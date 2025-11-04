@@ -1,0 +1,82 @@
+{
+    "name": "laravel-desktop-app",
+    "version": "1.0.0",
+    "description": "Laravel desktop application with Electron",
+    "private": true,
+    "main": "electron/main.js",
+    "scripts": {
+        "dev": "vite",
+        "dev-server": "php artisan serve",
+        "build": "vite build",
+        "build-frontend": "vite build",
+        "electron": "electron .",
+        "electron-dev": "concurrently \"npm run dev-server\" \"wait-on http://localhost:8000 && electron .\"",
+        "build-electron": "electron-builder",
+        "build-electron-win": "electron-builder --win",
+        "build-electron-all": "electron-builder -wml",
+        "dist": "npm run build-frontend && npm run build-electron",
+        "dist-win": "npm run build-frontend && npm run build-electron-win",
+        "pack": "electron-builder --dir",
+        "pack-win": "electron-builder --dir --win"
+    },
+    "build": {
+        "appId": "com.yourcompany.laravel-desktop",
+        "productName": "Laravel Desktop App",
+        "directories": {
+            "output": "dist_electron",
+            "buildResources": "electron/assets"
+        },
+        "files": [
+            "electron/**/*",
+            "public/**/*",
+            "bootstrap/**/*",
+            "storage/**/*",
+            "vendor/**/*",
+            "resources/**/*",
+            "app/**/*",
+            "config/**/*",
+            "database/**/*",
+            "routes/**/*",
+            "*.php",
+            ".env",
+            "composer.json",
+            "artisan"
+        ],
+        "extraResources": [
+            {
+                "from": "vendor",
+                "to": "vendor",
+                "filter": ["**/*"]
+            },
+            {
+                "from": "node_modules",
+                "to": "node_modules",
+                "filter": ["**/*"]
+            }
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": ["x64", "ia32"]
+                }
+            ],
+            "icon": "electron/assets/icon.ico",
+            "publisherName": "Your Company",
+            "verifyUpdateCodeSignature": false
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "Laravel Desktop App",
+            "deleteAppDataOnUninstall": true,
+            "include": "build/installer.nsh"
+        },
+        "publish": {
+            "provider": "github",
+            "releaseType": "release"
+        }
+    }
+}
