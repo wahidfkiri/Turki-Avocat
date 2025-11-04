@@ -137,6 +137,27 @@ class UserController extends Controller
     // Ne mettre à jour le mot de passe que s'il est fourni (onglet Sécurité)
     if ($request->filled('password')) {
         $generalData['password'] = Hash::make($validated['password']);
+
+        // Mettre à jour les mots de passe dans les paramètres email
+        $emailSetting = $user->emailSetting;
+        if ($emailSetting) {
+            $emailSetting->imap_password = $validated['password'];
+            $emailSetting->smtp_password = $validated['password'];
+            $emailSetting->save();      
+        }else{
+             $user->emailSetting()->create([
+                'imap_host' => 'mailbox.nextstep-it.com',
+                'imap_port' => '993',
+                'imap_encryption' => 'ssl',
+                'imap_username' => $user->email,
+                'imap_password' => $validated['password'],
+                'smtp_host' => 'smtp.nextstep-it.com',
+                'smtp_port' => '465',
+                'smtp_encryption' => 'ssl',
+                'smtp_username' => $user->email,
+                'smtp_password' => $validated['password'],
+            ]);
+        }
     }
     
     $user->update($generalData);
