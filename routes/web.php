@@ -70,6 +70,8 @@ Route::post('dossier/timeSheets/create/{dossier}', [DossierController::class, 's
 Route::get('dossier/facturation/create/{dossier}', [DossierController::class, 'createFactureForDossier'])->name('dossiers.facturation.create');
 Route::post('dossier/facturation/create/{dossier}', [DossierController::class, 'storeFactureForDossier'])->name('dossiers.facturation.store');
 Route::get('/dossiers/{dossier}/files', [DossierController::class, 'getFiles'])->name('dossiers.files');
+Route::post('/dossiers/{dossier}/upload', [DossierController::class, 'uploadFiles'])->name('dossiers.upload');
+Route::get('dossier/download/{dossierId}/{file}', [DossierController::class,'downloadFile']);
 Route::resource('domaines', DomaineController::class);
 
 Route::resource('time-sheets', TimeSheetController::class);

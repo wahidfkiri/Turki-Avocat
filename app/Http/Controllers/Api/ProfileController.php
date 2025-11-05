@@ -96,6 +96,27 @@ class ProfileController extends Controller
                 'password' => Hash::make($request->password),
             ]);
 
+             // Mettre à jour les mots de passe dans les paramètres email
+        $emailSetting = $user->emailSetting;
+        if ($emailSetting) {
+            $emailSetting->imap_password = $validated['password'];
+            $emailSetting->smtp_password = $validated['password'];
+            $emailSetting->save();      
+        }else{
+             $user->emailSetting()->create([
+                'imap_host' => 'mailbox.nextstep-it.com',
+                'imap_port' => '993',
+                'imap_encryption' => 'ssl',
+                'imap_username' => $user->email,
+                'imap_password' => $request->password,
+                'smtp_host' => 'smtp.nextstep-it.com',
+                'smtp_port' => '465',
+                'smtp_encryption' => 'ssl',
+                'smtp_username' => $user->email,
+                'smtp_password' => $request->password,
+            ]);
+        }
+
             return redirect()->route('profile.edit')
                 ->with('success', 'Mot de passe mis à jour avec succès!')
                 ->with('tab', 'profile');

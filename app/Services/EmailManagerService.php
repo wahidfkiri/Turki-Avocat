@@ -172,7 +172,10 @@ protected function getConfig()
         
         try {
             $folder = $this->client->getFolder($folderName);
-            $messages = $folder->messages()->limit($limit)->all()->get();
+            $messages = $folder->messages()
+                ->limit(20)
+                ->all()
+                ->get();
             
             $emails = [];
             foreach ($messages as $message) {

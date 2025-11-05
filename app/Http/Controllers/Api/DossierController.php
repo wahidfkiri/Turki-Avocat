@@ -990,29 +990,118 @@ public function getDossiersData(Request $request)
 
     
     public function getFiles(Dossier $dossier)
-    {
-        $directory = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
-        $files = [];
+{
+    $directory = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
+    $items = [];
+    
+    // Check if directory exists
+    if (Storage::disk('public')->exists($directory)) {
+        // Get all directories
+        $directories = Storage::disk('public')->allDirectories($directory);
         
-        // Check if directory exists
-        if (Storage::disk('public')->exists($directory)) {
-            // Get all files and directories
-            $items = Storage::disk('public')->allFiles($directory);
-            
-            foreach ($items as $item) {
-                $files[] = [
-                    'name' => basename($item),
-                    'path' => $item,
-                    'type' => pathinfo($item, PATHINFO_EXTENSION) ? 'file' : 'folder',
-                    'extension' => pathinfo($item, PATHINFO_EXTENSION),
-                    'size' => Storage::disk('public')->size($item),
-                    'last_modified' => Storage::disk('public')->lastModified($item),
-                    'url' => Storage::disk('public')->url($item)
-                ];
-            }
+        // Get all files
+        $files = Storage::disk('public')->allFiles($directory);
+        
+        // Process directories
+        foreach ($directories as $dir) {
+            $items[] = [
+                'name' => basename($dir),
+                'path' => $dir,
+                'type' => 'folder',
+                'extension' => '',
+                'size' => 0, // Folders don't have size
+                'last_modified' => Storage::disk('public')->lastModified($dir),
+                'url' => null // Folders typically don't have direct URLs
+            ];
         }
         
-        return response()->json($files);
+        // Process files
+        foreach ($files as $file) {
+            $items[] = [
+                'name' => basename($file),
+                'path' => $file,
+                'type' => 'file',
+                'extension' => pathinfo($file, PATHINFO_EXTENSION),
+                'size' => Storage::disk('public')->size($file),
+                'last_modified' => Storage::disk('public')->lastModified($file),
+                'url' => Storage::disk('public')->url($file)
+            ];
+        }
+    }
+    
+    return response()->json($items);
+}
+
+
+    public function uploadFiles(Request $request, Dossier $dossier)
+    {
+        try {
+            $request->validate([
+                'files.*' => 'required|file', // 10MB max per file
+            ]);
+
+            $uploadedFiles = [];
+            $directory = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
+
+            // Ensure directory exists
+            if (!Storage::disk('public')->exists($directory)) {
+                Storage::disk('public')->makeDirectory($directory);
+            }
+
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $originalName = $file->getClientOriginalName();
+                    $fileName = pathinfo($originalName, PATHINFO_FILENAME);
+                    $extension = $file->getClientOriginalExtension();
+                    
+                    // Generate unique name if file exists
+                    $fullFileName = $originalName;
+                    $counter = 1;
+                    
+                    // while (Storage::disk('public')->exists("$directory/$fullFileName")) {
+                    //     $fullFileName = $fileName . '_' . $counter . '.' . $extension;
+                    //     $counter++;
+                    // }
+
+                    // Store file (will replace if same name)
+                    $path = $file->storeAs($directory, $fullFileName, 'public');
+
+                    $uploadedFiles[] = [
+                        'name' => $fullFileName,
+                        'path' => $path,
+                        'size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fichiers uploadés avec succès',
+                'files' => $uploadedFiles
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Upload error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'upload des fichiers: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
+    public function downloadFile($dossierId, $fileName, Request $request)
+    {
+        $dossier = Dossier::findOrFail($dossierId);
+         $fullPath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}/" . basename($fileName);
+        // Check if file exists
+         $fullPath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}/" . basename($fileName);
+
+        if (Storage::disk('public')->exists($fullPath)) {
+            return Storage::disk('public')->download($fullPath);
+        } else {
+            return redirect()->back()->with('error', 'Fichier non trouvé.');
+        }               
+    }
 }
