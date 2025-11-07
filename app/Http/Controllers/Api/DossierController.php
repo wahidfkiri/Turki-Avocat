@@ -1059,7 +1059,7 @@ public function getDossiersData(Request $request)
 {
     try {
         $request->validate([
-            'files.*' => 'required|file|max:10240', // 10MB max per file
+            'files.*' => 'required|file', // 10MB max per file
         ]);
 
         $uploadedFiles = [];
@@ -1146,6 +1146,41 @@ public function getDossiersData(Request $request)
     }
 }
 
+public function viewFile(Request $request)
+{
+    try{
+        $validated = $request->validate([
+            'dossier_id' => 'required|exists:dossiers,id',
+            'file_path' => 'required|string'
+        ]);
+
+        $dossier = Dossier::findOrFail($validated['dossier_id']);
+        $filePath = $validated['file_path'];
+        
+        // Construire le chemin complet
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
+        $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
+
+        if (!Storage::disk('public')->exists($fullPath)) {
+            return response()->json([
+                'error' => 'Fichier non trouvé'
+            ], 404);
+        }
+
+        $mimeType = Storage::disk('public')->mimeType($fullPath);
+        $fileContent = Storage::disk('public')->get($fullPath);
+
+        return response($fileContent, 200)
+                ->header('Content-Type', $mimeType);
+
+    } catch (\Exception $e) {
+        \Log::error("Erreur lors de la visualisation: " . $e->getMessage());
+        return response()->json([
+            'error' => 'Erreur serveur lors de la visualisation'
+        ], 500);    
+    }
+}
+
    public function downloadFile(Request $request)
 {
     try {
@@ -1183,12 +1218,12 @@ public function getDossiersData(Request $request)
         }
 
         // Vérifier que c'est bien un fichier et non un dossier
-        if (Storage::disk('public')->size($fullPath) === 0) {
-            \Log::error("Chemin point vers un dossier: " . $fullPath);
-            return response()->json([
-                'error' => 'Impossible de télécharger un dossier'
-            ], 400);
-        }
+        // if (Storage::disk('public')->size($fullPath) === 0) {
+        //     \Log::error("Chemin point vers un dossier: " . $fullPath);
+        //     return response()->json([
+        //         'error' => 'Impossible de télécharger un dossier'
+        //     ], 400);
+        // }
 
         // Télécharger le fichier
         return Storage::disk('public')->download($fullPath);

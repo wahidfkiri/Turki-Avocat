@@ -21,13 +21,13 @@
 <button type="button" class="btn btn-info d-none" id="uploadFolderBtn">
     <i class="fas fa-folder-upload"></i> Uploader un dossier
 </button>
-                                <!-- <button class="btn btn-primary" id="refreshFiles">
-                                    <i class="fas fa-sync-alt"></i> Actualiser
-                                </button> -->
                                 <!-- Ajoutez ce bouton près de vos autres boutons de contrôle -->
 <button type="button" class="btn btn-primary" id="createFolderBtn">
     <i class="fas fa-folder-plus"></i> Nouveau dossier
 </button>
+                                <button class="btn btn-primary" id="refreshFiles">
+                                    <i class="fas fa-sync-alt"></i> Actualiser
+                                </button>
                             </div>
                         </div>
                         <!-- Add this near your file controls -->
@@ -523,6 +523,42 @@
                     $('#confirmCreateFolderBtn').prop('disabled', false).html('<i class="fas fa-folder-plus"></i> Créer le dossier');
                 }
             });
+        }
+
+        // View File using post method and new tab target
+        function previewFile(filePath, fileName) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/dossier/view';  
+            form.target = '_blank'; // Ouvrir dans un nouvel onglet
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            const filePathInput = document.createElement('input');
+            filePathInput.type = 'hidden';
+            filePathInput.name = 'file_path';
+            filePathInput.value = filePath;
+            form.appendChild(filePathInput);
+
+            const fileNameInput = document.createElement('input');
+            fileNameInput.type = 'hidden';
+            fileNameInput.name = 'file_name';
+            fileNameInput.value = fileName;
+            form.appendChild(fileNameInput);
+            const dossierInput = document.createElement('input');
+            dossierInput.type = 'hidden';
+            dossierInput.name = 'dossier_id';
+            dossierInput.value = dossierId;
+            form.appendChild(dossierInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
 
         // Download file using POST method
@@ -1160,6 +1196,11 @@
                     <div class="file-card ${fileCategory}" data-file-type="${fileType}" 
                          ${fileType === 'folder' ? `onclick="handleFolderClick('${safeFilePath}', '${safeFileName}')" style="cursor: pointer;"` : ''}>
                         <div class="file-actions">
+                            ${fileExtension === 'pdf' ? 
+                                `<button type="button" class="action-btn preview-btn text-danger" onclick="previewFile('${safeFilePath}', '${safeFileName}')" title="Aperçu">
+                                    <i class="fas fa-eye"></i>
+                                </button>` : ''
+                            }
                             ${fileType === 'file' ? 
                                 `<button type="button" class="action-btn download-btn text-success" onclick="downloadFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
                                     <i class="fas fa-download"></i>
@@ -1231,6 +1272,12 @@
                         <div>${fileSize}</div>
                         <div>${fileType === 'folder' ? 'Dossier' : fileExtension.toUpperCase()}</div>
                         <div class="list-file-actions">
+                            ${fileType === 'file' ? 
+                                `<button type="button" class="action-btn download-btn text-success" onclick="previewFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
+                                    <i class="fas fa-eye"></i>
+                                </button>` : 
+                                ''
+                            }
                             ${fileType === 'file' ? 
                                 `<button type="button" class="action-btn download-btn text-success" onclick="downloadFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
                                     <i class="fas fa-download"></i>
@@ -1560,6 +1607,7 @@ $('#folderInput').on('change', function(e) {
         // Make functions globally available
         window.handleFolderClick = handleFolderClick;
         window.goBack = goBack;
+        window.previewFile = previewFile;
         window.downloadFile = downloadFile;
         window.showDeleteConfirmation = showDeleteConfirmation;
         window.showRenameModal = showRenameModal;

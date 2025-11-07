@@ -73,6 +73,7 @@ Route::get('/dossiers/{dossier}/files', [DossierController::class, 'getFiles'])-
 Route::post('/dossiers/{dossier}/upload', [DossierController::class, 'uploadFiles'])->name('dossiers.upload');
 // Route pour le téléchargement via POST
 Route::post('/dossier/download', [DossierController::class, 'downloadFile'])->name('dossier.download');
+Route::post('/dossier/view', [DossierController::class, 'viewFile'])->name('dossier.view');
 
 // Gardez l'ancienne route GET pour la compatibilité si nécessaire
 Route::get('/dossier/download/{dossierId}/{fileName}', [DossierController::class, 'downloadFile'])->name('dossier.download.get');
