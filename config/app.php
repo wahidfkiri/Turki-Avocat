@@ -186,6 +186,7 @@ return [
          * Package Service Providers...
          */
          Yajra\DataTables\DataTablesServiceProvider::class,
+         Vendor\Drive\DriveServiceProvider::class,
 
         /*
          * Application Service Providers...

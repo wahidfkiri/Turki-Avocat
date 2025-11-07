@@ -71,7 +71,18 @@ Route::get('dossier/facturation/create/{dossier}', [DossierController::class, 'c
 Route::post('dossier/facturation/create/{dossier}', [DossierController::class, 'storeFactureForDossier'])->name('dossiers.facturation.store');
 Route::get('/dossiers/{dossier}/files', [DossierController::class, 'getFiles'])->name('dossiers.files');
 Route::post('/dossiers/{dossier}/upload', [DossierController::class, 'uploadFiles'])->name('dossiers.upload');
-Route::get('dossier/download/{dossierId}/{file}', [DossierController::class,'downloadFile']);
+// Route pour le téléchargement via POST
+Route::post('/dossier/download', [DossierController::class, 'downloadFile'])->name('dossier.download');
+
+// Gardez l'ancienne route GET pour la compatibilité si nécessaire
+Route::get('/dossier/download/{dossierId}/{fileName}', [DossierController::class, 'downloadFile'])->name('dossier.download.get');
+Route::post('/dossiers/{dossier}/delete', [DossierController::class, 'deleteFile'])->name('dossiers.delete');
+Route::post('/dossiers/{dossier}/rename', [DossierController::class, 'renameFile'])->name('dossiers.rename');
+Route::post('/dossiers/{dossier}/move', [DossierController::class, 'moveFile'])->name('dossiers.move');
+Route::get('/dossiers/{dossier}/folders', [DossierController::class, 'getFoldersTree'])->name('dossiers.folders');
+Route::post('/dossiers/{dossier}/create-folder', [DossierController::class, 'createFolder'])->name('dossiers.create-folder');
+Route::post('/dossiers/{dossier}/file-url', [DossierController::class, 'getFileUrl'])->name('dossiers.file-url');
+Route::post('/dossiers/{dossier}/upload-folder', [DossierController::class, 'uploadFolder'])->name('dossiers.upload-folder');
 Route::resource('domaines', DomaineController::class);
 
 Route::resource('time-sheets', TimeSheetController::class);
