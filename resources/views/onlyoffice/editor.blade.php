@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>OnlyOffice Editor</title>
-    <script type="text/javascript" src="http://{{ request()->getHost() }}:8080/web-apps/apps/api/documents/api.js"></script>
+    <script type="text/javascript" src="http://{{ request()->getHost() }}:8082/web-apps/apps/api/documents/api.js"></script>
 </head>
 <body style="margin:0; padding:0; height:100vh;">
     <div id="placeholder" style="height:100vh;"></div>
