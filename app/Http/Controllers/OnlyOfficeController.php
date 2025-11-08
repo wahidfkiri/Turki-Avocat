@@ -4,23 +4,33 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Firebase\JWT\JWT;
 
 class OnlyOfficeController extends Controller
 {
+    private $jwtSecret = '9PYbJQIoas57t61v4MGkCyNjsT2VPgpriq17xqRPC0uw3KW96SQw6cleyrglpxeN'; // must match OnlyOffice Docker JWT_SECRET
+
     public function open()
     {
         $filePath = storage_path('app/view.docx');
-        $fileUrl = asset('storage/view.docx'); // public URL si storage:link
+
+        if (!file_exists($filePath)) {
+            abort(404, "Le fichier n'existe pas.");
+        }
+
+        $fileUrl = asset('storage/view.docx'); // Assure-toi d'avoir fait php artisan storage:link
 
         $user = [
             "id" => auth()->id() ?? 1,
             "name" => auth()->user()->name ?? "Invité",
         ];
 
-        $config = [
+        $documentKey = md5($filePath . filemtime($filePath));
+
+        $payload = [
             "document" => [
                 "fileType" => "docx",
-                "key" => md5($filePath . filemtime($filePath)),
+                "key" => $documentKey,
                 "title" => "example.docx",
                 "url" => $fileUrl,
                 "permissions" => [
@@ -40,27 +50,32 @@ class OnlyOfficeController extends Controller
                     "help" => true,
                 ]
             ],
-            "token" => $this->generateToken($fileUrl, $user),
+            "iat" => time(),
+            "exp" => time() + 3600, // token valable 1h
         ];
 
-        return view('onlyoffice.editor', compact('config'));
-    }
+        // Génération du JWT
+        $token = JWT::encode($payload, $this->jwtSecret, 'HS256');
 
-    private function generateToken($fileUrl, $user)
-    {
-        $secret = 'secret123';
-        return \Firebase\JWT\JWT::encode([
-            'url' => $fileUrl,
-            'user' => $user,
-            'iat' => time()
-        ], $secret, 'HS256');
+        return view('onlyoffice.editor', [
+            'config' => $payload,
+            'token' => $token,
+        ]);
     }
 
     public function callback(Request $request)
     {
-        // Here OnlyOffice will send file updates
         $data = $request->all();
-        // handle save, status, etc.
+
+        // OnlyOffice envoie les modifications du fichier
+        // Vérifier status et sauvegarder
+        if (isset($data['status']) && $data['status'] == 2) { // status 2 = ready to save
+            $downloadUrl = $data['url'];
+            $fileContent = file_get_contents($downloadUrl);
+
+            Storage::put('view.docx', $fileContent);
+        }
+
         return response()->json(['error' => 0]);
     }
 }
