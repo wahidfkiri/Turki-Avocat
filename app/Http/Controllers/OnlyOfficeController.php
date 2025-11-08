@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Firebase\JWT\JWT;
 
 class OnlyOfficeController extends Controller
@@ -18,16 +17,13 @@ class OnlyOfficeController extends Controller
             file_put_contents($filePath, '');
         }
 
-        // URL publique accessible par OnlyOffice
         $fileUrl = asset('storage/view.docx');
 
-        // Infos utilisateur (auth ou invité)
         $user = [
             "id" => auth()->id() ?? 1,
             "name" => auth()->user()->name ?? "Invité"
         ];
 
-        // Configuration OnlyOffice
         $config = [
             "document" => [
                 "fileType" => "docx",
@@ -65,7 +61,7 @@ class OnlyOfficeController extends Controller
             'url' => $fileUrl,
             'user' => $user,
             'iat' => time(),
-            'exp' => time() + 3600 // token valide 1h
+            'exp' => time() + 3600
         ];
 
         return JWT::encode($payload, $secret, 'HS256');
@@ -73,15 +69,12 @@ class OnlyOfficeController extends Controller
 
     public function callback(Request $request)
     {
-        // OnlyOffice envoie le status du document
         $data = $request->all();
 
-        // Exemple simple : sauvegarde du fichier si modifié
-        if (isset($data['status']) && $data['status'] == 2) { // status 2 = document fermé et sauvegardé
+        if (isset($data['status']) && $data['status'] == 2) {
             $downloadUrl = $data['url'];
             $filePath = storage_path('app/public/view.docx');
 
-            // Récupérer le fichier depuis OnlyOffice
             $ch = curl_init($downloadUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [

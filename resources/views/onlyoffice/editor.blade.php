@@ -10,11 +10,13 @@
     <script>
         const config = @json($config);
 
+        // ⚠️ Token doit être dans document.token
+        config.document.token = config.token;
+
         const docEditor = new DocsAPI.DocEditor("placeholder", {
             document: config.document,
             documentType: config.documentType,
-            editorConfig: config.editorConfig,
-            token: config.token
+            editorConfig: config.editorConfig
         });
     </script>
 </body>
