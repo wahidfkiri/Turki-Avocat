@@ -1,48 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ONLYOFFICE Simple Test</title>
-    <script src="http://localhost:8080/web-apps/apps/api/documents/api.js"></script>
-    <style>
-        body { margin: 0; padding: 20px; font-family: Arial; }
-        #editor { width: 100%; height: 600px; border: 1px solid #ccc; }
-    </style>
+    <title>OnlyOffice Editor</title>
+    <script type="text/javascript" src="http://{{ request()->getHost() }}:8080/web-apps/apps/api/documents/api.js"></script>
 </head>
-<body>
-    <h1>Simple ONLYOFFICE Test</h1>
-    <div id="editor"></div>
-    
+<body style="margin:0; padding:0; height:100vh;">
+    <div id="placeholder" style="height:100vh;"></div>
+
     <script>
-        // Create a simple text content for the document
-        var fileContent = "Simple test document content";
-        var blob = new Blob([fileContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-        var fileUrl = URL.createObjectURL(blob);
+        const config = @json($config);
 
-        var config = {
-            "document": {
-                "title": "test.docx",
-                "url": fileUrl,  // Use blob URL instead of Laravel
-                "fileType": "docx",
-                "key": "test_" + Date.now()
-            },
-            "documentType": "word",
-            "editorConfig": {
-                "mode": "edit",
-                "callbackUrl": "https://httpbin.org/post"  // Public test endpoint
-            }
-        };
-
-        console.log('Config:', config);
-        
-        var docEditor = new DocsAPI.DocEditor("editor", config);
-        
-        docEditor.onReady = function() {
-            console.log('Editor ready');
-        };
-        
-        docEditor.onError = function(error) {
-            console.error('Error:', error);
-        };
+        const docEditor = new DocsAPI.DocEditor("placeholder", {
+            document: config.document,
+            documentType: config.documentType,
+            editorConfig: config.editorConfig,
+            token: config.token
+        });
     </script>
 </body>
 </html>

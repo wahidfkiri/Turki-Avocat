@@ -168,6 +168,9 @@ Route::get('/open-folder', [ExplorerController::class, 'showForm'])->name('folde
 Route::post('/open-folder', [ExplorerController::class, 'openFolder'])->name('folder.open');
 Route::post('/open-folder-network', [ExplorerController::class, 'openFolderNetwork'])->name('folder.open.network');
 
+// Simple callback
+Route::get('/onlyoffice/open', [OnlyOfficeController::class, 'open'])->name('onlyoffice.open');
+Route::post('/onlyoffice/callback', [OnlyOfficeController::class, 'callback'])->name('onlyoffice.callback');
 
 
     });
@@ -322,11 +325,6 @@ Route::get('/file/{filename}', function ($filename) {
     ]);
 });
 
-// Simple callback
-Route::post('/callback', function () {
-    \Log::info('Callback received: ' . json_encode(request()->all()));
-    return response()->json(['error' => 0]);
-});
 
 // Health check
 Route::get('/health', function () {
