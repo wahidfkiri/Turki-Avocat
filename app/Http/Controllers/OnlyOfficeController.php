@@ -8,30 +8,31 @@ use Firebase\JWT\JWT;
 
 class OnlyOfficeController extends Controller
 {
-    private $jwtSecret = '9PYbJQIoas57t61v4MGkCyNjsT2VPgpriq17xqRPC0uw3KW96SQw6cleyrglpxeN'; // must match OnlyOffice Docker JWT_SECRET
-
     public function open()
     {
-        $filePath = storage_path('app/view.docx');
+        // Fichier docx
+        $filePath = storage_path('app/public/view.docx');
 
+        // Créer un fichier vide si manquant
         if (!file_exists($filePath)) {
-            abort(404, "Le fichier n'existe pas.");
+            file_put_contents($filePath, '');
         }
 
-        $fileUrl = asset('storage/view.docx'); // Assure-toi d'avoir fait php artisan storage:link
+        // URL publique accessible par OnlyOffice
+        $fileUrl = asset('storage/view.docx');
 
+        // Infos utilisateur (auth ou invité)
         $user = [
             "id" => auth()->id() ?? 1,
-            "name" => auth()->user()->name ?? "Invité",
+            "name" => auth()->user()->name ?? "Invité"
         ];
 
-        $documentKey = md5($filePath . filemtime($filePath));
-
-        $payload = [
+        // Configuration OnlyOffice
+        $config = [
             "document" => [
                 "fileType" => "docx",
-                "key" => $documentKey,
-                "title" => "example.docx",
+                "key" => md5($filePath . filemtime($filePath)),
+                "title" => "view.docx",
                 "url" => $fileUrl,
                 "permissions" => [
                     "edit" => true,
@@ -47,33 +48,51 @@ class OnlyOfficeController extends Controller
                 "customization" => [
                     "chat" => true,
                     "comments" => true,
-                    "help" => true,
+                    "help" => true
                 ]
             ],
-            "iat" => time(),
-            "exp" => time() + 3600, // token valable 1h
+            "token" => $this->generateToken($fileUrl, $user)
         ];
 
-        // Génération du JWT
-        $token = JWT::encode($payload, $this->jwtSecret, 'HS256');
+        return view('onlyoffice.editor', compact('config'));
+    }
 
-        return view('onlyoffice.editor', [
-            'config' => $payload,
-            'token' => $token,
-        ]);
+    private function generateToken($fileUrl, $user)
+    {
+        $secret = env('ONLYOFFICE_JWT_SECRET');
+
+        $payload = [
+            'url' => $fileUrl,
+            'user' => $user,
+            'iat' => time(),
+            'exp' => time() + 3600 // token valide 1h
+        ];
+
+        return JWT::encode($payload, $secret, 'HS256');
     }
 
     public function callback(Request $request)
     {
+        // OnlyOffice envoie le status du document
         $data = $request->all();
 
-        // OnlyOffice envoie les modifications du fichier
-        // Vérifier status et sauvegarder
-        if (isset($data['status']) && $data['status'] == 2) { // status 2 = ready to save
+        // Exemple simple : sauvegarde du fichier si modifié
+        if (isset($data['status']) && $data['status'] == 2) { // status 2 = document fermé et sauvegardé
             $downloadUrl = $data['url'];
-            $fileContent = file_get_contents($downloadUrl);
+            $filePath = storage_path('app/public/view.docx');
 
-            Storage::put('view.docx', $fileContent);
+            // Récupérer le fichier depuis OnlyOffice
+            $ch = curl_init($downloadUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer " . $this->generateToken($downloadUrl, $data['user'] ?? [])
+            ]);
+            $content = curl_exec($ch);
+            curl_close($ch);
+
+            if ($content) {
+                file_put_contents($filePath, $content);
+            }
         }
 
         return response()->json(['error' => 0]);
