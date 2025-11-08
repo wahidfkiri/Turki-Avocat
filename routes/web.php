@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\DesktopDatabaseController;
 use App\Http\Controllers\ExplorerController;
+use App\Http\Controllers\OnlyOfficeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -166,20 +167,35 @@ Route::prefix('email')->group(function () {
 Route::get('/open-folder', [ExplorerController::class, 'showForm'])->name('folder.form');
 Route::post('/open-folder', [ExplorerController::class, 'openFolder'])->name('folder.open');
 Route::post('/open-folder-network', [ExplorerController::class, 'openFolderNetwork'])->name('folder.open.network');
+
+
+
     });
 
 
-
-    Route::prefix('v1/peakmind')->group(function () {
-    Route::get('/test', [EmailController::class, 'testConnection']);
-    Route::get('/folders', [EmailController::class, 'getFolders']);
-    Route::get('/emails/{folder?}', [EmailController::class, 'getBasicEmails']);
-    Route::get('/emails-very-basic/{folder?}', [EmailController::class, 'getVeryBasicEmails']);
-    Route::post('/send', [EmailController::class, 'sendEmail']);
-    Route::post('/reconnect', [EmailController::class, 'reconnect']);
+Route::middleware(['auth','web'])->group(function () {
+    // Editor route - without file ID, uses path parameter
+    Route::get('/onlyoffice/editor', [OnlyOfficeController::class, 'editor'])
+        ->name('onlyoffice.editor');
+    
+    // File download route
+    Route::get('/onlyoffice/download', [OnlyOfficeController::class, 'download'])
+        ->name('onlyoffice.download');
+    
+    
+    // File list route
+    Route::get('/onlyoffice/files', [OnlyOfficeController::class, 'fileList'])
+        ->name('onlyoffice.files');
+    
+    // Quick test routes for different file types
+    Route::get('/onlyoffice/test/word', function () {
+        return redirect()->route('onlyoffice.editor', ['path' => storage_path('app/public/sample.docx')]);
+    });
+    
+    Route::get('/onlyoffice/test/excel', function () {
+        return redirect()->route('onlyoffice.editor', ['path' => storage_path('app/public/sample.xlsx')]);
+    });
 });
-
-
 // 1️⃣ Serve DOCX file with correct MIME type
 Route::get('/file/{filename}', function ($filename) {
     $path = storage_path("app/public/intervenants/2/{$filename}");
@@ -263,4 +279,56 @@ Route::get('/debug-uids', function() {
     $emailService = app()->make(App\Services\EmailManagerService::class);
     $result = $emailService->debugUids('INBOX', 20);
     return response()->json($result);
+});
+
+
+Route::get('/test-jwt', function () {
+    $service = app(App\Services\OnlyOfficeService::class);
+    return response()->json($service->testJwt());
+});
+
+
+    // Callback route - Make sure this is defined as POST
+    Route::post('/onlyoffice/callback', [OnlyOfficeController::class, 'callback'])
+        ->name('onlyoffice.callback');
+
+        // routes/web.php
+
+// TEMPORARY: Completely public test callback
+Route::get('/onlyoffice-callback-test', function (Request $request) {
+    \Log::info('Public callback test received', $request->all());
+    return response()->json(['error' => 0, 'message' => 'Public callback working']);
+});
+
+
+
+// Simple test route
+Route::get('/test', function () {
+    return response()->json(['status' => 'OK', 'message' => 'Laravel is working']);
+});
+
+// Simple file serve
+Route::get('/file/{filename}', function ($filename) {
+    $path = storage_path('app/public/' . $filename);
+    
+    if (!file_exists($path)) {
+        // Create a simple file
+        file_put_contents($path, "Test document content");
+    }
+    
+    return response()->file($path, [
+        'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Access-Control-Allow-Origin' => '*'
+    ]);
+});
+
+// Simple callback
+Route::post('/callback', function () {
+    \Log::info('Callback received: ' . json_encode(request()->all()));
+    return response()->json(['error' => 0]);
+});
+
+// Health check
+Route::get('/health', function () {
+    return response()->json(['status' => 'healthy']);
 });
