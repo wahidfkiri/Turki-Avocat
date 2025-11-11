@@ -88,9 +88,9 @@
 <div class="dropdown" style="position: relative; display: inline-block;">
     <button id="createFileBtn" class="btn btn-primary">Créer un fichier ▾</button>
     <ul id="fileTypeDropdown" class="dropdown-menu">
-        <li><a href="#" class="dropdown-item" data-file-type="docx">Word (.docx)</a></li>
-        <li><a href="#" class="dropdown-item" data-file-type="xlsx">Excel (.xlsx)</a></li>
-        <li><a href="#" class="dropdown-item" data-file-type="pptx">PowerPoint (.pptx)</a></li>
+        <li><a href="#" class="dropdown-item" data-file-type="docx"><i class="fas fa-file-word text-primary"></i> Word (.docx)</a></li>
+        <li><a href="#" class="dropdown-item" data-file-type="xlsx"><i class="fas fa-file-excel text-success"></i> Excel (.xlsx)</a></li>
+        <li><a href="#" class="dropdown-item" data-file-type="pptx"><i class="fas fa-file-powerpoint text-warning"></i> PowerPoint (.pptx)</a></li>
     </ul>
 </div>
 
