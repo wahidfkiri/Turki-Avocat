@@ -1184,7 +1184,7 @@ public function viewFile(Request $request)
                 ],
                 "editorConfig" => [
                     "mode" => "edit", // edit mode
-                    "callbackUrl" => url("/onlyoffice/save"),
+                    "callbackUrl" => "http://217.182.168.27/onlyoffice/save",
                     "user" => [
                         "id" => (string)(auth()->id() ?? '1'),
                         "name" => auth()->user()->name ?? "Utilisateur",
