@@ -1184,6 +1184,8 @@ public function viewFile($dossierId, $file)
 
             // Generate safe hash key
             $key = md5($fullPath . '-' . (auth()->id() ?? '1'));
+              // Clear any old cache for this key
+            Cache::forget("onlyoffice_file_$key");
             Cache::put("onlyoffice_file_$key", $fullPath, 3600);
 
             $config = [
