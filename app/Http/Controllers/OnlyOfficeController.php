@@ -42,7 +42,8 @@ class OnlyOfficeController extends Controller
             $downloadUrl = $data['url'];
 
             // Retrieve the original path from OnlyOffice key
-            $originalPath = $data['key'] ?? null;
+            $originalPath = urldecode($data['key'] ?? '');
+
 
             if ($originalPath && Storage::disk('public')->exists($originalPath)) {
                 $contents = @file_get_contents($downloadUrl);

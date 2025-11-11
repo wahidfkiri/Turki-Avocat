@@ -1178,7 +1178,7 @@ public function viewFile(Request $request)
             $config = [
                 "document" => [
                     "fileType" => $extension,
-                    "key" => $fullPath, // use original path as key
+                    "key" => urlencode($fullPath),
                     "title" => basename($fullPath),
                     "url" => $fileUrl,
                 ],
