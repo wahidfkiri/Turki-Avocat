@@ -19,13 +19,14 @@ class OnlyOfficeController extends Controller
                 "url" => $fileUrl,
             ],
             "editorConfig" => [
-                "mode" => "edit",
-                "callbackUrl" => 'http://217.182.168.27/onlyoffice/save',
-                "user" => [
-                    "id" => auth()->id() ?? 1,
-                    "name" => auth()->user()->name ?? "User",
-                ],
-            ],
+    "mode" => "edit",
+    "callbackUrl" => 'http://217.182.168.27/onlyoffice/save',
+    "user" => [
+        "id" => (string) (auth()->id() ?? 1),
+        "name" => auth()->user()->name ?? "User",
+    ],
+],
+
         ];
 
         return view('onlyoffice.editor', compact('config'));
