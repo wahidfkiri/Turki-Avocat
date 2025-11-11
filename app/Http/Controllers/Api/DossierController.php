@@ -1155,7 +1155,7 @@ public function viewFilePost(Request $request)
     ]);
 
     $dossier = Dossier::findOrFail($validated['dossier_id']);
-    $filePath = urlencode($validated['file_path']); // encode for URL
+    $filePath = base64_encode($validated['file_path']); // POST
 
     return redirect()->route('dossier.view', [
         'dossier' => $dossier->id,
@@ -1167,7 +1167,7 @@ public function viewFile($dossierId, $file)
 {
     try {
         $dossier = Dossier::findOrFail($dossierId);
-        $filePath = urldecode($file);
+        $filePath = base64_decode($file);
 
         $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
