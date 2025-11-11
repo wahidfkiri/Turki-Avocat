@@ -21,14 +21,12 @@
 <button type="button" class="btn btn-info d-none" id="uploadFolderBtn">
     <i class="fas fa-folder-upload"></i> Uploader un dossier
 </button>
-<div class="dropdown mb-3">
-    <button class="btn btn-primary dropdown-toggle" type="button" id="createFileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-        Créer un fichier
-    </button>
-    <ul class="dropdown-menu" aria-labelledby="createFileDropdown">
-        <li><a class="dropdown-item" href="#" data-file-type="docx" data-bs-toggle="modal" data-bs-target="#createFileModal">Word (.docx)</a></li>
-        <li><a class="dropdown-item" href="#" data-file-type="xlsx" data-bs-toggle="modal" data-bs-target="#createFileModal">Excel (.xlsx)</a></li>
-        <li><a class="dropdown-item" href="#" data-file-type="pptx" data-bs-toggle="modal" data-bs-target="#createFileModal">PowerPoint (.pptx)</a></li>
+<div class="dropdown mb-3" style="position: relative; display: inline-block;">
+    <button id="createFileBtn" class="btn btn-primary">Créer un fichier ▾</button>
+    <ul id="fileTypeDropdown" class="dropdown-menu" style="display:none; position: absolute; list-style:none; padding:0; margin:0; border:1px solid #ccc; background:#fff; z-index:10;">
+        <li><a href="#" class="dropdown-item" data-file-type="docx">Word (.docx)</a></li>
+        <li><a href="#" class="dropdown-item" data-file-type="xlsx">Excel (.xlsx)</a></li>
+        <li><a href="#" class="dropdown-item" data-file-type="pptx">PowerPoint (.pptx)</a></li>
     </ul>
 </div>
                                 <!-- Ajoutez ce bouton près de vos autres boutons de contrôle -->
@@ -260,30 +258,21 @@
     </div>
 </div>
 
-<div class="modal fade" id="createFileModal" tabindex="-1" aria-labelledby="createFileModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="createFileForm">
-        @csrf
-        <div class="modal-header">
-          <h5 class="modal-title" id="createFileModalLabel">Créer un fichier</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+<!-- Custom Modal -->
+<div id="createFileModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100;">
+    <div style="background:#fff; max-width:400px; margin:100px auto; padding:20px; border-radius:5px; position:relative;">
+        <h5>Créer un fichier</h5>
+        <input type="hidden" id="file_type">
+        <input type="hidden" id="dossier_id" value="{{ $dossier->id }}">
+        <div class="mb-3">
+            <label for="file_name">Nom du fichier</label>
+            <input type="text" id="file_name" class="form-control" placeholder="Ex: Nouveau fichier">
         </div>
-        <div class="modal-body">
-            <input type="hidden" name="file_type" id="file_type">
-            <input type="hidden" name="dossier_id" value="{{ $dossier->id }}">
-            <div class="mb-3">
-                <label for="file_name" class="form-label">Nom du fichier</label>
-                <input type="text" class="form-control" id="file_name" name="file_name" placeholder="Ex: Nouveau fichier">
-            </div>
+        <div style="text-align:right;">
+            <button id="cancelBtn" class="btn btn-secondary">Annuler</button>
+            <button id="submitBtn" class="btn btn-primary">Créer</button>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="submit" class="btn btn-primary">Créer</button>
-        </div>
-      </form>
     </div>
-  </div>
 </div>
 <!-- Modal pour l'upload de dossier -->
 <div class="modal fade" id="uploadFolderModal" tabindex="-1" role="dialog" aria-labelledby="uploadFolderModalLabel" aria-hidden="true">
@@ -1839,25 +1828,57 @@ function uploadFolderStructure(folderStructure) {
 }
 </script>
 
-
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const dropdownItems = document.querySelectorAll('.dropdown-item[data-file-type]');
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Dropdown toggle
+    const createFileBtn = document.getElementById('createFileBtn');
+    const dropdown = document.getElementById('fileTypeDropdown');
+    createFileBtn.addEventListener('click', () => {
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e){
+        if(!createFileBtn.contains(e.target) && !dropdown.contains(e.target)){
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // Open modal and set file type
+    const dropdownItems = document.querySelectorAll('.dropdown-item');
+    const modal = document.getElementById('createFileModal');
     const fileTypeInput = document.getElementById('file_type');
 
     dropdownItems.forEach(item => {
-        item.addEventListener('click', function () {
-            const type = this.getAttribute('data-file-type');
-            fileTypeInput.value = type;
+        item.addEventListener('click', function(e){
+            e.preventDefault();
+            fileTypeInput.value = this.dataset.fileType;
+            modal.style.display = 'block';
+            dropdown.style.display = 'none';
         });
     });
 
-    // Handle form submission via AJAX
-    const form = document.getElementById('createFileForm');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+    // Cancel button
+    document.getElementById('cancelBtn').addEventListener('click', function(){
+        modal.style.display = 'none';
+        document.getElementById('file_name').value = '';
+    });
 
-        const formData = new FormData(form);
+    // Submit button
+    document.getElementById('submitBtn').addEventListener('click', function(){
+        const fileName = document.getElementById('file_name').value.trim();
+        const fileType = fileTypeInput.value;
+        const dossierId = document.getElementById('dossier_id').value;
+
+        if(!fileName) {
+            alert('Veuillez saisir un nom de fichier.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file_name', fileName + '.' + fileType);
+        formData.append('dossier_id', dossierId);
 
         fetch('{{ route("dossier.create.file.backend") }}', {
             method: 'POST',
@@ -1866,12 +1887,12 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             body: formData
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
             if(data.success){
                 alert(data.message);
-                // Optionally refresh page or append file to file list
-                location.reload();
+                modal.style.display = 'none';
+                location.reload(); // refresh or update file list
             } else {
                 alert(data.error || 'Erreur lors de la création du fichier.');
             }
@@ -1881,5 +1902,6 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('Erreur serveur.');
         });
     });
+
 });
 </script>
