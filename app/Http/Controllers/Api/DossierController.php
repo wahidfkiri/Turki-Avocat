@@ -21,6 +21,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 
 class DossierController extends Controller

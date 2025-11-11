@@ -1,4 +1,68 @@
 
+    <style>
+/* Dropdown */
+#fileTypeDropdown {
+    position: absolute;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #ccc;
+    background: #fff;
+    z-index: 10;
+    min-width: 150px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+#fileTypeDropdown.show {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* Dropdown items */
+.dropdown-item {
+    display: block;
+    padding: 5px 10px;
+    text-decoration: none;
+    color: #000;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* Modal */
+#createFileModal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    visibility: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 100;
+}
+
+#createFileModal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Modal content */
+#createFileModal .modal-content {
+    background: #fff;
+    max-width: 400px;
+    width: 90%;
+    padding: 20px;
+    border-radius: 5px;
+}
+</style>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- AdminLTE 3 -->
@@ -21,14 +85,16 @@
 <button type="button" class="btn btn-info d-none" id="uploadFolderBtn">
     <i class="fas fa-folder-upload"></i> Uploader un dossier
 </button>
-<div class="dropdown mb-3" style="position: relative; display: inline-block;">
+<div class="dropdown" style="position: relative; display: inline-block;">
     <button id="createFileBtn" class="btn btn-primary">Créer un fichier ▾</button>
-    <ul id="fileTypeDropdown" class="dropdown-menu" style="display:none; position: absolute; list-style:none; padding:0; margin:0; border:1px solid #ccc; background:#fff; z-index:10;">
+    <ul id="fileTypeDropdown" class="dropdown-menu">
         <li><a href="#" class="dropdown-item" data-file-type="docx">Word (.docx)</a></li>
         <li><a href="#" class="dropdown-item" data-file-type="xlsx">Excel (.xlsx)</a></li>
         <li><a href="#" class="dropdown-item" data-file-type="pptx">PowerPoint (.pptx)</a></li>
     </ul>
 </div>
+
+
                                 <!-- Ajoutez ce bouton près de vos autres boutons de contrôle -->
 <button type="button" class="btn btn-primary" id="createFolderBtn">
     <i class="fas fa-folder-plus"></i> Nouveau dossier
@@ -259,8 +325,8 @@
 </div>
 
 <!-- Custom Modal -->
-<div id="createFileModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100;">
-    <div style="background:#fff; max-width:400px; margin:100px auto; padding:20px; border-radius:5px; position:relative;">
+<div id="createFileModal">
+    <div class="modal-content">
         <h5>Créer un fichier</h5>
         <input type="hidden" id="file_type">
         <input type="hidden" id="dossier_id" value="{{ $dossier->id }}">
@@ -1830,38 +1896,35 @@ function uploadFolderStructure(folderStructure) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
-    // Dropdown toggle
     const createFileBtn = document.getElementById('createFileBtn');
     const dropdown = document.getElementById('fileTypeDropdown');
-    createFileBtn.addEventListener('click', () => {
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(e){
-        if(!createFileBtn.contains(e.target) && !dropdown.contains(e.target)){
-            dropdown.style.display = 'none';
-        }
-    });
-
-    // Open modal and set file type
-    const dropdownItems = document.querySelectorAll('.dropdown-item');
     const modal = document.getElementById('createFileModal');
     const fileTypeInput = document.getElementById('file_type');
 
-    dropdownItems.forEach(item => {
+    // Toggle dropdown
+    createFileBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        dropdown.classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(){
+        dropdown.classList.remove('show');
+    });
+
+    // Dropdown item click -> open modal
+    document.querySelectorAll('.dropdown-item').forEach(item => {
         item.addEventListener('click', function(e){
             e.preventDefault();
             fileTypeInput.value = this.dataset.fileType;
-            modal.style.display = 'block';
-            dropdown.style.display = 'none';
+            modal.classList.add('show'); // show modal
+            dropdown.classList.remove('show'); // hide dropdown
         });
     });
 
     // Cancel button
     document.getElementById('cancelBtn').addEventListener('click', function(){
-        modal.style.display = 'none';
+        modal.classList.remove('show');
         document.getElementById('file_name').value = '';
     });
 
@@ -1871,10 +1934,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fileType = fileTypeInput.value;
         const dossierId = document.getElementById('dossier_id').value;
 
-        if(!fileName) {
-            alert('Veuillez saisir un nom de fichier.');
-            return;
-        }
+        if(!fileName){ alert('Veuillez saisir un nom de fichier.'); return; }
 
         const formData = new FormData();
         formData.append('file_name', fileName + '.' + fileType);
@@ -1882,26 +1942,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch('{{ route("dossier.create.file.backend") }}', {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             body: formData
         })
         .then(res => res.json())
         .then(data => {
             if(data.success){
                 alert(data.message);
-                modal.style.display = 'none';
-                location.reload(); // refresh or update file list
+                modal.classList.remove('show');
+                location.reload();
             } else {
                 alert(data.error || 'Erreur lors de la création du fichier.');
             }
         })
-        .catch(err => {
-            console.error(err);
-            alert('Erreur serveur.');
-        });
+        .catch(err => { console.error(err); alert('Erreur serveur.'); });
     });
 
+    // Close modal when clicking outside modal content
+    modal.addEventListener('click', function(e){
+        if(e.target === modal){
+            modal.classList.remove('show');
+        }
+    });
 });
 </script>
