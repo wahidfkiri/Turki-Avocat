@@ -285,52 +285,6 @@
     </div>
   </div>
 </div>
-2️⃣ JS to pass selected file type to modal
-javascript
-Copier le code
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const dropdownItems = document.querySelectorAll('.dropdown-item[data-file-type]');
-    const fileTypeInput = document.getElementById('file_type');
-
-    dropdownItems.forEach(item => {
-        item.addEventListener('click', function () {
-            const type = this.getAttribute('data-file-type');
-            fileTypeInput.value = type;
-        });
-    });
-
-    // Handle form submission via AJAX
-    const form = document.getElementById('createFileForm');
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const formData = new FormData(form);
-
-        fetch('{{ route("dossier.create.file.backend") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.success){
-                alert(data.message);
-                // Optionally refresh page or append file to file list
-                location.reload();
-            } else {
-                alert(data.error || 'Erreur lors de la création du fichier.');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert('Erreur serveur.');
-        });
-    });
-});
-</script>
 <!-- Modal pour l'upload de dossier -->
 <div class="modal fade" id="uploadFolderModal" tabindex="-1" role="dialog" aria-labelledby="uploadFolderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -1883,4 +1837,49 @@ function uploadFolderStructure(folderStructure) {
         }
     });
 }
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const dropdownItems = document.querySelectorAll('.dropdown-item[data-file-type]');
+    const fileTypeInput = document.getElementById('file_type');
+
+    dropdownItems.forEach(item => {
+        item.addEventListener('click', function () {
+            const type = this.getAttribute('data-file-type');
+            fileTypeInput.value = type;
+        });
+    });
+
+    // Handle form submission via AJAX
+    const form = document.getElementById('createFileForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+
+        fetch('{{ route("dossier.create.file.backend") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success){
+                alert(data.message);
+                // Optionally refresh page or append file to file list
+                location.reload();
+            } else {
+                alert(data.error || 'Erreur lors de la création du fichier.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erreur serveur.');
+        });
+    });
+});
 </script>
