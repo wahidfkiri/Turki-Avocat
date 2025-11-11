@@ -14,7 +14,7 @@ class OnlyOfficeController extends Controller
         $config = [
             "document" => [
                 "fileType" => "docx",
-                "key" => md5($filename . filemtime($filePath)),
+                "key" => md5($filename . '-' . (auth()->id() ?? 1)),
                 "title" => $filename,
                 "url" => $fileUrl,
             ],
@@ -32,17 +32,27 @@ class OnlyOfficeController extends Controller
         return view('onlyoffice.editor', compact('config'));
     }
 
-    public function save(Request $request)
-    {
-        $data = $request->all();
+   public function save(Request $request)
+{
+    $data = $request->all();
 
-        if (isset($data['status']) && $data['status'] == 2) { // 2 = document ready for saving
-            $downloadUrl = $data['url'];
+    // Only save if status = 2 (document edited & ready to save)
+    if (isset($data['status']) && $data['status'] == 2) {
+        $downloadUrl = $data['url'];
+        $filename = 'view.docx';
+
+        try {
             $contents = file_get_contents($downloadUrl);
-            $filePath = storage_path("app/view.docx"); // le même fichier d’origine
-            file_put_contents($filePath, $contents);
+            if ($contents !== false) {
+                \Storage::disk('local')->put($filename, $contents);
+            }
+        } catch (\Exception $e) {
+            // optional logging
         }
-
-        return response()->json(["result" => "ok"]);
     }
+
+    // Always return JSON ok to prevent popup
+    return response()->json(["error" => 0]);
+}
+
 }
