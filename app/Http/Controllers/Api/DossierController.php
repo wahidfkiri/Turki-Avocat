@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 
 
 class DossierController extends Controller
@@ -1156,9 +1157,8 @@ public function viewFile(Request $request)
         ]);
 
         $dossier = Dossier::findOrFail($validated['dossier_id']);
-        $filePath = $validated['file_path'];
+        $filePath = urldecode($validated['file_path']); // decode URL if needed
 
-        // Full path in storage
         $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
 
@@ -1166,25 +1166,28 @@ public function viewFile(Request $request)
             return response()->json(['error' => 'Fichier non trouvé'], 404);
         }
 
-        // File extension
         $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
-
-        // OnlyOffice supported formats
         $onlyofficeFormats = ['docx', 'xlsx', 'pptx', 'pdf'];
 
         if (in_array($extension, $onlyofficeFormats)) {
             $fileUrl = asset("storage/$fullPath");
 
+            // Generate a safe hash key
+            $key = md5($fullPath . '-' . (auth()->id() ?? '1'));
+
+            // Store mapping key → original path in cache for 1 hour
+            Cache::put("onlyoffice_file_$key", $fullPath, 3600);
+
             $config = [
                 "document" => [
                     "fileType" => $extension,
-                    "key" => urlencode($fullPath),
+                    "key" => $key, // safe hash key
                     "title" => basename($fullPath),
                     "url" => $fileUrl,
                 ],
                 "editorConfig" => [
-                    "mode" => "edit", // edit mode
-                    "callbackUrl" => "http://217.182.168.27/onlyoffice/save",
+                    "mode" => "edit",
+                    "callbackUrl" => url('/onlyoffice/save'),
                     "user" => [
                         "id" => (string)(auth()->id() ?? '1'),
                         "name" => auth()->user()->name ?? "Utilisateur",
@@ -1192,11 +1195,10 @@ public function viewFile(Request $request)
                 ],
             ];
 
-            // Return OnlyOffice editor view
             return view('onlyoffice.editor', compact('config'));
         }
 
-        // If not a supported format, return the file directly
+        // Non-supported formats: return raw file
         $mimeType = Storage::disk('public')->mimeType($fullPath);
         $fileContent = Storage::disk('public')->get($fullPath);
 
@@ -1209,8 +1211,7 @@ public function viewFile(Request $request)
     }
 }
 
-
-   public function downloadFile(Request $request)
+public function downloadFile(Request $request)
 {
     try {
         // Valider les données de la requête

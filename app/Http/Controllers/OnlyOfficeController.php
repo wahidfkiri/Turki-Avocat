@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class OnlyOfficeController extends Controller
 {
@@ -32,18 +33,17 @@ class OnlyOfficeController extends Controller
         return view('onlyoffice.editor', compact('config'));
     }
 
-   public function save(Request $request)
+  public function save(Request $request)
 {
     try {
         $data = $request->all();
 
-        // Only save when status = 2 (document ready to save)
         if (isset($data['status']) && $data['status'] == 2 && !empty($data['url'])) {
             $downloadUrl = $data['url'];
+            $key = $data['key'] ?? '';
 
-            // Retrieve the original path from OnlyOffice key
-            $originalPath = urldecode($data['key'] ?? '');
-
+            // Retrieve original path from cache
+            $originalPath = Cache::get("onlyoffice_file_$key");
 
             if ($originalPath && Storage::disk('public')->exists($originalPath)) {
                 $contents = @file_get_contents($downloadUrl);
@@ -53,8 +53,9 @@ class OnlyOfficeController extends Controller
             }
         }
 
-        // Always return error:0 to avoid popup
+        // Always return error:0 to prevent popup
         return response()->json(['error' => 0]);
+
     } catch (\Throwable $e) {
         \Log::error("OnlyOffice save error: " . $e->getMessage());
         return response()->json(['error' => 0], 200);
