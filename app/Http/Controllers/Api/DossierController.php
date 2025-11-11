@@ -1147,23 +1147,33 @@ public function getDossiersData(Request $request)
     }
 }
 
-public function viewFile(Request $request)
+public function viewFilePost(Request $request)
+{
+    $validated = $request->validate([
+        'dossier_id' => 'required|exists:dossiers,id',
+        'file_path' => 'required|string',
+    ]);
+
+    $dossier = Dossier::findOrFail($validated['dossier_id']);
+    $filePath = urlencode($validated['file_path']); // encode for URL
+
+    return redirect()->route('dossier.view', [
+        'dossier' => $dossier->id,
+        'file' => $filePath
+    ]);
+}
+
+public function viewFile($dossierId, $file)
 {
     try {
-        // Validate input
-        $validated = $request->validate([
-            'dossier_id' => 'required|exists:dossiers,id',
-            'file_path' => 'required|string'
-        ]);
-
-        $dossier = Dossier::findOrFail($validated['dossier_id']);
-        $filePath = urldecode($validated['file_path']); // decode URL if needed
+        $dossier = Dossier::findOrFail($dossierId);
+        $filePath = urldecode($file);
 
         $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
 
         if (!Storage::disk('public')->exists($fullPath)) {
-            return response()->json(['error' => 'Fichier non trouvé'], 404);
+            abort(404, 'Fichier non trouvé');
         }
 
         $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
@@ -1172,16 +1182,14 @@ public function viewFile(Request $request)
         if (in_array($extension, $onlyofficeFormats)) {
             $fileUrl = asset("storage/$fullPath");
 
-            // Generate a safe hash key
+            // Generate safe hash key
             $key = md5($fullPath . '-' . (auth()->id() ?? '1'));
-
-            // Store mapping key → original path in cache for 1 hour
             Cache::put("onlyoffice_file_$key", $fullPath, 3600);
 
             $config = [
                 "document" => [
                     "fileType" => $extension,
-                    "key" => $key, // safe hash key
+                    "key" => $key,
                     "title" => basename($fullPath),
                     "url" => $fileUrl,
                 ],
@@ -1198,18 +1206,19 @@ public function viewFile(Request $request)
             return view('onlyoffice.editor', compact('config'));
         }
 
-        // Non-supported formats: return raw file
+        // Non-supported formats: return file directly
         $mimeType = Storage::disk('public')->mimeType($fullPath);
         $fileContent = Storage::disk('public')->get($fullPath);
 
-        return response($fileContent, 200)
-            ->header('Content-Type', $mimeType);
+        return response($fileContent, 200)->header('Content-Type', $mimeType);
 
     } catch (\Exception $e) {
         \Log::error("Erreur lors de la visualisation: " . $e->getMessage());
         return response()->json(['error' => 'Erreur serveur lors de la visualisation'], 500);
     }
 }
+
+
 
 public function downloadFile(Request $request)
 {
