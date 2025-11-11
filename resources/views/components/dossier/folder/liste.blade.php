@@ -1695,6 +1695,82 @@ $('#folderInput').on('change', function(e) {
             loadFiles();
         }
 
+    const createFileBtn = document.getElementById('createFileBtn');
+    const dropdown = document.getElementById('fileTypeDropdown');
+    const modal = document.getElementById('createFileModal');
+    const fileTypeInput = document.getElementById('file_type');
+
+    // Toggle dropdown
+    createFileBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        dropdown.classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(){
+        dropdown.classList.remove('show');
+    });
+
+    // Dropdown item click -> open modal
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e){
+            e.preventDefault();
+            fileTypeInput.value = this.dataset.fileType;
+            modal.classList.add('show'); // show modal
+            dropdown.classList.remove('show'); // hide dropdown
+        });
+    });
+
+    // Cancel button
+    document.getElementById('cancelBtn').addEventListener('click', function(){
+        modal.classList.remove('show');
+        document.getElementById('file_name').value = '';
+    });
+
+    // Submit button
+    document.getElementById('submitBtn').addEventListener('click', function(){
+        const fileName = document.getElementById('file_name').value.trim();
+        const fileType = fileTypeInput.value;
+        const dossierId = document.getElementById('dossier_id').value;
+
+        if(!fileName){ alert('Veuillez saisir un nom de fichier.'); return; }
+
+        const formData = new FormData();
+        formData.append('file_name', fileName + '.' + fileType);
+        formData.append('dossier_id', dossierId);
+
+        fetch('{{ route("dossier.create.file.backend") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success){
+                
+                $(document).Toasts('create', {
+                    class: 'bg-success',
+                    title: 'Succès',
+                    body: `"${data.message}"`,
+                    autohide: true,
+                    delay: 4000
+                });
+                modal.classList.remove('show');
+                loadFiles(currentPath);
+            } else {
+                alert(data.error || 'Erreur lors de la création du fichier.');
+            }
+        })
+        .catch(err => { console.error(err); alert('Erreur serveur.'); });
+    });
+
+    // Close modal when clicking outside modal content
+    modal.addEventListener('click', function(e){
+        if(e.target === modal){
+            modal.classList.remove('show');
+        }
+    });
+        
         // Make functions globally available
         window.handleFolderClick = handleFolderClick;
         window.goBack = goBack;
@@ -1705,6 +1781,7 @@ $('#folderInput').on('change', function(e) {
         window.showMoveModal = showMoveModal;
         window.showCreateFolderModal = showCreateFolderModal;
     });
+   
 </script>
 <script>
     // Function to handle folder upload
@@ -1894,75 +1971,3 @@ function uploadFolderStructure(folderStructure) {
 }
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const createFileBtn = document.getElementById('createFileBtn');
-    const dropdown = document.getElementById('fileTypeDropdown');
-    const modal = document.getElementById('createFileModal');
-    const fileTypeInput = document.getElementById('file_type');
-
-    // Toggle dropdown
-    createFileBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        dropdown.classList.toggle('show');
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(){
-        dropdown.classList.remove('show');
-    });
-
-    // Dropdown item click -> open modal
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', function(e){
-            e.preventDefault();
-            fileTypeInput.value = this.dataset.fileType;
-            modal.classList.add('show'); // show modal
-            dropdown.classList.remove('show'); // hide dropdown
-        });
-    });
-
-    // Cancel button
-    document.getElementById('cancelBtn').addEventListener('click', function(){
-        modal.classList.remove('show');
-        document.getElementById('file_name').value = '';
-    });
-
-    // Submit button
-    document.getElementById('submitBtn').addEventListener('click', function(){
-        const fileName = document.getElementById('file_name').value.trim();
-        const fileType = fileTypeInput.value;
-        const dossierId = document.getElementById('dossier_id').value;
-
-        if(!fileName){ alert('Veuillez saisir un nom de fichier.'); return; }
-
-        const formData = new FormData();
-        formData.append('file_name', fileName + '.' + fileType);
-        formData.append('dossier_id', dossierId);
-
-        fetch('{{ route("dossier.create.file.backend") }}', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success){
-                alert(data.message);
-                modal.classList.remove('show');
-                location.reload();
-            } else {
-                alert(data.error || 'Erreur lors de la création du fichier.');
-            }
-        })
-        .catch(err => { console.error(err); alert('Erreur serveur.'); });
-    });
-
-    // Close modal when clicking outside modal content
-    modal.addEventListener('click', function(e){
-        if(e.target === modal){
-            modal.classList.remove('show');
-        }
-    });
-});
-</script>
