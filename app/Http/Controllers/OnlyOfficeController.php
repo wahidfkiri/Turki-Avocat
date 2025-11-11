@@ -34,25 +34,31 @@ class OnlyOfficeController extends Controller
 
    public function save(Request $request)
 {
-    $data = $request->all();
+    try {
+        $data = $request->all();
 
-    // Only save if status = 2 (document edited & ready to save)
-    if (isset($data['status']) && $data['status'] == 2) {
-        $downloadUrl = $data['url'];
-        $filename = 'view.docx';
+        // Only save when status = 2 (document ready to save)
+        if (isset($data['status']) && $data['status'] == 2 && !empty($data['url'])) {
+            $downloadUrl = $data['url'];
 
-        try {
-            $contents = file_get_contents($downloadUrl);
-            if ($contents !== false) {
-                \Storage::disk('local')->put($filename, $contents);
+            // Retrieve the original path from OnlyOffice key
+            $originalPath = $data['key'] ?? null;
+
+            if ($originalPath && Storage::disk('public')->exists($originalPath)) {
+                $contents = @file_get_contents($downloadUrl);
+                if ($contents !== false) {
+                    Storage::disk('public')->put($originalPath, $contents);
+                }
             }
-        } catch (\Exception $e) {
-            // optional logging
         }
-    }
 
-    // Always return JSON ok to prevent popup
-    return response()->json(["error" => 0]);
+        // Always return error:0 to avoid popup
+        return response()->json(['error' => 0]);
+    } catch (\Throwable $e) {
+        \Log::error("OnlyOffice save error: " . $e->getMessage());
+        return response()->json(['error' => 0], 200);
+    }
 }
+
 
 }

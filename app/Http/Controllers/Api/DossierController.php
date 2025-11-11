@@ -1148,7 +1148,8 @@ public function getDossiersData(Request $request)
 
 public function viewFile(Request $request)
 {
-    try{
+    try {
+        // Validate input
         $validated = $request->validate([
             'dossier_id' => 'required|exists:dossiers,id',
             'file_path' => 'required|string'
@@ -1156,30 +1157,58 @@ public function viewFile(Request $request)
 
         $dossier = Dossier::findOrFail($validated['dossier_id']);
         $filePath = $validated['file_path'];
-        
-        // Construire le chemin complet
+
+        // Full path in storage
         $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
 
         if (!Storage::disk('public')->exists($fullPath)) {
-            return response()->json([
-                'error' => 'Fichier non trouvé'
-            ], 404);
+            return response()->json(['error' => 'Fichier non trouvé'], 404);
         }
 
+        // File extension
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+
+        // OnlyOffice supported formats
+        $onlyofficeFormats = ['docx', 'xlsx', 'pptx', 'pdf'];
+
+        if (in_array($extension, $onlyofficeFormats)) {
+            $fileUrl = asset("storage/$fullPath");
+
+            $config = [
+                "document" => [
+                    "fileType" => $extension,
+                    "key" => $fullPath, // use original path as key
+                    "title" => basename($fullPath),
+                    "url" => $fileUrl,
+                ],
+                "editorConfig" => [
+                    "mode" => "edit", // edit mode
+                    "callbackUrl" => url("/onlyoffice/save"),
+                    "user" => [
+                        "id" => (string)(auth()->id() ?? '1'),
+                        "name" => auth()->user()->name ?? "Utilisateur",
+                    ],
+                ],
+            ];
+
+            // Return OnlyOffice editor view
+            return view('onlyoffice.editor', compact('config'));
+        }
+
+        // If not a supported format, return the file directly
         $mimeType = Storage::disk('public')->mimeType($fullPath);
         $fileContent = Storage::disk('public')->get($fullPath);
 
         return response($fileContent, 200)
-                ->header('Content-Type', $mimeType);
+            ->header('Content-Type', $mimeType);
 
     } catch (\Exception $e) {
         \Log::error("Erreur lors de la visualisation: " . $e->getMessage());
-        return response()->json([
-            'error' => 'Erreur serveur lors de la visualisation'
-        ], 500);    
+        return response()->json(['error' => 'Erreur serveur lors de la visualisation'], 500);
     }
 }
+
 
    public function downloadFile(Request $request)
 {
