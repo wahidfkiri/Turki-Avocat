@@ -169,8 +169,8 @@ Route::post('/open-folder', [ExplorerController::class, 'openFolder'])->name('fo
 Route::post('/open-folder-network', [ExplorerController::class, 'openFolderNetwork'])->name('folder.open.network');
 
 // Simple callback
-Route::get('/onlyoffice/open', [OnlyOfficeController::class, 'open'])->name('onlyoffice.open');
-Route::post('/onlyoffice/callback', [OnlyOfficeController::class, 'callback'])->name('onlyoffice.callback');
+Route::get('/onlyoffice/open/{file}', [OnlyOfficeController::class, 'open'])->name('onlyoffice.open');
+Route::post('/onlyoffice/save', [OnlyOfficeController::class, 'save'])->name('onlyoffice.save');
 
 
     });
