@@ -20,7 +20,7 @@ class OnlyOfficeController extends Controller
             ],
             "editorConfig" => [
     "mode" => "edit",
-    "callbackUrl" => 'http://217.182.168.27/onlyoffice/save',
+    "callbackUrl" => "http://host.docker.internal:8000/onlyoffice/save",
     "user" => [
         "id" => (string) (auth()->id() ?? 1),
         "name" => auth()->user()->name ?? "User",
