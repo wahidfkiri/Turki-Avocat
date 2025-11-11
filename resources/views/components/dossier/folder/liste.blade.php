@@ -21,6 +21,16 @@
 <button type="button" class="btn btn-info d-none" id="uploadFolderBtn">
     <i class="fas fa-folder-upload"></i> Uploader un dossier
 </button>
+<div class="dropdown mb-3">
+    <button class="btn btn-primary dropdown-toggle" type="button" id="createFileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        Créer un fichier
+    </button>
+    <ul class="dropdown-menu" aria-labelledby="createFileDropdown">
+        <li><a class="dropdown-item" href="#" data-file-type="docx" data-bs-toggle="modal" data-bs-target="#createFileModal">Word (.docx)</a></li>
+        <li><a class="dropdown-item" href="#" data-file-type="xlsx" data-bs-toggle="modal" data-bs-target="#createFileModal">Excel (.xlsx)</a></li>
+        <li><a class="dropdown-item" href="#" data-file-type="pptx" data-bs-toggle="modal" data-bs-target="#createFileModal">PowerPoint (.pptx)</a></li>
+    </ul>
+</div>
                                 <!-- Ajoutez ce bouton près de vos autres boutons de contrôle -->
 <button type="button" class="btn btn-primary" id="createFolderBtn">
     <i class="fas fa-folder-plus"></i> Nouveau dossier
@@ -249,6 +259,78 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="createFileModal" tabindex="-1" aria-labelledby="createFileModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="createFileForm">
+        @csrf
+        <div class="modal-header">
+          <h5 class="modal-title" id="createFileModalLabel">Créer un fichier</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" name="file_type" id="file_type">
+            <input type="hidden" name="dossier_id" value="{{ $dossier->id }}">
+            <div class="mb-3">
+                <label for="file_name" class="form-label">Nom du fichier</label>
+                <input type="text" class="form-control" id="file_name" name="file_name" placeholder="Ex: Nouveau fichier">
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary">Créer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+2️⃣ JS to pass selected file type to modal
+javascript
+Copier le code
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const dropdownItems = document.querySelectorAll('.dropdown-item[data-file-type]');
+    const fileTypeInput = document.getElementById('file_type');
+
+    dropdownItems.forEach(item => {
+        item.addEventListener('click', function () {
+            const type = this.getAttribute('data-file-type');
+            fileTypeInput.value = type;
+        });
+    });
+
+    // Handle form submission via AJAX
+    const form = document.getElementById('createFileForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+
+        fetch('{{ route("dossier.create.file.backend") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success){
+                alert(data.message);
+                // Optionally refresh page or append file to file list
+                location.reload();
+            } else {
+                alert(data.error || 'Erreur lors de la création du fichier.');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erreur serveur.');
+        });
+    });
+});
+</script>
 <!-- Modal pour l'upload de dossier -->
 <div class="modal fade" id="uploadFolderModal" tabindex="-1" role="dialog" aria-labelledby="uploadFolderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">

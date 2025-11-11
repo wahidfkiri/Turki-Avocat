@@ -337,3 +337,4 @@ Route::get('/file/{filename}', function ($filename) {
 
 
 Route::post('/onlyoffice/save', [OnlyOfficeController::class, 'save'])->name('onlyoffice.save');
+Route::post('/dossier/create-file-backend', [DossierController::class, 'createFileBackend']);

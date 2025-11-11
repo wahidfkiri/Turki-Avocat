@@ -1290,6 +1290,101 @@ public function downloadFile(Request $request)
     }
 }
 
+public function createFile(Request $request)
+{
+    $validated = $request->validate([
+        'dossier_id' => 'required|exists:dossiers,id',
+        'file_name' => 'required|string', // ex: "Nouveau.docx"
+    ]);
+
+    $dossier = Dossier::findOrFail($validated['dossier_id']);
+    $fileName = $validated['file_name'];
+
+    // Chemin complet dans storage
+    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
+    $fullPath = $basePath . '/' . $fileName;
+
+    // Crée le dossier s'il n'existe pas
+    if (!Storage::disk('public')->exists($basePath)) {
+        Storage::disk('public')->makeDirectory($basePath);
+    }
+
+    // Crée le fichier vide si n'existe pas
+    if (!Storage::disk('public')->exists($fullPath)) {
+        // Fichier vide pour docx, xlsx, pptx peut être un vrai template minimal
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+        if ($extension === 'docx') {
+            // Crée un document Word minimal vide
+            $template = Storage::disk('local')->get('empty.docx'); // mettez un docx vide dans storage/app/empty.docx
+            Storage::disk('public')->put($fullPath, $template);
+        } elseif ($extension === 'xlsx') {
+            $template = Storage::disk('local')->get('empty.xlsx');
+            Storage::disk('public')->put($fullPath, $template);
+        } elseif ($extension === 'pptx') {
+            $template = Storage::disk('local')->get('empty.pptx');
+            Storage::disk('public')->put($fullPath, $template);
+        } else {
+            // Pour PDF ou autre: fichier vide simple
+            Storage::disk('public')->put($fullPath, '');
+        }
+    }
+
+    // Encode le chemin pour URL
+    $filePathEncoded = base64_encode($fileName);
+
+    // Redirige vers la vue OnlyOffice pour édition
+    return redirect()->route('dossier.view', [
+        'dossier' => $dossier->id,
+        'file' => $filePathEncoded
+    ]);
+}
+
+
+public function createFileBackend(Request $request)
+{
+    $validated = $request->validate([
+        'dossier_id' => 'required|exists:dossiers,id',
+        'file_name' => 'required|string', // ex: "Report.docx"
+    ]);
+
+    $dossier = Dossier::findOrFail($validated['dossier_id']);
+    $fileName = $validated['file_name'];
+    $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
+    $fullPath = $basePath . '/' . $fileName;
+
+    // Make directory if it doesn't exist
+    if (!Storage::disk('public')->exists($basePath)) {
+        Storage::disk('public')->makeDirectory($basePath);
+    }
+
+    // Minimal templates for each type
+    $templates = [
+        'docx' => 'templates/empty.docx',
+        'xlsx' => 'templates/empty.xlsx',
+        'pptx' => 'templates/empty.pptx',
+    ];
+
+    if (!array_key_exists($extension, $templates)) {
+        return response()->json(['error' => 'Extension non supportée'], 422);
+    }
+
+    // Copy the template file to create new file
+    if (!Storage::disk('public')->exists($fullPath)) {
+        Storage::disk('public')->copy($templates[$extension], $fullPath);
+    }
+
+    return response()->json([
+        'success' => true,
+        'file_path' => $fullPath,
+        'file_url' => asset("storage/$fullPath"),
+        'message' => "Le fichier $fileName a été créé avec succès."
+    ]);
+}
+
+
 public function deleteFile(Request $request, Dossier $dossier)
 {
     try {
