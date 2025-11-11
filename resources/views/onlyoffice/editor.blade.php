@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>OnlyOffice Editor</title>
-    <script src="http://217.182.168.27/web-apps/apps/api/documents/api.js"></script>
+    <script src="http://217.182.168.27:8080/web-apps/apps/api/documents/api.js"></script>
 </head>
 <body style="margin:0; padding:0;">
     <div id="placeholder" style="width:100%; height:100vh;"></div>
