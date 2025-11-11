@@ -80,7 +80,11 @@ Route::post('/dossier/download', [DossierController::class, 'downloadFile'])->na
 Route::post('/dossier/view', [DossierController::class, 'viewFilePost'])->name('dossier.view.post');
 
 // GET: open OnlyOffice editor
-Route::get('/dossier/view/{dossier}/{file}', [DossierController::class, 'viewFile'])->name('dossier.view');
+// GET route with catch-all
+Route::get('/dossier/view/{dossier}/{file}', [DossierController::class, 'viewFile'])
+    ->where('file', '.*') // this allows slashes in filename
+    ->name('dossier.view');
+
 
 
 // Gardez l'ancienne route GET pour la compatibilité si nécessaire
