@@ -170,7 +170,6 @@ Route::post('/open-folder-network', [ExplorerController::class, 'openFolderNetwo
 
 // Simple callback
 Route::get('/onlyoffice/open/{file}', [OnlyOfficeController::class, 'open'])->name('onlyoffice.open');
-Route::post('/onlyoffice/save', [OnlyOfficeController::class, 'save'])->name('onlyoffice.save');
 
 
     });
@@ -326,7 +325,4 @@ Route::get('/file/{filename}', function ($filename) {
 });
 
 
-// Health check
-Route::get('/health', function () {
-    return response()->json(['status' => 'healthy']);
-});
+Route::post('/onlyoffice/save', [OnlyOfficeController::class, 'save'])->name('onlyoffice.save');
