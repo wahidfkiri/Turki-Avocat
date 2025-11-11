@@ -34,7 +34,7 @@ class OnlyOfficeController extends Controller
         return view('onlyoffice.editor', compact('config'));
     }
 
-  public function save(Request $request)
+ public function save(Request $request)
 {
     try {
         $data = $request->all();
@@ -43,18 +43,16 @@ class OnlyOfficeController extends Controller
             $downloadUrl = $data['url'];
             $key = $data['key'] ?? '';
 
-            // Retrieve original path from cache
-            $originalPath = \Cache::get("onlyoffice_file_$key");
+            $originalPath = Cache::get("onlyoffice_file_$key");
 
-            if ($originalPath && \Storage::disk('public')->exists($originalPath)) {
+            if ($originalPath && Storage::disk('public')->exists($originalPath)) {
                 $contents = @file_get_contents($downloadUrl);
                 if ($contents !== false) {
-                    \Storage::disk('public')->put($originalPath, $contents);
+                    Storage::disk('public')->put($originalPath, $contents);
                 }
             }
         }
 
-        // Always return error:0 to prevent popup
         return response()->json(['error' => 0]);
 
     } catch (\Throwable $e) {
