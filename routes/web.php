@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\{
-    UserController, IntervenantController, DossierController, DomaineController,
+    UserController, IntervenantController, DossierController,
     TimeSheetController, AgendaController, TaskController, FactureController, ProfileController
 };
 
@@ -98,7 +98,7 @@ Route::get('/dossiers/{dossier}/folders', [DossierController::class, 'getFolders
 Route::post('/dossiers/{dossier}/create-folder', [DossierController::class, 'createFolder'])->name('dossiers.create-folder');
 Route::post('/dossiers/{dossier}/file-url', [DossierController::class, 'getFileUrl'])->name('dossiers.file-url');
 Route::post('/dossiers/{dossier}/upload-folder', [DossierController::class, 'uploadFolder'])->name('dossiers.upload-folder');
-Route::resource('domaines', DomaineController::class);
+
 
 Route::resource('time-sheets', TimeSheetController::class);
 Route::get('dossiers/{dossierId}/time-sheets', [TimeSheetController::class, 'byDossier']);

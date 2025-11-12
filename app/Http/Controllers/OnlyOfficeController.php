@@ -12,17 +12,20 @@ class OnlyOfficeController extends Controller
     {
         $filePath = storage_path("app/$filename");
         $fileUrl = asset("storage/$filename"); // accessible via /storage symlink
-
+ $key = md5($filename . '-' . (auth()->id() ?? '1'));
+              // Clear any old cache for this key
+            Cache::forget("onlyoffice_file_$key");
+            Cache::put("onlyoffice_file_$key", $filename, 3600);
         $config = [
             "document" => [
                 "fileType" => "docx",
-                "key" => md5($filename . '-' . (auth()->id() ?? 1)),
+                "key" =>$key,
                 "title" => $filename,
                 "url" => $fileUrl,
             ],
             "editorConfig" => [
     "mode" => "edit",
-    "callbackUrl" => 'http://217.182.168.27/onlyoffice/save',
+    "callbackUrl" => 'http://192.168.1.130:8000/onlyoffice/save',
     "user" => [
         "id" => (string) (auth()->id() ?? 1),
         "name" => auth()->user()->name ?? "User",
