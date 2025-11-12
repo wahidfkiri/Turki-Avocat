@@ -79,6 +79,8 @@ Route::post('/dossier/download', [DossierController::class, 'downloadFile'])->na
 // POST: select file
 Route::post('/dossier/view', [DossierController::class, 'viewFilePost'])->name('dossier.view.post');
 
+Route::post('/dossier/view/chrome', [DossierController::class, 'viewFileChrome'])->name('dossier.view.chrome');
+
 // GET: open OnlyOffice editor
 Route::get('/dossier/view/{dossier}/{file}', [DossierController::class, 'viewFile'])
     ->where('file', '.*')

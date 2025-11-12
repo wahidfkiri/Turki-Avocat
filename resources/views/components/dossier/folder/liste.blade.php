@@ -99,7 +99,7 @@
 <button type="button" class="btn btn-primary" id="createFolderBtn">
     <i class="fas fa-folder-plus"></i> Nouveau dossier
 </button>
-                                <button class="btn btn-primary" id="refreshFiles">
+                                <button class="btn btn-success" id="refreshFiles">
                                     <i class="fas fa-sync-alt"></i> Actualiser
                                 </button>
                             </div>
@@ -621,6 +621,43 @@
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '/dossier/view';  
+            form.target = '_blank'; // Ouvrir dans un nouvel onglet
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+
+            const filePathInput = document.createElement('input');
+            filePathInput.type = 'hidden';
+            filePathInput.name = 'file_path';
+            filePathInput.value = filePath;
+            form.appendChild(filePathInput);
+
+            const fileNameInput = document.createElement('input');
+            fileNameInput.type = 'hidden';
+            fileNameInput.name = 'file_name';
+            fileNameInput.value = fileName;
+            form.appendChild(fileNameInput);
+            const dossierInput = document.createElement('input');
+            dossierInput.type = 'hidden';
+            dossierInput.name = 'dossier_id';
+            dossierInput.value = dossierId;
+            form.appendChild(dossierInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        
+        // View File using post method and new tab target
+        function previewFileChrome(filePath, fileName) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/dossier/view/chrome';  
             form.target = '_blank'; // Ouvrir dans un nouvel onglet
 
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1354,9 +1391,9 @@
                 html += `
                     <div class="list-item" ${folderClick}>
                         <div class="list-item-content">
-                            <div class="list-file-icon ${fileType === 'folder' ? 'text-warning' : (fileExtension === 'docx' ? 'text-success' : (fileExtension === 'xlsx' ? 'text-danger' : 'text-info'))}">${icon}</div>
+                            <div class="list-file-icon ${fileType === 'folder' ? 'text-warning' : (fileExtension === 'docx' ? 'text-primary' : (fileExtension === 'xlsx' ? 'text-success' : (fileExtension === 'pptx' ? 'text-warning' : 'text-secondary')))}">${icon}</div>
                             <div>
-                                <div class="file-name">${fileName}</div>
+                                <div class="file-name">${fileType === 'file' ? `<a href="#" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')">${fileName}</a>` : fileName}</div>
                                 <div class="file-meta">${lastModified}</div>
                             </div>
                         </div>
@@ -1422,7 +1459,8 @@
                 'rar': 'fa-file-archive',
                 'txt': 'fa-file-alt',
                 'mp4': 'fa-file-video',
-                'mp3': 'fa-file-audio'
+                'mp3': 'fa-file-audio',
+                'pptx': 'fa-file-powerpoint'
             };
             
             const iconClass = iconMap[extension] || 'fa-file';
@@ -1775,6 +1813,7 @@ $('#folderInput').on('change', function(e) {
         window.handleFolderClick = handleFolderClick;
         window.goBack = goBack;
         window.previewFile = previewFile;
+        window.previewFileChrome = previewFileChrome;
         window.downloadFile = downloadFile;
         window.showDeleteConfirmation = showDeleteConfirmation;
         window.showRenameModal = showRenameModal;

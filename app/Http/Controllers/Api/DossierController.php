@@ -1164,6 +1164,31 @@ public function viewFilePost(Request $request)
     ]);
 }
 
+public function viewFileChrome(Request $request)
+{
+    $validated = $request->validate([
+        'dossier_id' => 'required|exists:dossiers,id',
+        'file_path' => 'required|string',
+    ]);
+
+    $dossier = Dossier::findOrFail($validated['dossier_id']);
+    $filePath = $validated['file_path']; // POST
+
+    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
+    $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
+
+    // Check if the file exists
+    if (!Storage::disk('public')->exists($fullPath)) {
+        abort(404, 'File not found');
+    }
+
+    // Non-supported formats: return file directly
+    $mimeType = Storage::disk('public')->mimeType($fullPath);
+    $fileContent = Storage::disk('public')->get($fullPath);
+
+    return response($fileContent, 200)->header('Content-Type', $mimeType);
+}
+
 public function viewFile($dossierId, $file)
 {
     try {
