@@ -31,20 +31,8 @@ class EmailWebController extends Controller
         $folders = $this->emailService->getFoldersSimples();
         
         // Essayer IMAP d'abord, puis storage en fallback
-        $inboxEmails = $this->emailService->getEmailsRobust('INBOX', 30);
-        
-        // Si IMAP échoue, essayer le storage
-        // if (!$inboxEmails['success']) {
-        //     $inboxEmails = $this->emailService->getEmailsFromStorage('inbox', 30);
-            
-        //     // Si le storage a des emails, on les utilise
-        //     if ($inboxEmails['success'] && !empty($inboxEmails['emails'])) {
-        //         $inboxEmails['warning'] = 'IMAP non disponible - Affichage depuis le stockage local';
-        //     } else {
-        //         // Si storage vide aussi, garder l'erreur originale
-        //         $inboxEmails['warning'] = 'Aucun email trouvé - IMAP et stockage local vides';
-        //     }
-        // }
+        $limit = 20;
+        $inboxEmails = $this->emailService->getEmailsRobust('INBOX', $limit);
         
         // Clean email previews et tri
         if ($inboxEmails['success'] && isset($inboxEmails['emails'])) {
@@ -66,8 +54,9 @@ class EmailWebController extends Controller
     } catch (\Exception $e) {
         // Fallback complet : essayer le storage directement
         try {
+        $limit = 20;
             $folders = $this->emailService->getFoldersSimples();
-            $storageEmails = $this->emailService->getEmailsRobust('inbox', 30);
+            $storageEmails = $this->emailService->getEmailsRobust('inbox', $limit);
             
             if ($storageEmails['success'] && isset($storageEmails['emails'])) {
                 $storageEmails['emails'] = $this->cleanEmailPreviews($storageEmails['emails']);

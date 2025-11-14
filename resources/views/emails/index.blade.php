@@ -167,29 +167,6 @@
                                     </a>
                                 </div>
                             </div>
-
-                            <!-- Card Info -->
-                            <div class="card card-modern">
-                                <div class="card-header">
-                                    <h3 class="card-title">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        Informations
-                                    </h3>
-                                </div>
-                                <div class="card-body">
-                                    <p class="mb-1"><strong>Compte:</strong></p>
-                                    <p class="text-sm text-muted">{{ $account ?? 'wahid.fkiri@peakmind-solutions.com' }}</p>
-                                    
-                                    <p class="mb-1"><strong>Dossier actuel:</strong></p>
-                                    <p class="text-sm text-muted">{{ $currentFolder ?? 'INBOX' }}</p>
-                                    
-                                    <p class="mb-1"><strong>Total dossiers:</strong></p>
-                                    <p class="text-sm text-muted">{{ $totalFolders ?? 0 }}</p>
-                                    
-                                    <p class="mb-1"><strong>Emails affichés:</strong></p>
-                                    <p class="text-sm text-muted">{{ count($emails ?? []) }}</p>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Main Content -->

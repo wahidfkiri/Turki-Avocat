@@ -155,6 +155,7 @@ Route::prefix('email')->group(function () {
         Route::get('/', [EmailWebController::class, 'index'])->name('email.index');
         Route::get('/folder/{folder}', [EmailWebController::class, 'showFolder'])->name('email.folder');
         Route::get('/email/{folder}/{uid}', [EmailWebController::class, 'showEmail'])->name('email.show');
+        Route::get('/ajax/emails/{folder?}', [EmailWebController::class, 'getEmailsAjax'])->name('email.ajax.emails');
         Route::post('/send', [EmailWebController::class, 'sendEmail'])->name('email.send');
         Route::post('/email/mark-read', [EmailWebController::class, 'markAsRead'])->name('email.mark-read');
         Route::post('/email/move', [EmailWebController::class, 'moveEmail'])->name('email.move');

@@ -1,0 +1,241 @@
+
+:root {
+    --primary-color: #4361ee;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-radius: 10px;
+    --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --transition: all 0.3s ease;
+}
+
+/* Modern Cards */
+.card-modern {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    background: #ffffff;
+}
+
+.card-modern:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.card-header-modern {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3a56e4 100%);
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+    border: none;
+    color: white;
+}
+
+/* Modern Buttons */
+.btn-modern {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: var(--transition);
+    border: none;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.875rem;
+}
+
+.btn-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3a56e4 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #3a56e4 0%, #2f46c4 100%);
+}
+
+/* Modern Form Controls */
+.form-control-modern {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: var(--transition);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+}
+
+.form-control-modern:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    transform: translateY(-1px);
+}
+
+.input-group-modern .form-control {
+    border-right: none;
+}
+
+.input-group-modern .input-group-append .btn {
+    border-left: none;
+    border-color: #e2e8f0;
+}
+
+/* Table Styles */
+.table-modern {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+    background: white;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-modern thead th {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: none;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    padding: 1rem 1.5rem;
+    text-align: left;
+}
+
+.table-modern tbody td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.table-modern tbody tr {
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.table-modern tbody tr:hover {
+    background-color: #f8fafc;
+    transform: translateY(-1px);
+}
+
+.table-modern tbody tr.bg-light {
+    background-color: #f0f9ff !important;
+    font-weight: 600;
+}
+
+.table-modern tbody tr.bg-light:hover {
+    background-color: #e1f0ff !important;
+}
+
+/* Badges */
+.badge-modern {
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+}
+
+/* Alerts */
+.alert-modern {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    border-left: 4px solid;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    border-left-color: var(--success-color);
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    color: #065f46;
+}
+
+.alert-danger {
+    border-left-color: var(--danger-color);
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    color: #7f1d1d;
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color);
+    background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
+    color: #78350f;
+}
+
+.alert-info {
+    border-left-color: var(--info-color);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    color: #0c4a6e;
+}
+
+/* Mailbox Styles */
+.mailbox-name {
+    width: 180px;
+}
+
+.mailbox-subject {
+    min-width: 300px;
+}
+
+.mailbox-date {
+    width: 120px;
+}
+
+.table-responsive {
+    min-height: 400px;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.card-body {
+    scrollbar-width: thin;
+}
+
+/* Gradient Backgrounds */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3a56e4 100%) !important;
+}
+
+/* Modal Modern */
+.modal-content {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-header {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+/* Star Animation */
+.mailbox-star {
+    transition: var(--transition);
+}
+
+.mailbox-star:hover {
+    transform: scale(1.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .mailbox-name {
+        width: 150px;
+    }
+    
+    .mailbox-subject {
+        min-width: 200px;
+    }
+    
+    .table-modern {
+        font-size: 0.875rem;
+    }
+    
+    .input-group-modern {
+        width: 200px !important;
+    }
+}
