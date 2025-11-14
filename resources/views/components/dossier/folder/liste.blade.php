@@ -1376,6 +1376,7 @@
             files.forEach(function(file) {
                 const fileName = file.name;
                 const fileType = file.type;
+                const originalPath = file.original_path;
                 const fileSize = file.type === 'folder' ? '-' : formatFileSize(file.size);
                 const lastModified = new Date(file.last_modified * 1000).toLocaleDateString();
                 const fileExtension = file.extension.toLowerCase();
@@ -1387,6 +1388,7 @@
                 const safeFileName = fileName.replace(/'/g, "\\'");
 
                 const folderClick = fileType === 'folder' ? `onclick="handleFolderClick('${safeFilePath}', '${safeFileName}')" style="cursor: pointer;"` : '';
+                
 
                 html += `
                     <div class="list-item" ${folderClick}>
@@ -1400,8 +1402,24 @@
                         <div>${fileSize}</div>
                         <div>${fileType === 'folder' ? 'Dossier' : fileExtension.toUpperCase()}</div>
                         <div class="list-file-actions">
+                            ${fileExtension === 'docx' ? 
+                                `<a href="ms-word:ofe|u|file:///P:/docs/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Word">
+                                    <i class="fas fa-eye"></i>  
+                                </a>` :
+                                (fileExtension === 'xlsx' ?
+                                    `<a href="ms-excel:ofe|u|file:///P:/docs/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Excel">
+                                        <i class="fas fa-eye"></i>
+                                    </a>` :
+                                    (fileExtension === 'pptx' ?
+                                        `<a href="ms-powerpoint:ofe|u|file:///P:/docs/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans PowerPoint">
+                                            <i class="fas fa-eye"></i>
+                                        </a>` :
+                                        `<a href="#" class="action-btn download-btn text-success"  style="border:2px solid black;" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')"><i class="fas fa-eye"></i></a>`
+                                    )
+                                )
+                            }
                             ${fileType === 'file' ? 
-                                `<button type="button" class="action-btn download-btn text-success" onclick="previewFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
+                                `<button type="button" class="action-btn download-btn text-success d-none" onclick="previewFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
                                     <i class="fas fa-eye"></i>
                                 </button>` : 
                                 ''

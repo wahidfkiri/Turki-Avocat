@@ -1025,6 +1025,7 @@ public function getDossiersData(Request $request)
                 $items[] = [
                     'name' => basename($path),
                     'path' => str_replace($baseDirectory . '/', '', $path), // Relative path
+                    'original_path' => $directory,
                     'type' => 'folder',
                     'extension' => '',
                     'size' => 0,
@@ -1035,6 +1036,7 @@ public function getDossiersData(Request $request)
                 $items[] = [
                     'name' => basename($path),
                     'path' => str_replace($baseDirectory . '/', '', $path), // Relative path
+                    'original_path' => $directory,
                     'type' => 'file',
                     'extension' => pathinfo($path, PATHINFO_EXTENSION),
                     'size' => $size,

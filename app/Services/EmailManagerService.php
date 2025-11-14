@@ -43,7 +43,7 @@ class EmailManagerService
     // Vérifiez votre configuration
 protected function getConfig()
 {
-    $config = \App\Models\EmailSetting::where('user_id', auth()->id())->first();
+    $config = EmailSetting::with('user')->first();
     return [
         'default' => 'default',
         'accounts' => [
@@ -164,7 +164,7 @@ protected function getConfig()
         return ['success' => true, 'emails' => $emails, 'source' => 'storage'];
     }
     
-      public function getEmailsRobust($folderName = 'INBOX', $limit)
+      public function getEmailsRobust($folderName = 'INBOX', $limit = 20)
     {
         if (!$this->connected) {
             return ['success' => false, 'error' => 'Client IMAP non connecté'];
@@ -173,7 +173,7 @@ protected function getConfig()
         try {
             $folder = $this->client->getFolder($folderName);
             $messages = $folder->messages()
-                ->limit($limit)
+                ->limit(20)
                 ->all()
                 ->get();
             
