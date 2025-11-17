@@ -153,6 +153,7 @@ Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->n
 // Email Web Routes
 Route::prefix('email')->group(function () {
         Route::get('/', [EmailWebController::class, 'index'])->name('email.index');
+        Route::get('/create/folder', [EmailWebController::class, 'createImapFolderSafe'])->name('email.createFolderForm');
         Route::get('/folder/{folder}', [EmailWebController::class, 'showFolder'])->name('email.folder');
         Route::get('/email/{folder}/{uid}', [EmailWebController::class, 'showEmail'])->name('email.show');
         Route::post('/send', [EmailWebController::class, 'sendEmail'])->name('email.send');

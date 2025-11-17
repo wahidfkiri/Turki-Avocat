@@ -18,9 +18,11 @@ class EmailManagerService
     protected $client;
     protected $storageService;
     protected $connected = false;
+    protected $userId;
     
     public function __construct()
     {
+        $this->userId = auth()->id(); // Utilisateur par défaut pour Turki Avocats
         $this->initializeClient();
         $this->storageService = new EmailStorageService();
     }
@@ -28,7 +30,7 @@ class EmailManagerService
     protected function initializeClient()
     {
         try {
-            $clientManager = new ClientManager($this->getConfig(\Auth::id()));
+            $clientManager = new ClientManager($this->getConfigs());
             $this->client = $clientManager->account('default');
             $this->client->connect();
             $this->connected = true;
@@ -40,10 +42,13 @@ class EmailManagerService
         }
     }
 
+    public static function getUser()
+    {
+        return EmailSetting::with('user')->where('user_id', 6)->first();
+    }
     // Vérifiez votre configuration
-protected function getConfig()
+public static function getConfigs()
 {
-    $config = EmailSetting::with('user')->first();
     return [
         'default' => 'default',
         'accounts' => [
@@ -52,9 +57,9 @@ protected function getConfig()
                 'port' => env('IMAP_PORT', 993),
                 'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
                 'validate_cert' => true,
-                'username' => env('IMAP_USERNAME', $config->imap_username ?? ''),
-                'password' => env('IMAP_PASSWORD', $config->imap_password ?? ''),
-                'from_name' => $config->user->name ?? '',
+                'username' => env('IMAP_USERNAME', self::getUser()->imap_username ?? ''),
+                'password' => env('IMAP_PASSWORD', self::getUser()->imap_password ?? ''),
+                'from_name' => self::getUser()->user->name ?? '',
                 'protocol' => 'imap',
                 'timeout' => 30,
             ],
@@ -164,7 +169,7 @@ protected function getConfig()
         return ['success' => true, 'emails' => $emails, 'source' => 'storage'];
     }
     
-      public function getEmailsRobust($folderName = 'INBOX', $limit = 20)
+      public function getEmailsRobust($folderName = 'INBOX', $limit)
     {
         if (!$this->connected) {
             return ['success' => false, 'error' => 'Client IMAP non connecté'];
@@ -173,7 +178,7 @@ protected function getConfig()
         try {
             $folder = $this->client->getFolder($folderName);
             $messages = $folder->messages()
-                ->limit(20)
+                ->limit($limit)
                 ->all()
                 ->get();
             

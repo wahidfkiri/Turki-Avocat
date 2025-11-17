@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use App\Services\EmailDossierService;
 use Illuminate\Support\Facades\Log;
 use App\Models\Dossier;
+use Webklex\PHPIMAP\ClientManager;
 use App\Models\EmailDossier;
 use Auth;
 
@@ -27,6 +28,7 @@ class EmailWebController extends Controller
    public function index()
 {
     try {
+        \Session::put('user_session_id', auth()->user());
         // Essayer d'abord les dossiers principaux
         $folders = $this->emailService->getFoldersSimples();
         
@@ -98,6 +100,53 @@ class EmailWebController extends Controller
         }
     }
 }
+
+
+public function createImapFolderSafe() {
+    $mailboxRoot = '{mailbox.nextstep-it.com:993/imap/ssl}';
+    $username = 'contact@turkiavocats.com';
+    $password = '6NsNs23Nu';
+    $folderName = 'Dossier Test';
+    $fullFolder = 'INBOX/' . $folderName;
+
+    // Connexion au serveur IMAP
+    $imap = imap_open($mailboxRoot . 'INBOX', $username, $password);
+
+    if (!$imap) {
+        return "Erreur de connexion : " . imap_last_error();
+    }
+
+    // Lister les dossiers existants
+    $folders = imap_list($imap, $mailboxRoot, '*');
+    $exists = false;
+    if ($folders !== false) {
+        foreach ($folders as $folder) {
+            // imap_list renvoie les dossiers en IMAP-UTF7
+            if (imap_utf7_decode(str_replace($mailboxRoot, '', $folder)) === $fullFolder) {
+                $exists = true;
+                break;
+            }
+        }
+    }
+
+    if ($exists) {
+        imap_close($imap);
+        return "Le dossier '$folderName' existe déjà.";
+    }
+
+    // Créer le dossier
+    $result = imap_createmailbox($imap, imap_utf7_encode($mailboxRoot . $fullFolder));
+
+    imap_close($imap);
+
+    if ($result) {
+        return "Dossier '$folderName' créé avec succès.";
+    } else {
+        return "Erreur lors de la création du dossier : " . imap_last_error();
+    }
+}
+
+
 
     public function showFolder($folder)
 {

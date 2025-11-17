@@ -22,23 +22,25 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use App\Traits\EmailTrait;
 
 
 class DossierController extends Controller
 {
+    use EmailTrait;
     public function index(Request $request)
 {
         if (!auth()->user()->hasPermission('view_dossiers')) {
             abort(403, 'Unauthorized action.');
         }
     if(auth()->user()->hasRole('admin')){
-        $dossiers = Dossier::with(['domaine', 'sousDomaine', 'users', 'intervenants'])->where('archive', false)->paginate(10);
+        $dossiers = Dossier::with(['domaine', 'sousDomaine', 'users', 'intervenants'])->paginate(10);
     }else{
      $dossiers = Dossier::with(['domaine', 'sousDomaine', 'users', 'intervenants'])
     ->whereHas('users', function($query) {
         $query->where('users.id', auth()->id());
     })
-    ->where('archive', false)
+    // ->where('archive', false)
     ->get();
 }
     $domaines = Domaine::all(); // Ajouter cette ligne
@@ -109,6 +111,7 @@ class DossierController extends Controller
         
         // Créer le dossier
         $dossier = Dossier::create($validatedData);
+        $this->createImapFolderSafe($dossier);
         if($request->has('archive')){
             $dossier->archive = true;
             $dossier->date_archive = now();
@@ -312,6 +315,7 @@ public function update(UpdateDossierRequest $request, Dossier $dossier)
     
     // Mettre à jour le dossier
     $dossier->update($validatedData);
+    $this->createImapFolderSafe($dossier);
     
     // Valider les données de base du dossier
     if($request->has('conseil')){
@@ -740,7 +744,7 @@ public function getDossiersData(Request $request)
               });
         });
     }else{
-        $query = Dossier::with(['domaine'])->where('archive', false)->select('dossiers.*');
+        $query = Dossier::with(['domaine'])->select('dossiers.*');
     }
 
     // Filtre par domaine
@@ -761,6 +765,9 @@ public function getDossiersData(Request $request)
                 break;
             case 'archive':
                 $query->where('archive', true);
+                break;
+            case 'all':
+                $query->where('archive', false);
                 break;
         }
     }

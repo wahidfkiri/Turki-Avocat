@@ -3,243 +3,128 @@
     <div class="p-3">
         <h5 class="text-primary mb-3"><i class="fas fa-envelope"></i> Emails attachés</h5>
         
-        <!-- Statistiques des emails -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="info-box bg-info">
-                    <span class="info-box-icon"><i class="fas fa-envelope"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Total des emails</span>
-                        <span class="info-box-number">{{ $dossier->attachedEmails->count() }}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="info-box bg-success">
-                    <span class="info-box-icon"><i class="fas fa-paperclip"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Dossiers sources</span>
-                        <span class="info-box-number">{{ $dossier->attachedEmails->groupBy('folder_name')->count() }}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="info-box bg-warning">
-                    <span class="info-box-icon"><i class="fas fa-calendar"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Plus ancien</span>
-                        <span class="info-box-number">
-                            @if($dossier->attachedEmails->count() > 0)
-                                {{ $dossier->attachedEmails->min('email_date')?->format('d/m/Y') ?? 'N/A' }}
-                            @else
-                                N/A
-                            @endif
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="info-box bg-primary">
-                    <span class="info-box-icon"><i class="fas fa-sync"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Dernier ajout</span>
-                        <span class="info-box-number">
-                            @if($dossier->attachedEmails->count() > 0)
-                                {{ $dossier->attachedEmails->max('created_at')?->format('d/m/Y') ?? 'N/A' }}
-                            @else
-                                N/A
-                            @endif
-                        </span>
-                    </div>
-                </div>
-            </div>
+        <!-- Loader simple CSS -->
+        <div id="emailLoader" class="email-loader" style="display: none;">
+            <div class="loader-spinner"></div>
+            <span class="loader-text">Chargement...</span>
         </div>
-
         <!-- Liste des emails -->
         <div class="row">
             <div class="col-md-12">
-                @if($dossier->attachedEmails && $dossier->attachedEmails->count() > 0)
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-list mr-2"></i>Liste des emails attachés
-                            </h6>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover w-100" id="email-table">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th width="50px">
-                                                <div class="icheck-primary d-inline">
-                                                    <input type="checkbox" id="checkAllEmails">
-                                                    <label for="checkAllEmails"></label>
-                                                </div>
-                                            </th>
-                                            <th>Sujet</th>
-                                            <th>Expéditeur</th>
-                                            <th>Dossier source</th>
-                                            <th>Date de l'email</th>
-                                            <th>Date d'attachement</th>
-                                            <th>Attaché par</th>
-                                            <th width="100px">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($dossier->attachedEmails as $attachedEmail)
-                                        <tr>
-                                            <td>
-                                                <div class="icheck-primary d-inline">
-                                                    <input type="checkbox" class="email-checkbox" value="{{ $attachedEmail->email_uid }}" 
-                                                           data-folder="{{ $attachedEmail->folder_name }}" 
-                                                           id="checkEmail{{ $attachedEmail->id }}">
-                                                    <label for="checkEmail{{ $attachedEmail->id }}"></label>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="email-subject">
-                                                    <strong>{{ $attachedEmail->subject ?? 'Sans objet' }}</strong>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">{{ $attachedEmail->from ?? 'Expéditeur inconnu' }}</small>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-info">{{ $attachedEmail->folder_name }}</span>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">
-                                                    {{ $attachedEmail->email_date ? $attachedEmail->email_date->format('d/m/Y H:i') : 'Date inconnue' }}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">
-                                                    {{ $attachedEmail->created_at->format('d/m/Y H:i') }}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">
-                                                    {{ $attachedEmail->user?->name ?? 'Utilisateur inconnu' }}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="{{ route('email.show', ['folder' => $attachedEmail->folder_name, 'uid' => $attachedEmail->email_uid]) }}" 
-                                                       class="btn btn-info" title="Voir l'email" target="_blank">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-danger detach-single-email" 
-                                                            title="Détacher cet email"
-                                                            data-email-uid="{{ $attachedEmail->email_uid }}"
-                                                            data-folder-name="{{ $attachedEmail->folder_name }}"
-                                                            data-email-subject="{{ $attachedEmail->subject ?? 'Sans objet' }}">
-                                                        <i class="fas fa-unlink"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <!-- Bouton de détachement groupé -->
-                            <div id="detachButtonContainer" style="display: none;">
-                                <button type="button" class="btn btn-danger" id="detachSelectedEmails">
-                                    <i class="fas fa-unlink mr-1"></i> Détacher les emails sélectionnés
-                                </button>
-                                <small class="text-muted ml-2">
-                                    <span id="selectedEmailsCount">0</span> email(s) sélectionné(s)
-                                </small>
-                            </div>
-                            
-                            <!-- Lien pour attacher plus d'emails -->
-                            <div class="mt-2">
-                                <a href="{{ route('email.index') }}" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-plus mr-1"></i> Attacher d'autres emails
-                                </a>
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-list mr-2"></i>Liste des emails
+                            <small class="text-muted ml-2" id="emailListInfo">Chargement...</small>
+                        </h6>
+                        <div class="card-tools">
+                            <div class="input-group input-group-sm" style="width: 200px;">
+                                <input type="text" class="form-control" placeholder="Rechercher..." id="emailSearch">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                @else
-                    <div class="text-center py-4">
-                        <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">Aucun email attaché</h4>
-                        <p class="text-muted">Ce dossier ne contient aucun email pour le moment.</p>
-                        <a href="{{ route('email.index') }}" 
-                           class="btn btn-primary mt-2">
-                            <i class="fas fa-link mr-1"></i> Attacher des emails
-                        </a>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover w-100" id="email-table">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <!-- <th width="50px">
+                                            <div class="icheck-primary d-inline">
+                                                <input type="checkbox" id="checkAllEmails">
+                                                <label for="checkAllEmails"></label>
+                                            </div>
+                                        </th> -->
+                                        <th>Sujet</th>
+                                        <th>Expéditeur</th>
+                                        <th width="120px">Date</th>
+                                        <th width="100px">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emailTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <div class="loader-spinner small"></div>
+                                            <p class="mt-2 text-muted">Chargement des emails...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                @endif
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de confirmation pour le détachement groupé -->
-<div class="modal fade" id="confirmDetachModal" tabindex="-1" role="dialog" aria-labelledby="confirmDetachModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmDetachModalLabel">
-                    <i class="fas fa-exclamation-triangle text-warning mr-2"></i>Confirmation de détachement
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir détacher <strong><span id="detachCount">0</span> email(s)</strong> de ce dossier ?</p>
-                <p class="text-muted small">
-                    <i class="fas fa-info-circle mr-1"></i> 
-                    Cette action ne supprime pas les emails de votre boîte mail, mais seulement leur lien avec ce dossier.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-danger" id="confirmDetach">
-                    <i class="fas fa-unlink mr-1"></i> Détacher
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de confirmation pour le détachement individuel -->
-<div class="modal fade" id="confirmSingleDetachModal" tabindex="-1" role="dialog" aria-labelledby="confirmSingleDetachModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmSingleDetachModalLabel">
-                    <i class="fas fa-exclamation-triangle text-warning mr-2"></i>Confirmation de détachement
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir détacher l'email suivant de ce dossier ?</p>
-                <div class="alert alert-light border">
-                    <strong id="singleEmailSubject">Sujet de l'email</strong><br>
-                    <small class="text-muted" id="singleEmailInfo">Informations supplémentaires</small>
+                    <div class="card-footer">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div id="emailPaginationInfo" class="text-muted">
+                                    Affichage de 0 email(s)
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <div id="attachButtonContainer" style="display: none;">
+                                    <button type="button" class="btn btn-success" id="attachSelectedEmails">
+                                        <i class="fas fa-link mr-1"></i> Attacher les emails sélectionnés
+                                    </button>
+                                    <small class="text-muted ml-2">
+                                        <span id="selectedEmailsCount">0</span> email(s) sélectionné(s)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-muted small">
-                    <i class="fas fa-info-circle mr-1"></i> 
-                    Cette action ne supprime pas l'email de votre boîte mail, mais seulement son lien avec ce dossier.
-                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation pour l'attachement groupé -->
+<div class="modal fade" id="confirmAttachModal" tabindex="-1" role="dialog" aria-labelledby="confirmAttachModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmAttachModalLabel">
+                    <i class="fas fa-link text-success mr-2"></i>Confirmation d'attachement
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir attacher <strong><span id="attachCount">0</span> email(s)</strong> à ce dossier ?</p>
+                <div class="selected-emails-preview mt-3" id="selectedEmailsPreview"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-danger" id="confirmSingleDetach">
-                    <i class="fas fa-unlink mr-1"></i> Détacher
+                <button type="button" class="btn btn-success" id="confirmAttach">
+                    <i class="fas fa-link mr-1"></i> Attacher
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour visualiser un email -->
+<div class="modal fade" id="emailViewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailViewModalTitle">Chargement...</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="emailViewModalBody">
+                <div class="text-center py-4">
+                    <div class="loader-spinner"></div>
+                    <p class="mt-2 text-muted">Chargement de l'email...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
             </div>
         </div>
     </div>
@@ -248,265 +133,520 @@
 <!-- Script pour la gestion des emails -->
 <script>
 $(document).ready(function() {
-    // Initialisation de DataTables
-    if ($('#email-table').length) {
-        $('#email-table').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json"
+    let currentFolder = 'Dossiers/{{$dossier->numero_dossier}}-{{$dossier->nom_dossier}}-{{$dossier->id}}';
+    let currentEmails = [];
+    let selectedEmails = new Set();
+
+    loadEmails(currentFolder);
+
+   
+
+    // Charger les emails d'un dossier
+    function loadEmails(folder, searchTerm = '') {
+        showLoader('Chargement des emails depuis ' + folder + '...');
+        
+        $.ajax({
+            url: '/emails/list',
+            method: 'GET',
+            data: {
+                folder: folder,
+                limit: 100
             },
-            "responsive": true,
-            "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
-            "pageLength": 10,
-            "order": [[5, 'desc']], // Trier par date d'attachement décroissante
-            "columnDefs": [
-                {
-                    "targets": 0, // Colonne checkbox
-                    "orderable": false,
-                    "searchable": false
-                },
-                {
-                    "targets": 6, // Colonne Actions
-                    "orderable": false,
-                    "searchable": false
+            success: function(response) {
+                hideLoader();
+                
+                if (response.success) {
+                    currentEmails = response.emails;
+                    displayEmails(currentEmails, searchTerm);
+                    updateStats(response.count, folder);
+                    showNotification('success', `${response.count} email(s) chargé(s) depuis ${folder}`);
+                } else {
+                    $('#emailTableBody').html(`
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-danger">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                <p>Erreur: ${response.error}</p>
+                                <button class="btn btn-sm btn-primary mt-2" onclick="loadEmails('${folder}')">
+                                    <i class="fas fa-redo"></i> Réessayer
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                    showNotification('error', 'Erreur: ' + response.error);
                 }
-            ],
-            "drawCallback": function(settings) {
-                // Réinitialiser les checkboxes après le redessinage de la table
-                updateDetachButton();
-                // Réattacher les événements après le redessinage
-                attachSingleDetachEvents();
+            },
+            error: function(xhr, status, error) {
+                hideLoader();
+                $('#emailTableBody').html(`
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-danger">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                            <p>Erreur de connexion: ${error}</p>
+                            <button class="btn btn-sm btn-primary mt-2" onclick="loadEmails('${folder}')">
+                                <i class="fas fa-redo"></i> Réessayer
+                            </button>
+                        </td>
+                    </tr>
+                `);
+                showNotification('error', 'Erreur de connexion: ' + error);
             }
         });
     }
 
-    // Gestion des checkboxes
-    const checkAllEmails = $('#checkAllEmails');
-    const emailCheckboxes = $('.email-checkbox');
-    const detachButtonContainer = $('#detachButtonContainer');
-    const selectedEmailsCount = $('#selectedEmailsCount');
-
-    // Fonction pour mettre à jour le bouton de détachement
-    function updateDetachButton() {
-        const checkedCount = $('.email-checkbox:checked').length;
-        if (checkedCount > 0) {
-            detachButtonContainer.show();
-            selectedEmailsCount.text(checkedCount);
-        } else {
-            detachButtonContainer.hide();
+    // Afficher les emails dans le tableau
+    function displayEmails(emails, searchTerm = '') {
+        const tbody = $('#emailTableBody');
+        
+        if (emails.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Aucun email trouvé dans ce dossier</p>
+                        <button class="btn btn-sm btn-primary mt-2" onclick="loadEmails('${currentFolder}')">
+                            <i class="fas fa-redo"></i> Actualiser
+                        </button>
+                    </td>
+                </tr>
+            `);
+            return;
         }
-        
-        // Mettre à jour l'état de "Tout cocher"
-        const allChecked = checkedCount === emailCheckboxes.length;
-        const someChecked = checkedCount > 0 && checkedCount < emailCheckboxes.length;
-        
-        checkAllEmails.prop('checked', allChecked);
-        checkAllEmails.prop('indeterminate', someChecked);
-    }
 
-    // Événement pour "Tout cocher"
-    checkAllEmails.on('change', function() {
-        emailCheckboxes.prop('checked', this.checked);
-        updateDetachButton();
-    });
+        let html = '';
+        let filteredEmails = emails;
 
-    // Événements pour les cases individuelles
-    emailCheckboxes.on('change', updateDetachButton);
+        // Filtrer par terme de recherche
+        if (searchTerm) {
+            filteredEmails = emails.filter(email => 
+                email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                email.from_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                email.from_name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
 
-    // Détachement groupé
-    $('#detachSelectedEmails').on('click', function() {
-        const selectedEmails = [];
-        const selectedFolders = [];
-        
-        $('.email-checkbox:checked').each(function() {
-            selectedEmails.push($(this).val());
-            selectedFolders.push($(this).data('folder'));
+        filteredEmails.forEach(email => {
+            const isSelected = selectedEmails.has(email.uid);
+            const seenClass = email.seen ? '' : 'font-weight-bold';
+            const seenBadge = email.seen ? 
+                '<span class="badge badge-secondary">Lu</span>' : 
+                '<span class="badge badge-primary">Non lu</span>';
+            
+            html += `
+                <tr>
+                    <td>
+                        <div class="email-subject" title="${escapeHtml(email.subject)}">
+                            <strong>${escapeHtml(email.subject)}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="email-from">
+                            <div>${escapeHtml(email.from_name)}</div>
+                            <small class="text-muted">${escapeHtml(email.from_email)}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <small class="text-muted">${formatDate(email.date)}</small>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-info view-email" 
+                                    title="Voir l'email"
+                                    data-uid="${email.uid}"
+                                    data-folder="${currentFolder}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
         });
 
-        $('#detachCount').text(selectedEmails.length);
-        $('#confirmDetachModal').modal('show');
-        
-        // Stocker les données pour la confirmation
-        $('#confirmDetach').data('emails', selectedEmails);
+        tbody.html(html);
+        updatePaginationInfo(filteredEmails.length, emails.length);
+        attachEmailEvents();
+        updateAttachButton();
+    }
+
+    // Mettre à jour les statistiques
+    function updateStats(count, folder) {
+        $('#totalEmailsCount').text(count);
+        $('#currentFolder').text(folder);
+        // $('#loadedEmailsCount').text(currentEmails.length);
+        $('#lastRefresh').text(new Date().toLocaleTimeString());
+        $('#emailListInfo').text(`${count} email(s) dans ${folder}`);
+    }
+
+    // Mettre à jour les informations de pagination
+    function updatePaginationInfo(displayed, total) {
+        $('#emailPaginationInfo').text(`Affichage de ${displayed} email(s) sur ${total}`);
+    }
+
+    // Gestion du loader
+    function showLoader(message) {
+        $('#emailLoader .loader-text').text(message);
+        $('#emailLoader').show();
+    }
+
+    function hideLoader() {
+        $('#emailLoader').hide();
+    }
+
+    // Événements
+    $('#folderSelect').on('change', function() {
+        currentFolder = $(this).val();
+        selectedEmails.clear();
+        loadEmails(currentFolder);
     });
 
-    // Confirmation du détachement groupé
-    $('#confirmDetach').on('click', function() {
-        const selectedEmails = $(this).data('emails');
+    $('#refreshEmails').on('click', function() {
         const button = $(this);
-        const originalText = button.html();
+        const originalHtml = button.html();
         
-        button.html('<i class="fas fa-spinner fa-spin mr-1"></i> Détachement...');
+        button.html('<i class="fas fa-spinner fa-spin"></i>');
         button.prop('disabled', true);
+        
+        loadEmails(currentFolder);
+        
+        setTimeout(() => {
+            button.html(originalHtml);
+            button.prop('disabled', false);
+        }, 1000);
+    });
 
-        // Envoi AJAX
+    $('#loadImapEmails').on('click', function() {
+        loadEmails(currentFolder);
+    });
+
+    $('#testImapConnection').on('click', function() {
+        const button = $(this);
+        const originalHtml = button.html();
+        
+        button.html('<i class="fas fa-spinner fa-spin"></i>');
+        button.prop('disabled', true);
+        
         $.ajax({
-            url: '{{ route("email.detach-from-dossier") }}',
-            method: 'POST',
-            data: {
-                dossier_id: {{ $dossier->id }},
-                email_uids: selectedEmails,
-                _token: '{{ csrf_token() }}'
-            },
+            url: '/emails/test-connection',
+            method: 'GET',
             success: function(response) {
                 if (response.success) {
-                    showNotification('success', response.message);
-                    // Recharger la page pour voir les changements
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
+                    showNotification('success', 
+                        `Connexion réussie! ${response.messages_count} message(s) dans la boîte.`);
                 } else {
-                    showNotification('error', response.message);
+                    showNotification('error', 'Erreur de connexion: ' + response.error);
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error:', error);
-                showNotification('error', 'Une erreur est survenue lors du détachement');
+                showNotification('error', 'Erreur de test: ' + error);
             },
             complete: function() {
-                $('#confirmDetachModal').modal('hide');
-                button.html(originalText);
+                button.html(originalHtml);
                 button.prop('disabled', false);
             }
         });
     });
 
-    // Fonction pour attacher les événements de détachement individuel
-    function attachSingleDetachEvents() {
-        $('.detach-single-email').off('click').on('click', function() {
-            const emailUid = $(this).data('email-uid');
-            const folderName = $(this).data('folder-name');
-            const emailSubject = $(this).data('email-subject');
-            const fromEmail = $(this).closest('tr').find('td:nth-child(3)').text().trim();
+    // Recherche d'emails
+    $('#emailSearch').on('input', function() {
+        const searchTerm = $(this).val();
+        displayEmails(currentEmails, searchTerm);
+    });
+
+    $('#clearSearch').on('click', function() {
+        $('#emailSearch').val('');
+        displayEmails(currentEmails, '');
+    });
+
+    // Gestion des checkboxes
+    function attachEmailEvents() {
+        // Checkbox "Tout cocher"
+        $('#checkAllEmails').off('change').on('change', function() {
+            const isChecked = $(this).is(':checked');
+            $('.email-checkbox').prop('checked', isChecked);
             
-            // Mettre à jour le modal avec les informations de l'email
-            $('#singleEmailSubject').text(emailSubject);
-            $('#singleEmailInfo').html(`
-                <strong>UID:</strong> ${emailUid}<br>
-                <strong>Dossier source:</strong> ${folderName}<br>
-                <strong>Expéditeur:</strong> ${fromEmail}
-            `);
+            if (isChecked) {
+                currentEmails.forEach(email => selectedEmails.add(email.uid));
+            } else {
+                selectedEmails.clear();
+            }
             
-            // Stocker les données pour la confirmation
-            $('#confirmSingleDetach').data('email-uid', emailUid);
-            $('#confirmSingleDetach').data('button', $(this));
+            updateAttachButton();
+        });
+
+        // Checkboxes individuelles
+        $('.email-checkbox').off('change').on('change', function() {
+            const uid = parseInt($(this).val());
             
-            // Afficher le modal
-            $('#confirmSingleDetachModal').modal('show');
+            if ($(this).is(':checked')) {
+                selectedEmails.add(uid);
+            } else {
+                selectedEmails.delete(uid);
+            }
+            
+            updateAttachButton();
+        });
+
+        // Bouton d'attachement individuel
+        $('.attach-single-email').off('click').on('click', function() {
+            const uid = $(this).data('uid');
+            const subject = $(this).data('subject');
+            const from = $(this).data('from');
+            
+            attachEmails([uid], [{uid, subject, from}]);
+        });
+
+        // Bouton de visualisation
+        $('.view-email').off('click').on('click', function() {
+            const uid = $(this).data('uid');
+            const folder = $(this).data('folder');
+            
+            viewEmail(uid, folder);
         });
     }
 
-    // Initialiser les événements de détachement individuel
-    attachSingleDetachEvents();
-
-    // Confirmation du détachement individuel
-    $('#confirmSingleDetach').on('click', function() {
-        const emailUid = $(this).data('email-uid');
-        const button = $(this).data('button');
-        const confirmButton = $(this);
-        const originalText = confirmButton.html();
+    // Mettre à jour le bouton d'attachement groupé
+    function updateAttachButton() {
+        const count = selectedEmails.size;
         
-        confirmButton.html('<i class="fas fa-spinner fa-spin mr-1"></i> Détachement...');
-        confirmButton.prop('disabled', true);
-
-        // Désactiver le bouton original pendant le traitement
-        if (button) {
-            button.prop('disabled', true);
-            button.html('<i class="fas fa-spinner fa-spin"></i>');
+        if (count > 0) {
+            $('#attachButtonContainer').show();
+            $('#selectedEmailsCount').text(count);
+        } else {
+            $('#attachButtonContainer').hide();
         }
+    }
+
+    // Attachement groupé
+    $('#attachSelectedEmails').on('click', function() {
+        const selectedUids = Array.from(selectedEmails);
+        const selectedEmailData = currentEmails.filter(email => 
+            selectedEmails.has(email.uid)
+        ).map(email => ({
+            uid: email.uid,
+            subject: email.subject,
+            from: email.from_name + ' <' + email.from_email + '>'
+        }));
+
+        showAttachConfirmation(selectedUids, selectedEmailData);
+    });
+
+    // Afficher la confirmation d'attachement
+    function showAttachConfirmation(uids, emailData) {
+        $('#attachCount').text(uids.length);
+        
+        let previewHtml = '';
+        emailData.slice(0, 5).forEach(email => {
+            previewHtml += `
+                <div class="border-bottom pb-2 mb-2">
+                    <strong>${escapeHtml(email.subject)}</strong><br>
+                    <small class="text-muted">${escapeHtml(email.from)}</small>
+                </div>
+            `;
+        });
+        
+        if (uids.length > 5) {
+            previewHtml += `<small class="text-muted">... et ${uids.length - 5} autre(s) email(s)</small>`;
+        }
+        
+        $('#selectedEmailsPreview').html(previewHtml);
+        $('#confirmAttachModal').modal('show');
+        
+        $('#confirmAttach').data('uids', uids);
+    }
+
+    // Confirmation d'attachement
+    $('#confirmAttach').on('click', function() {
+        const uids = $(this).data('uids');
+        attachEmails(uids);
+    });
+
+    // Fonction d'attachement des emails
+    function attachEmails(uids, emailData = null) {
+        const button = $('#confirmAttach');
+        const originalText = button.html();
+        
+        button.html('<i class="fas fa-spinner fa-spin mr-1"></i> Attachement...');
+        button.prop('disabled', true);
 
         $.ajax({
-            url: '{{ route("email.detach-from-dossier") }}',
+            url: '{{ route("email.attach-to-dossier") }}',
             method: 'POST',
             data: {
                 dossier_id: {{ $dossier->id }},
-                email_uids: [emailUid],
+                email_uids: uids,
+                folder_name: currentFolder,
                 _token: '{{ csrf_token() }}'
             },
             success: function(response) {
                 if (response.success) {
                     showNotification('success', response.message);
+                    $('#confirmAttachModal').modal('hide');
                     
-                    // Fermer le modal
-                    $('#confirmSingleDetachModal').modal('hide');
+                    // Désélectionner les emails attachés
+                    uids.forEach(uid => selectedEmails.delete(uid));
+                    updateAttachButton();
                     
-                    // Supprimer la ligne du tableau
-                    if (button) {
-                        button.closest('tr').fadeOut(400, function() {
-                            $(this).remove();
-                            // Si plus d'emails, recharger la page
-                            if ($('#email-table tbody tr').length === 0) {
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 500);
-                            }
-                        });
-                    }
                 } else {
                     showNotification('error', response.message);
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error:', error);
-                showNotification('error', 'Une erreur est survenue lors du détachement');
+                showNotification('error', 'Erreur lors de l\'attachement: ' + error);
             },
             complete: function() {
-                confirmButton.html(originalText);
-                confirmButton.prop('disabled', false);
-                
-                // Réactiver le bouton original en cas d'erreur
-                if (button && !button.closest('tr').is(':visible')) {
-                    button.prop('disabled', false);
-                    button.html('<i class="fas fa-unlink"></i>');
-                }
+                button.html(originalText);
+                button.prop('disabled', false);
             }
         });
-    });
+    }
 
-    // Réinitialiser le modal individuel quand il se ferme
-    $('#confirmSingleDetachModal').on('hidden.bs.modal', function () {
-        const confirmButton = $('#confirmSingleDetach');
-        confirmButton.html('<i class="fas fa-unlink mr-1"></i> Détacher');
-        confirmButton.prop('disabled', false);
-        confirmButton.removeData('email-uid');
-        confirmButton.removeData('button');
-    });
+    // Visualiser un email
+    function viewEmail(uid, folder) {
+        $('#emailViewModalTitle').text('Chargement...');
+        $('#emailViewModalBody').html(`
+            <div class="text-center py-4">
+                <div class="loader-spinner"></div>
+                <p class="mt-2 text-muted">Chargement de l'email...</p>
+            </div>
+        `);
+        
+        $('#emailViewModal').modal('show');
+        
+        $.ajax({
+            url: '/emails/email',
+            method: 'GET',
+            data: {
+                folder: folder,
+                uid: uid
+            },
+            success: function(response) {
+                if (response.success) {
+                    const email = response.email;
+                    $('#emailViewModalTitle').text(escapeHtml(email.subject));
+                    
+                    const emailHtml = `
+                        <div class="email-header border-bottom pb-3 mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>De:</strong> ${escapeHtml(email.from_name)}<br>
+                                    <strong>Email:</strong> ${escapeHtml(email.from_email)}
+                                </div>
+                                <div class="col-md-6 text-right">
+                                    <strong>Date:</strong> ${formatDate(email.date)}<br>
+                                    <strong>UID:</strong> ${email.uid}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="email-body">
+                            <pre style="white-space: pre-wrap; font-family: inherit; background: #f8f9fa; padding: 15px; border-radius: 5px;">${escapeHtml(email.body)}</pre>
+                        </div>
+                    `;
+                    
+                    $('#emailViewModalBody').html(emailHtml);
+                    
+                    $('#emailViewModal .modal-footer').html(`
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                    `);
+                } else {
+                    $('#emailViewModalBody').html(`
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Erreur: ${response.error}
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#emailViewModalBody').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Erreur de chargement: ${error}
+                    `);
+            }
+        });
+    }
 
-    // Fonction pour afficher les notifications
+    // Utilitaires
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return 'Date inconnue';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
+        } catch (e) {
+            return dateString;
+        }
+    }
+
     function showNotification(type, message) {
         if (typeof toastr !== 'undefined') {
             toastr[type](message);
         } else {
-            alert(message);
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            `;
+            $('body').append(alertHtml);
+            setTimeout(() => $('.alert').alert('close'), 1000);
         }
     }
 });
 </script>
 
-<!-- Styles supplémentaires pour les emails -->
 <style>
-#email-table thead th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-    border-bottom: 2px solid #dee2e6;
+/* Loader CSS simple */
+.email-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    margin: 10px 0;
+    border: 1px solid #e3e6f0;
 }
 
-.hover-row {
-    background-color: #f8f9fa !important;
-    transition: background-color 0.3s ease;
+.loader-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
 }
 
-.email-subject {
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.loader-spinner.small {
+    width: 16px;
+    height: 16px;
+    border-width: 1.5px;
 }
 
+.loader-text {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Styles existants */
 .info-box {
     box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
     border-radius: 0.25rem;
     background: #fff;
-    display: -ms-flexbox;
     display: flex;
     margin-bottom: 1rem;
     min-height: 80px;
@@ -516,19 +656,15 @@ $(document).ready(function() {
 
 .info-box .info-box-icon {
     border-radius: 0.25rem;
-    -ms-flex-align: center;
     align-items: center;
-    display: -ms-flexbox;
     display: flex;
     font-size: 1.875rem;
-    -ms-flex-pack: center;
     justify-content: center;
     text-align: center;
     width: 70px;
 }
 
 .info-box .info-box-content {
-    -ms-flex: 1;
     flex: 1;
     padding: 0.5rem 0.5rem 0.5rem 1rem;
 }
@@ -539,9 +675,15 @@ $(document).ready(function() {
     font-size: 1.5rem;
 }
 
-.badge {
-    font-size: 0.75em;
-    padding: 0.3em 0.6em;
+.email-subject {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.email-from {
+    max-width: 200px;
 }
 
 .table-responsive {
@@ -549,28 +691,39 @@ $(document).ready(function() {
     overflow: hidden;
 }
 
-/* Style pour DataTables */
-.dataTables_wrapper .dataTables_length,
-.dataTables_wrapper .dataTables_filter {
-    margin-bottom: 1rem;
+#emailTableBody tr {
+    cursor: pointer;
 }
 
-.dataTables_wrapper .dataTables_filter input {
-    margin-left: 0.5em;
-    border: 1px solid #ced4da;
-    border-radius: 0.25rem;
-    padding: 0.375rem 0.75rem;
+#emailTableBody tr:hover {
+    background-color: #f8f9fa !important;
 }
 
-/* Style pour les checkboxes */
-.icheck-primary.d-inline {
-    display: inline-block;
-    margin-right: 0;
+.btn:disabled {
+    cursor: not-allowed;
 }
 
-/* Style pour le modal d'information */
-.alert-light {
-    background-color: #f8f9fa;
-    border-color: #dee2e6;
+@media (max-width: 768px) {
+    .info-box .info-box-icon {
+        width: 50px;
+        font-size: 1.5rem;
+    }
+    
+    .info-box .info-box-number {
+        font-size: 1.2rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .email-subject {
+        max-width: 150px;
+    }
+    
+    .email-from {
+        max-width: 120px;
+    }
 }
 </style>

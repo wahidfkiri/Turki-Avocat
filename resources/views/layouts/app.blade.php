@@ -620,5 +620,41 @@ document.addEventListener('DOMContentLoaded', function() {
     setupSelectHiding('avocat_id', 'equipe_supplementaire');
 });
 </script>
+<script>
+  $(document).ready(function() {
+    // Gestion du toggle du menu
+    $('#pushmenu').on('click', function() {
+        $('body').toggleClass('sidebar-collapse');
+        
+        // Sauvegarder l'état dans le localStorage
+        const isCollapsed = $('body').hasClass('sidebar-collapse');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+    });
+
+    // Restaurer l'état du sidebar au chargement de la page
+    function restoreSidebarState() {
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            $('body').addClass('sidebar-collapse');
+        } else {
+            $('body').removeClass('sidebar-collapse');
+        }
+    }
+
+    // Appeler au chargement
+    restoreSidebarState();
+
+    // Gestion responsive - fermer le sidebar sur les petits écrans
+    function handleResponsive() {
+        if ($(window).width() < 768) {
+            $('body').addClass('sidebar-collapse');
+        }
+    }
+
+    // Appeler au redimensionnement
+    $(window).on('resize', handleResponsive);
+    handleResponsive(); // Appeler au chargement initial
+});
+</script>
 </body>
 </html>

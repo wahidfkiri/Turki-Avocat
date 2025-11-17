@@ -187,6 +187,7 @@ return [
          */
          Yajra\DataTables\DataTablesServiceProvider::class,
          Vendor\Drive\DriveServiceProvider::class,
+         Vendor\Email\EmailServiceProvider::class,
 
         /*
          * Application Service Providers...

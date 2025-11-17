@@ -1403,18 +1403,20 @@
                         <div>${fileType === 'folder' ? 'Dossier' : fileExtension.toUpperCase()}</div>
                         <div class="list-file-actions">
                             ${fileExtension === 'docx' ? 
-                                `<a href="ms-word:ofe|u|file:///P:/docs/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Word">
+                                `<a href="ms-word:ofe|u|file:///P:/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Word">
                                     <i class="fas fa-eye"></i>  
                                 </a>` :
                                 (fileExtension === 'xlsx' ?
-                                    `<a href="ms-excel:ofe|u|file:///P:/docs/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Excel">
+                                    `<a href="ms-excel:ofe|u|file:///P:/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Excel">
                                         <i class="fas fa-eye"></i>
                                     </a>` :
                                     (fileExtension === 'pptx' ?
-                                        `<a href="ms-powerpoint:ofe|u|file:///P:/docs/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans PowerPoint">
+                                        `<a href="ms-powerpoint:ofe|u|file:///P:/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans PowerPoint">
                                             <i class="fas fa-eye"></i>
                                         </a>` :
-                                        `<a href="#" class="action-btn download-btn text-success"  style="border:2px solid black;" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')"><i class="fas fa-eye"></i></a>`
+                                    (fileType === 'folder' ?
+                                        `` :  `<a href="#" class="action-btn download-btn text-success"  style="border:2px solid black;" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')"><i class="fas fa-eye"></i></a>`
+                                    )
                                     )
                                 )
                             }

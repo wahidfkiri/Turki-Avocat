@@ -79,7 +79,7 @@
                     </a>
                 </li>
                 @endif
-                <li class="nav-item">
+                <li class="nav-item d-none">
                     <a href="{{ route('email.index') }}" class="nav-link {{ request()->routeIs('email.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-envelope"></i>
                         <p>Emails</p>

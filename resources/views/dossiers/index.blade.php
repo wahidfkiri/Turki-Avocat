@@ -76,7 +76,7 @@
                       </div>
                       <div class="col-md-6">
                         <select class="form-control" id="statutFilter">
-                          <option value="">Tous les statuts</option>
+                          <option value="all">Tous les statuts</option>
                           <option value="conseil">Conseil</option>
                           <option value="contentieux">Contentieux</option>
                           <option value="archive">Archivé</option>
