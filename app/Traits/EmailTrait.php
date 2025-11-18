@@ -6,10 +6,7 @@ trait EmailTrait
 {
     private function getImapConnection($folder) {
         $mailboxRoot = '{mailbox.nextstep-it.com:993/imap/ssl/novalidate-cert}';
-        $username = 'slim.turki@turkiavocats.com';
-        $password = 'QSD@rty08112017';
-        // $username = 'contact@turkiavocats.com';
-        // $password = '6NsNs23Nu';
+       
         
         $mailboxPath = $mailboxRoot . $folder;
         
