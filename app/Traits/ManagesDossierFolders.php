@@ -14,7 +14,7 @@ trait ManagesDossierFolders
      */
     public function syncDossierFolder($dossier)
     {
-        $newFolderName = $dossier->numero_dossier . '-' . $dossier->nom_dossier . '-' . $dossier->id;
+        $newFolderName = $dossier->numero_dossier . '-' . $dossier->id;
         $basePath = 'dossiers';
         $newPath = $basePath . '/' . $newFolderName;
 
