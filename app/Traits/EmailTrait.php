@@ -7,7 +7,7 @@ trait EmailTrait
     private function getImapConnection($folder) {
         $mailboxRoot = '{mailbox.nextstep-it.com:993/imap/ssl/novalidate-cert}';
         $username = 'slim.turki@turkiavocats.com';
-       $password = 'QSD@rty08112017';
+        $password = 'QSD@rty08112017';
         // $username = 'contact@turkiavocats.com';
         // $password = '6NsNs23Nu';
         
@@ -43,7 +43,7 @@ trait EmailTrait
     public function createImapFolderSafe($dossier)
 {
     // Nouveau nom attendu
-    $newFolderName = $dossier->numero_dossier . '-' . $dossier->nom_dossier . '-' . $dossier->id;
+    $newFolderName = $dossier->numero_dossier . '-' . $dossier->id;
     $newFolderRelative = 'Dossiers/' . $newFolderName;
 
     // Connexion IMAP
@@ -246,7 +246,7 @@ trait EmailTrait
         // Décoder le texte quoted-printable si nécessaire
         if (preg_match('/=\?([^?]+)\?Q\?(.+)\?=/i', $body)) {
             $body = imap_qprint($body);
-        }
+        } 
         
         return $body;
     }

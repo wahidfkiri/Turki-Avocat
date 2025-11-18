@@ -133,7 +133,7 @@
 <!-- Script pour la gestion des emails -->
 <script>
 $(document).ready(function() {
-    let currentFolder = 'Dossiers/{{$dossier->numero_dossier}}-{{$dossier->nom_dossier}}-{{$dossier->id}}';
+    let currentFolder = 'Dossiers/{{$dossier->numero_dossier}}-{{$dossier->id}}';
     let currentEmails = [];
     let selectedEmails = new Set();
 

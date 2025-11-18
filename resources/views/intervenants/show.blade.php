@@ -62,7 +62,7 @@
                                                 <i class="fas fa-address-book"></i> Coordonnées
                                             </a>
                                         </li>
-                                        <li class="nav-item">
+                                        <li class="nav-item d-none">
                                             <a class="nav-link" id="fichiers-tab" data-toggle="tab" href="#fichiers" role="tab" aria-controls="fichiers" aria-selected="false">
                                                 <i class="fas fa-file"></i> Fichiers
                                                 @if(($intervenant->files ?? null) && count($intervenant->files) > 0)
@@ -372,6 +372,7 @@
                                         <!-- Onglet Dossiers (unchanged) -->
                                         <x-intervenants.dossier-liste :intervenant="$intervenant" />
                                         <x-intervenant.folder.liste :intervenant="$intervenant" />
+                                        
                                     </div>
                                 </div>
                             </div>

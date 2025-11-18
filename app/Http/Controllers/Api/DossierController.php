@@ -24,6 +24,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use App\Traits\EmailTrait;
 use App\Traits\ManagesDossierFolders;
+use Exception;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
+
 
 
 class DossierController extends Controller
@@ -1005,11 +1010,13 @@ public function getDossiersData(Request $request)
     
     public function getFiles(Dossier $dossier)
 {
-    $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+    $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
+    $baseDirectory1 = "{$dossier->numero_dossier}-{$dossier->id}";
     $requestedPath = request('path', '');
     
     // Build the full directory path
     $directory = $requestedPath ? $baseDirectory . '/' . $requestedPath : $baseDirectory;
+    $directory1 = $requestedPath ? $baseDirectory1 . '/' . $requestedPath : $baseDirectory1;
     
     $items = [];
     
@@ -1037,7 +1044,7 @@ public function getDossiersData(Request $request)
                 $items[] = [
                     'name' => basename($path),
                     'path' => str_replace($baseDirectory . '/', '', $path), // Relative path
-                    'original_path' => $directory,
+                    'original_path' => $directory1,
                     'type' => 'folder',
                     'extension' => '',
                     'size' => 0,
@@ -1048,7 +1055,7 @@ public function getDossiersData(Request $request)
                 $items[] = [
                     'name' => basename($path),
                     'path' => str_replace($baseDirectory . '/', '', $path), // Relative path
-                    'original_path' => $directory,
+                    'original_path' => $directory1,
                     'type' => 'file',
                     'extension' => pathinfo($path, PATHINFO_EXTENSION),
                     'size' => $size,
@@ -1079,7 +1086,7 @@ public function getDossiersData(Request $request)
         ]);
 
         $uploadedFiles = [];
-        $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         
         // Get the subdirectory path from the request
         $subDirectory = $request->input('path', '');
@@ -1188,7 +1195,7 @@ public function viewFileChrome(Request $request)
     $dossier = Dossier::findOrFail($validated['dossier_id']);
     $filePath = $validated['file_path']; // POST
 
-    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
     $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
 
     // Check if the file exists
@@ -1209,7 +1216,7 @@ public function viewFile($dossierId, $file)
         $dossier = Dossier::findOrFail($dossierId);
         $filePath = base64_decode($file);
 
-        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
 
         if (!Storage::disk('public')->exists($fullPath)) {
@@ -1275,7 +1282,7 @@ public function downloadFile(Request $request)
         $filePath = $validated['file_path'];
         
         // Construire le chemin complet
-        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $fullPath = $filePath ? $basePath . '/' . $filePath : $basePath;
 
         \Log::info("Tentative de téléchargement:");
@@ -1341,7 +1348,7 @@ public function createFile(Request $request)
     $fileName = $validated['file_name'];
 
     // Chemin complet dans storage
-    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
     $fullPath = $basePath . '/' . $fileName;
 
     // Crée le dossier s'il n'existe pas
@@ -1392,7 +1399,7 @@ public function createFileBackend(Request $request)
     $fileName = $validated['file_name'];
     $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
-    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+    $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
     $fullPath = $basePath . '/' . $fileName;
 
     // Make directory if it doesn't exist
@@ -1433,7 +1440,7 @@ public function deleteFile(Request $request, Dossier $dossier)
             'file_type' => 'required|in:file,folder'
         ]);
 
-        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $filePath = $request->file_path;
         $fullPath = $basePath . '/' . $filePath;
 
@@ -1484,7 +1491,7 @@ public function renameFile(Request $request, Dossier $dossier)
             'new_name' => 'required|string|max:255'
         ]);
 
-        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $oldFilePath = $request->file_path;
         $newName = $request->new_name;
         $fileType = $request->file_type;
@@ -1576,7 +1583,7 @@ public function moveFile(Request $request, Dossier $dossier)
             'target_path' => 'sometimes|string|nullable'
         ]);
 
-        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $oldFilePath = $request->file_path;
         $fileType = $request->file_type;
         $targetPath = $request->target_path ?? ''; // Chaîne vide pour la racine
@@ -1656,7 +1663,7 @@ public function moveFile(Request $request, Dossier $dossier)
 public function getFoldersTree(Dossier $dossier, Request $request)
 {
     try {
-        $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $excludePath = $request->get('exclude_path', ''); // Chemin à exclure
         
         \Log::info("Chargement de l'arborescence des dossiers - Exclure: " . $excludePath);
@@ -1715,7 +1722,7 @@ public function createFolder(Request $request, Dossier $dossier)
             'path' => 'sometimes|string|nullable'
         ]);
 
-        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $folderName = $request->folder_name;
         $parentPath = $request->path ?? '';
 
@@ -1774,7 +1781,7 @@ public function getFileUrl(Request $request, Dossier $dossier)
             'file_path' => 'required|string'
         ]);
 
-        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $filePath = $request->file_path;
         $fullPath = $basePath . '/' . $filePath;
 
@@ -1812,7 +1819,7 @@ public function uploadFolder(Request $request, Dossier $dossier)
             'path' => 'sometimes|string|nullable' // Chemin de destination
         ]);
 
-        $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->nom_dossier}-{$dossier->id}";
+        $baseDirectory = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
         $subDirectory = $request->input('path', '');
         $fullDirectory = $subDirectory ? $baseDirectory . '/' . $subDirectory : $baseDirectory;
 

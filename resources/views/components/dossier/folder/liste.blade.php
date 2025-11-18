@@ -1395,37 +1395,33 @@
                         <div class="list-item-content">
                             <div class="list-file-icon ${fileType === 'folder' ? 'text-warning' : (fileExtension === 'docx' ? 'text-primary' : (fileExtension === 'xlsx' ? 'text-success' : (fileExtension === 'pptx' ? 'text-warning' : 'text-secondary')))}">${icon}</div>
                             <div>
-                                <div class="file-name">${fileType === 'file' ? `<a href="#" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')">${fileName}</a>` : fileName}</div>
+                                <div class="file-name">
+                                ${fileType === 'file' ? `${fileExtension === 'docx' ? 
+                                `<a href="ms-word:ofe|u|file:///P:/${originalPath}/${fileName}" title="Ouvrir dans Word">
+                                    ${fileName}  
+                                </a>` :
+                                (fileExtension === 'xlsx' ?
+                                    `<a href="ms-excel:ofe|u|file:///P:/${originalPath}/${fileName}" title="Ouvrir dans Excel">
+                                        ${fileName}
+                                    </a>` :
+                                    (fileExtension === 'pptx' ?
+                                        `<a href="ms-powerpoint:ofe|u|file:///P:/${originalPath}/${fileName}" title="Ouvrir dans PowerPoint">
+                                            ${fileName}
+                                        </a>` :
+                                    (fileType === 'folder' ?
+                                        `` :  `<a href="#" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')">${fileName}</a>`
+                                    )
+                                    )
+                                )
+                            }
+                                <a href="#" class="d-none" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')">${fileName}</a>
+                                ` : fileName}</div>
                                 <div class="file-meta">${lastModified}</div>
                             </div>
                         </div>
                         <div>${fileSize}</div>
                         <div>${fileType === 'folder' ? 'Dossier' : fileExtension.toUpperCase()}</div>
                         <div class="list-file-actions">
-                            ${fileExtension === 'docx' ? 
-                                `<a href="ms-word:ofe|u|file:///P:/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Word">
-                                    <i class="fas fa-eye"></i>  
-                                </a>` :
-                                (fileExtension === 'xlsx' ?
-                                    `<a href="ms-excel:ofe|u|file:///P:/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans Excel">
-                                        <i class="fas fa-eye"></i>
-                                    </a>` :
-                                    (fileExtension === 'pptx' ?
-                                        `<a href="ms-powerpoint:ofe|u|file:///P:/${originalPath}/${fileName}" class="action-btn download-btn text-success" style="border:2px solid black;" title="Ouvrir dans PowerPoint">
-                                            <i class="fas fa-eye"></i>
-                                        </a>` :
-                                    (fileType === 'folder' ?
-                                        `` :  `<a href="#" class="action-btn download-btn text-success"  style="border:2px solid black;" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')"><i class="fas fa-eye"></i></a>`
-                                    )
-                                    )
-                                )
-                            }
-                            ${fileType === 'file' ? 
-                                `<button type="button" class="action-btn download-btn text-success d-none" onclick="previewFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
-                                    <i class="fas fa-eye"></i>
-                                </button>` : 
-                                ''
-                            }
                             ${fileType === 'file' ? 
                                 `<button type="button" class="action-btn download-btn text-success" onclick="downloadFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
                                     <i class="fas fa-download"></i>

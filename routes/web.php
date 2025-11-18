@@ -99,6 +99,17 @@ Route::post('/dossiers/{dossier}/create-folder', [DossierController::class, 'cre
 Route::post('/dossiers/{dossier}/file-url', [DossierController::class, 'getFileUrl'])->name('dossiers.file-url');
 Route::post('/dossiers/{dossier}/upload-folder', [DossierController::class, 'uploadFolder'])->name('dossiers.upload-folder');
 
+// Gardez l'ancienne route GET pour la compatibilité si nécessaire
+Route::get('/intervenants/download/{intervenantId}/{fileName}', [IntervenantController::class, 'downloadFile'])->name('intervenant.download.get');
+Route::post('/intervenants/{intervenant}/delete', [IntervenantController::class, 'deleteFile'])->name('intervenant.delete');
+Route::post('/intervenants/{intervenant}/rename', [IntervenantController::class, 'renameFile'])->name('intervenant.rename');
+Route::post('/intervenants/{intervenant}/move', [IntervenantController::class, 'moveFile'])->name('intervenant.move');
+Route::get('/intervenants/{intervenant}/folders', [IntervenantController::class, 'getFoldersTree'])->name('intervenant.folders');
+Route::post('/intervenants/{intervenant}/create-folder', [IntervenantController::class, 'createFolder'])->name('intervenant.create-folder');
+Route::post('/intervenants/{intervenant}/file-url', [IntervenantController::class, 'getFileUrl'])->name('intervenant.file-url');
+Route::post('/intervenants/{intervenant}/upload-folder', [IntervenantController::class, 'uploadFolder'])->name('intervenant.upload-folder');
+Route::get('/intervenants/{intervenant}/files', [IntervenantController::class, 'getFiles'])->name('intervenant.files');
+Route::post('/intervenants/{intervenant}/upload', [IntervenantController::class, 'uploadFiles'])->name('intervenant.upload');
 
 Route::resource('time-sheets', TimeSheetController::class);
 Route::get('dossiers/{dossierId}/time-sheets', [TimeSheetController::class, 'byDossier']);
@@ -341,3 +352,4 @@ Route::get('/file/{filename}', function ($filename) {
 
 Route::post('/onlyoffice/save', [OnlyOfficeController::class, 'save'])->name('onlyoffice.save');
 Route::post('/dossier/create-file-backend', [DossierController::class, 'createFileBackend'])->name('dossier.create.file.backend');
+Route::post('/intervenant/create-file-backend', [IntervenantController::class, 'createFileBackend'])->name('intervenant.create.file.backend');
