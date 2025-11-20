@@ -19,12 +19,19 @@ class TaskController extends Controller
     public function getTasksData(Request $request)
     {
         $this->authorize('view_tasks', Task::class);
-
+    if(auth()->user()->hasRole('admin')){
         $query = Task::with([
             'dossier:id,numero_dossier,nom_dossier',
             'intervenant:id,identite_fr',
             'user:id,name'
         ])->select('tasks.*');
+    }else{
+        $query = Task::with([
+            'dossier:id,numero_dossier,nom_dossier',
+            'intervenant:id,identite_fr',
+            'user:id,name'
+        ])->where('utilisateur_id', auth()->id())->select('tasks.*');
+    }
 
         // Filtre par titre
         if ($request->has('titre') && !empty($request->titre)) {

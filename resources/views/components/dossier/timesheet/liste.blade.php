@@ -3,7 +3,7 @@
     <div class="p-3">
         <div style="display: flow-root;">
             <h5 class="text-primary mb-3"><i class="fas fa-money-bill-wave"></i> Informations des feuilles de temps</h5>
-            <a href="{{ route('dossiers.timesheets.create', ['dossier' => $dossier->id]) }}" class="btn btn-primary mb-3" style="float: right;">
+            <a href="#"  data-toggle="modal" data-target="#timesheetModal" class="btn btn-primary mb-3" style="float: right;">
                 <i class="fas fa-plus"></i> Ajouter une feuille de temps 
             </a>
         </div>
@@ -73,7 +73,6 @@
         @endif
     </div>
 </div>
-
 <!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>

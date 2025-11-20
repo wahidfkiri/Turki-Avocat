@@ -410,6 +410,9 @@
     </form>
 @endcan
 
+@include('dossiers.timesheets.create')
+@include('dossiers.factures.create')
+@include('dossiers.tasks.create')
 @section('scripts')
 <script>
 // Fonction de confirmation de suppression

@@ -226,14 +226,25 @@ public function destroy(Timesheet $time_sheet)
    public function getTimesheetsData(Request $request)
 {
     $this->authorize('view_timesheets', Timesheet::class);
-
+    
+    if(auth()->user()->hasRole('admin')){
+        $query = Timesheet::with([
+            'user:id,name',
+            'dossier:id,numero_dossier',
+            'dossier.intervenants:id,identite_fr',
+            'categorieRelation:id,nom',
+            'typeRelation:id,nom'
+        ])->select('time_sheets.*');
+    }else{
     $query = Timesheet::with([
         'user:id,name',
         'dossier:id,numero_dossier',
         'dossier.intervenants:id,identite_fr',
         'categorieRelation:id,nom',
         'typeRelation:id,nom'
-    ])->select('time_sheets.*');
+    ])->where('utilisateur_id', auth()->id())
+    ->select('time_sheets.*');
+    }
 
     // Filtre par date
     if ($request->has('date') && !empty($request->date)) {

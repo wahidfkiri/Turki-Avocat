@@ -1387,8 +1387,7 @@
                 const safeFileName = fileName.replace(/'/g, "\\'");
 
                 const folderClick = fileType === 'folder' ? `onclick="handleFolderClick('${safeFilePath}', '${safeFileName}')" style="cursor: pointer;"` : '';
-                
-
+               
                  html += `
                     <div class="list-item" ${folderClick}>
                         <div class="list-item-content">
@@ -1396,15 +1395,15 @@
                             <div>
                                 <div class="file-name">
                                 ${fileType === 'file' ? `${fileExtension === 'docx' ? 
-                                `<a href="ms-word:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans Word">
+                                `<a href="" onclick="window.location = this.dataset.url" data-url="ms-word:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans Word">
                                     ${fileName}  
                                 </a>` :
                                 (fileExtension === 'xlsx' ?
-                                    `<a href="ms-excel:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans Excel">
+                                    `<a href="" onclick="window.location = this.dataset.url" data-url="ms-excel:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans Excel">
                                         ${fileName}
                                     </a>` :
                                     (fileExtension === 'pptx' ?
-                                        `<a href="ms-powerpoint:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans PowerPoint">
+                                        `<a href="" onclick="window.location = this.dataset.url" data-url="ms-powerpoint:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans PowerPoint">
                                             ${fileName}
                                         </a>` :
                                     (fileType === 'folder' ?

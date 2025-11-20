@@ -310,7 +310,10 @@ class DossierController extends Controller
         $intervenants = Intervenant::orderBy('identite_fr')->get();
         $categories = \App\Models\Categorie::all();
         $types = \App\Models\Type::all();
-        return view('dossiers.show', compact('dossier', 'users', 'intervenants', 'categories', 'types'));
+        // Générer le prochain numéro de facture
+        $lastFacture = \App\Models\Facture::orderBy('id', 'desc')->first();
+        $nextNumber = 'FACT-' . date('Y') . '-' . str_pad(($lastFacture ? $lastFacture->id + 1 : 1), 4, '0', STR_PAD_LEFT);
+        return view('dossiers.show', compact('dossier', 'users', 'intervenants', 'categories', 'types','nextNumber'));
     }
 public function update(UpdateDossierRequest $request, Dossier $dossier)
 {
@@ -754,7 +757,14 @@ public function getDossiersData(Request $request)
               });
         });
     }else{
+    if(auth()->user()->hasRole('admin')){
         $query = Dossier::with(['domaine'])->select('dossiers.*');
+    }else{
+        $query = Dossier::with(['domaine'])->select('dossiers.*')
+        ->whereHas('users', function($q) {
+            $q->where('users.id', auth()->id());
+        }); 
+    }
     }
 
     // Filtre par domaine
@@ -905,7 +915,18 @@ public function getDossiersData(Request $request)
             'intervenant_id' => 'nullable|exists:intervenants,id',
             'utilisateur_id' => 'required|exists:users,id',
             'note' => 'nullable|string',
+            'file' => 'nullable|file|mimes:pdf,doc,docx,txt,jpg,jpeg,png,xlsx,xls|max:10240', // 10MB max
         ]);
+
+        // Handle file upload before creating the task
+    if ($request->hasFile('file')) {
+        $file = $request->file('file');
+        $filePath = $file->store('tasks/files', 'public');
+        
+        // Add file data to task data
+        $validated['file_path'] = $filePath;
+        $validated['file_name'] = $file->getClientOriginalName();
+    }
 
         \App\Models\Task::create($validated);
 
@@ -955,12 +976,27 @@ public function getDossiersData(Request $request)
         }
 
         // Gestion de la pièce jointe
-    if ($request->hasFile('piece_jointe')) {
-        $file = $request->file('piece_jointe');
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('factures', $fileName, 'public');
-        $validated['piece_jointe'] = $fileName;
-    }
+
+       if ($request->hasFile('piece_jointe')) {
+    $file = $request->file('piece_jointe');
+    
+    // Créer la structure : factures/année/statut/
+    $currentYear = date('Y');
+    $statut = $validated['type_piece']; // "payé" ou "non_payé"
+    
+    // Chemin personnalisé : factures/2025/payé/ ou factures/2025/non_payé/
+    $customPath = "factures/{$currentYear}/{$statut}";
+    
+    // Générer le nom du fichier
+    $fileName = time() . '_' . $file->getClientOriginalName();
+    
+    // Stocker le fichier dans le chemin personnalisé
+    $filePath = $file->storeAs($customPath, $fileName, 'public');
+    
+    // Stocker le chemin complet dans la base de données
+    $validated['piece_jointe'] = $filePath;
+}
+
 
         $facture = \App\Models\Facture::create($validated);
          if($request->hasFile('piece_jointe')) {

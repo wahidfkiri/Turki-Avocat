@@ -9,6 +9,8 @@ use App\Models\Intervenant;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class FactureController extends Controller
 {
@@ -21,11 +23,21 @@ class FactureController extends Controller
         abort(403, 'Unauthorized action.');
     }
 
-    $query = Facture::with([
-        'dossier:id,numero_dossier',
-        'client:id,identite_fr,identite_ar'
-    ])->select('factures.*');
-
+    if(auth()->user()->hasRole('admin')){
+        $query = Facture::with([
+            'dossier:id,numero_dossier',
+            'client:id,identite_fr,identite_ar'
+        ])->select('factures.*');
+    } else {
+        $query = Facture::with([
+            'dossier:id,numero_dossier',
+            'client:id,identite_fr,identite_ar'
+        ])
+        ->whereHas('dossier.users', function($q) {
+            $q->where('users.id', auth()->id());
+        })
+        ->select('factures.*');
+    }
     // Filtre par numéro
     if ($request->has('numero') && !empty($request->numero)) {
         $query->where('numero', 'LIKE', '%' . $request->numero . '%');
@@ -517,12 +529,25 @@ class FactureController extends Controller
         }
 
         // Gestion de la pièce jointe
-    if ($request->hasFile('piece_jointe')) {
-        $file = $request->file('piece_jointe');
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('factures', $fileName, 'public');
-        $validated['piece_jointe'] = $fileName;
-    }
+        if ($request->hasFile('piece_jointe')) {
+    $file = $request->file('piece_jointe');
+    
+    // Créer la structure : factures/année/statut/
+    $currentYear = date('Y');
+    $statut = $validated['type_piece']; // "payé" ou "non_payé"
+    
+    // Chemin personnalisé : factures/2025/payé/ ou factures/2025/non_payé/
+    $customPath = "factures/{$currentYear}/{$statut}";
+    
+    // Générer le nom du fichier
+    $fileName = time() . '_' . $file->getClientOriginalName();
+    
+    // Stocker le fichier dans le chemin personnalisé
+    $filePath = $file->storeAs($customPath, $fileName, 'public');
+    
+    // Stocker le chemin complet dans la base de données
+    $validated['piece_jointe'] = $filePath;
+}
 
         $facture = Facture::create($validated);
 
@@ -593,17 +618,24 @@ class FactureController extends Controller
                 ->with('error', 'Le montant TTC doit être égal à HT + TVA.');
         }
         // Gestion de la pièce jointe
-    if ($request->hasFile('piece_jointe')) {
-        // Supprimer l'ancien fichier s'il existe
-        if ($facture->piece_jointe) {
-            Storage::disk('public')->delete('factures/' . $facture->piece_jointe);
-        }
-        
-        $file = $request->file('piece_jointe');
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('factures', $fileName, 'public');
-        $validated['piece_jointe'] = $fileName;
+        if ($request->hasFile('piece_jointe')) {
+    // Supprimer l'ancien fichier s'il existe
+    if ($facture->piece_jointe) {
+        Storage::disk('public')->delete($facture->piece_jointe);
     }
+    
+    $file = $request->file('piece_jointe');
+    
+    // Structure : factures/année/statut/
+    $currentYear = date('Y');
+    $statut = $validated['type_piece'] ?? $facture->type_piece; // Nouveau statut ou ancien
+    
+    $customPath = "factures/{$currentYear}/{$statut}";
+    
+    $fileName = time() . '_' . $file->getClientOriginalName();
+    $filePath = $file->storeAs($customPath, $fileName, 'public');
+    $validated['piece_jointe'] = $filePath;
+}
 
         $facture->update($validated);
 
@@ -645,7 +677,7 @@ class FactureController extends Controller
     }
     
     // Chemin complet du fichier
-    $filePath = storage_path('app/public/factures/' . $facture->piece_jointe);
+    return $filePath = storage_path('app/public/factures/' . $facture->piece_jointe);
     
     // Vérifier si le fichier existe
     if (!file_exists($filePath)) {
@@ -670,7 +702,7 @@ class FactureController extends Controller
             return redirect()->back()->with('error', 'Fichier introuvable pour cette facture.');
         }
 
-        $filePath = storage_path('app/public/factures/' . $facture->piece_jointe);
+         $filePath = storage_path('app/public/' . $facture->piece_jointe);
 
         if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'Le fichier est introuvable sur le serveur.');
@@ -694,7 +726,7 @@ class FactureController extends Controller
             return redirect()->back()->with('error', 'Fichier introuvable pour cette facture.');
         }
 
-        $filePath = storage_path('app/public/factures/' . $facture->piece_jointe);
+        $filePath = storage_path('app/public/' . $facture->piece_jointe);
 
         if (!file_exists($filePath)) {
             return redirect()->back()->with('error', 'Le fichier est introuvable sur le serveur.');
