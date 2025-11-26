@@ -500,88 +500,181 @@ $(document).ready(function() {
     }
 
     // Visualiser un email
-    function viewEmail(uid, folder) {
-        $('#emailViewModalTitle').text('Chargement...');
-        $('#emailViewModalBody').html(`
-            <div class="text-center py-4">
-                <div class="loader-spinner"></div>
-                <p class="mt-2 text-muted">Chargement de l'email...</p>
-            </div>
-        `);
-        
-        $('#emailViewModal').modal('show');
-        
-        $.ajax({
-            url: '/emails/email',
-            method: 'GET',
-            data: {
-                folder: folder,
-                uid: uid
-            },
-            success: function(response) {
-                if (response.success) {
-                    const email = response.email;
-                    $('#emailViewModalTitle').text(escapeHtml(email.subject));
-                    
-                    const emailHtml = `
-                        <div class="email-header border-bottom pb-3 mb-3">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <strong>De:</strong> ${escapeHtml(email.from_name)}<br>
-                                    <strong>Email:</strong> ${escapeHtml(email.from_email)}
-                                </div>
-                                <div class="col-md-6 text-right">
-                                    <strong>Date:</strong> ${formatDate(email.date)}<br>
-                                    <strong>UID:</strong> ${email.uid}
-                                </div>
+    // Visualiser un email
+function viewEmail(uid, folder) {
+    $('#emailViewModalTitle').text('Chargement...');
+    $('#emailViewModalBody').html(`
+        <div class="text-center py-4">
+            <div class="loader-spinner"></div>
+            <p class="mt-2 text-muted">Chargement de l'email...</p>
+        </div>
+    `);
+    
+    $('#emailViewModal').modal('show');
+    
+    $.ajax({
+        url: '/emails/email',
+        method: 'GET',
+        data: {
+            folder: folder,
+            uid: uid
+        },
+        success: function(response) {
+            if (response.success) {
+                const email = response.email;
+                $('#emailViewModalTitle').text(escapeHtml(email.subject));
+                
+                // Nettoyer le HTML pour autoriser seulement les balises sécurisées
+                const cleanBody = sanitizeHtml(email.body);
+                
+                const emailHtml = `
+                    <div class="email-header border-bottom pb-3 mb-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>De:</strong> ${escapeHtml(email.from_name)}<br>
+                                <strong>Email:</strong> ${escapeHtml(email.from_email)}
+                            </div>
+                            <div class="col-md-6 text-md-right">
+                                <strong>Date:</strong> ${formatDate(email.date)}<br>
+                                <strong>UID:</strong> ${email.uid}
                             </div>
                         </div>
-                        <div class="email-body">
-                            <pre style="white-space: pre-wrap; font-family: inherit; background: #f8f9fa; padding: 15px; border-radius: 5px;">${escapeHtml(email.body)}</pre>
+                    </div>
+                    <div class="email-body">
+                        <div class="email-content" style="background: #f8f9fa; padding: 20px; border-radius: 5px; font-family: inherit; max-height: 600px; overflow-y: auto;">
+                            ${cleanBody}
                         </div>
-                    `;
-                    
-                    $('#emailViewModalBody').html(emailHtml);
-                    
-                    $('#emailViewModal .modal-footer').html(`
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-                    `);
-                } else {
-                    $('#emailViewModalBody').html(`
-                        <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            Erreur: ${response.error}
-                        </div>
-                    `);
-                }
-            },
-            error: function(xhr, status, error) {
+                    </div>
+                `;
+                
+                $('#emailViewModalBody').html(emailHtml);
+                
+                $('#emailViewModal .modal-footer').html(`
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                `);
+            } else {
                 $('#emailViewModalBody').html(`
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
-                        Erreur de chargement: ${error}
-                    `);
+                        Erreur: ${response.error}
+                    </div>
+                `);
             }
-        });
-    }
+        },
+        error: function(xhr, status, error) {
+            $('#emailViewModalBody').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Erreur de chargement: ${error}
+                </div>
+            `);
+        }
+    });
+}
 
-    // Utilitaires
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    function formatDate(dateString) {
-        if (!dateString) return 'Date inconnue';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
-        } catch (e) {
-            return dateString;
+// Fonction pour nettoyer le HTML (autorise seulement les balises sécurisées)
+function sanitizeHtml(html) {
+    if (!html) return '';
+    
+    // Créer un élément temporaire
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Liste des balises autorisées (vous pouvez l'adapter selon vos besoins)
+    const allowedTags = ['a', 'b', 'i', 'u', 'strong', 'em', 'br', 'p', 'div', 'span', 
+                        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 
+                        'tr', 'td', 'th', 'tbody', 'thead', 'img', 'blockquote', 'hr'];
+    
+    // Attributs autorisés par balise
+    const allowedAttributes = {
+        'a': ['href', 'title', 'target', 'rel'],
+        'img': ['src', 'alt', 'title', 'width', 'height'],
+        'span': ['style', 'class'],
+        'div': ['style', 'class'],
+        'p': ['style', 'class'],
+        'table': ['border', 'cellpadding', 'cellspacing', 'class', 'style'],
+        'td': ['colspan', 'rowspan', 'class', 'style'],
+        'th': ['colspan', 'rowspan', 'class', 'style']
+    };
+    
+    // Parcourir tous les éléments de manière récursive
+    function sanitizeNode(node) {
+        for (let i = node.childNodes.length - 1; i >= 0; i--) {
+            const child = node.childNodes[i];
+            
+            // Si c'est un élément
+            if (child.nodeType === 1) {
+                const tagName = child.tagName.toLowerCase();
+                
+                // Supprimer les balises non autorisées
+                if (!allowedTags.includes(tagName)) {
+                    node.removeChild(child);
+                    continue;
+                }
+                
+                // Nettoyer les attributs
+                const attributes = child.attributes;
+                for (let j = attributes.length - 1; j >= 0; j--) {
+                    const attr = attributes[j];
+                    const allowedAttrs = allowedAttributes[tagName] || [];
+                    
+                    // Supprimer les attributs non autorisés
+                    if (!allowedAttrs.includes(attr.name.toLowerCase())) {
+                        child.removeAttribute(attr.name);
+                    }
+                    
+                    // Sécuriser les liens et images
+                    if (attr.name === 'href' || attr.name === 'src') {
+                        // Bloquer javascript: et autres protocoles dangereux
+                        if (attr.value.toLowerCase().startsWith('javascript:') ||
+                            attr.value.toLowerCase().startsWith('vbscript:') ||
+                            attr.value.toLowerCase().startsWith('data:')) {
+                            child.removeAttribute(attr.name);
+                        }
+                    }
+                    
+                    // Forcer target="_blank" et rel="noopener" pour les liens externes
+                    if (tagName === 'a' && attr.name === 'href') {
+                        if (attr.value.startsWith('http')) {
+                            child.setAttribute('target', '_blank');
+                            child.setAttribute('rel', 'noopener noreferrer');
+                        }
+                    }
+                }
+                
+                // Continuer la sanitisation récursive
+                sanitizeNode(child);
+            }
         }
     }
+    
+    sanitizeNode(temp);
+    return temp.innerHTML;
+}
+
+// Utilitaires
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'Date inconnue';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateString;
+    }
+}
 
     function showNotification(type, message) {
         if (typeof toastr !== 'undefined') {

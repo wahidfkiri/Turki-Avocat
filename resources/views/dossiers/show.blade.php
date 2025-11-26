@@ -27,16 +27,15 @@
                 <div class="col-md-12">
                     <div class="card card-primary">
                         <div class="card-header">
-                            <h3 class="card-title">Informations du dossier</h3>
                             <div class="card-tools" style="display:ruby;">
-                            <x-dossier.folder-network :dossier="$dossier"/>
-                                @if(auth()->user()->hasPermission('edit_dossiers'))
+                            <!-- <x-dossier.folder-network :dossier="$dossier"/> -->
+                                <!-- @if(auth()->user()->hasPermission('edit_dossiers'))
                                     <a href="{{ route('dossiers.edit', $dossier) }}" class="btn btn-warning btn-sm">
                                         <i class="fas fa-edit"></i> Modifier
                                     </a>
-                                @endif
+                                @endif -->
                             </div>
-                             <br><p>{{$dossier->numero_dossier}}</p>
+                             <br><p>{{$dossier->numero_dossier}}/{{$dossier->nom_dossier}}</p>
                         </div>
                         <div class="card-body">
                             <!-- Navigation par onglets -->
@@ -49,11 +48,11 @@
                                                 <i class="fas fa-info-circle"></i> Générale
                                             </a>
                                         </li>
-                                        <li class="nav-item">
+                                        <!-- <li class="nav-item">
                                             <a class="nav-link" id="juridique-tab" data-toggle="tab" href="#juridique" role="tab" aria-controls="juridique" aria-selected="false">
                                                 <i class="fas fa-gavel"></i> Information Juridique
                                             </a>
-                                        </li>
+                                        </li> -->
                                         <li class="nav-item">
                                             <a class="nav-link" id="intervenants-tab" data-toggle="tab" href="#intervenants" role="tab" aria-controls="intervenants" aria-selected="false">
                                                 <i class="fas fa-users"></i> Intervenants
@@ -209,11 +208,8 @@
             </div>
         </div>
     </div>
-</div>
-
-<!-- Onglet Information Juridique -->
-<div class="tab-pane fade" id="juridique" role="tabpanel" aria-labelledby="juridique-tab">
-    <div class="p-3">
+    @if($dossier->contentieux)
+     <div class="p-3">
         <!-- Informations sur la procédure -->
         <div class="row">
             <div class="col-md-6">
@@ -261,7 +257,9 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
+
 
                                         <x-dossier.intervenant.tab-list :dossier="$dossier" />
 

@@ -45,9 +45,9 @@
                             <h3 class="card-title">Liste des factures</h3>
                             <div class="card-tools">
                                 @if(auth()->user()->hasPermission('create_factures'))
-                                    <a href="{{ route('factures.create') }}" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-plus"></i> Nouvelle facture
-                                    </a>
+                                     <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createFactureModal">
+                                    <i class="fas fa-plus"></i> Nouvelle Facture
+                                </button>
                                 @endif
                             </div>
                         </div>
@@ -122,7 +122,8 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label for="filter_year">Année</label>
-                                    <select class="form-control" id="filter_year">
+                                    <input type="text" class="form-control" id="filter_year" placeholder="Toutes les années">
+                                    <!-- <select class="form-control" id="filter_year">
                                         <option value="">Toutes les années</option>
                                         @php
                                             $currentYear = date('Y');
@@ -131,7 +132,7 @@
                                         @for($year = $currentYear; $year >= $startYear; $year--)
                                             <option value="{{ $year }}">{{ $year }}</option>
                                         @endfor
-                                    </select>
+                                    </select> -->
                                 </div>
                                 <div class="col-md-2">
                                     <label for="filter_date_fin">Date fin</label>
@@ -598,4 +599,5 @@ $(document).ready(function() {
         transform: scale(1.05);
     }
 </style>
+@include('factures.create')
 @endsection

@@ -33,7 +33,8 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Vendor\\Drive\\": "packages/vendor/drive/src",
-            "Vendor\\Email\\": "packages/vendor/email/src"
+            "Vendor\\Email\\": "packages/vendor/email/src",
+            "Vendor\\Apps\\": "packages/vendor/apps/src"
         }
     },
     "autoload-dev": {

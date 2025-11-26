@@ -37,18 +37,15 @@
                             <td data-value="{{ $time_sheet->quantite ?? 0 }}">{{ $time_sheet->quantite ?? ''}}</td>
                             <td data-value="{{ $time_sheet->prix ?? 0 }}">{{ number_format($time_sheet->prix ?? 0, 2, ',', ' ') }} DT</td>
                             <td data-value="{{ $time_sheet->total ?? 0 }}">{{ number_format($time_sheet->total ?? 0, 2, ',', ' ') }} DT</td>
-                            <td>
-                                @if(auth()->user()->hasPermission('view_timesheets'))
-                                <a href="{{route('time-sheets.show', $time_sheet)}}" class="btn btn-sm btn-info" title="Voir">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                @endif
-                                @if(auth()->user()->hasPermission('edit_timesheets'))
-                                <a href="{{route('time-sheets.edit', $time_sheet)}}" class="btn btn-sm btn-warning" title="Modifier">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                @endif
-                            </td>
+                           <td>
+    @if(auth()->user()->hasPermission('view_timesheets'))
+    <!-- Bouton pour ouvrir le modal de visualisation -->
+    <button type="button" class="btn btn-sm btn-info view-timesheet-btn" 
+            data-timesheet-id="{{ $time_sheet->id }}" title="Voir">
+        <i class="fas fa-eye"></i>
+    </button>
+    @endif
+</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -73,6 +70,7 @@
         @endif
     </div>
 </div>
+@include('components.dossier.timesheet.modal-view')
 <!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>

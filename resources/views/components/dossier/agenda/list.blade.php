@@ -1,110 +1,113 @@
 <div class="tab-pane fade" id="agenda" role="tabpanel" aria-labelledby="agenda-tab">
-     <div class="p-3">
+    <div class="p-3">
         <h5 class="text-primary mb-3"><i class="fas fa-calendar-alt"></i> Agenda</h5>
 
-         <!-- Main content -->
-    <section class="content">
-        <div class="container-fluid">
-            <!-- Boutons d'action en haut à droite -->
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <div class="d-flex justify-content-end">
-                        <div class="btn-group">
-                            <button type="button" id="btn_today" class="btn btn-info btn-sm">
-                                Aujourd'hui
-                            </button>
-                            <button type="button" id="btn_reset_filters" class="btn btn-secondary btn-sm">
-                                Réinitialiser
-                            </button>
-                            @if(auth()->user()->hasPermission('create_agendas'))
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createEventModal">
-                                    <i class="fas fa-plus"></i> Créer un événement
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Boutons d'action en haut à droite -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="d-flex justify-content-end">
+                            <div class="btn-group">
+                                <button type="button" id="btn_today" class="btn btn-info btn-sm">
+                                    Aujourd'hui
                                 </button>
-                            @endif
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="toggleFiltersBtn">
-                                <i class="fas fa-filter"></i> Filtres
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <!-- Filtres - Caché par défaut -->
-                <div class="col-md-3 d-none" id="filtersSidebar">
-                    <!-- Filtres -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Filtres</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" id="closeFiltersBtn">
-                                    <i class="fas fa-times"></i>
+                                <button type="button" id="btn_reset_filters" class="btn btn-secondary btn-sm">
+                                    Réinitialiser
+                                </button>
+                                @if(auth()->user()->hasPermission('create_agendas'))
+                                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createEventModal">
+                                        <i class="fas fa-plus"></i> Créer un événement
+                                    </button>
+                                @endif
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="toggleFiltersBtn" data-toggle="modal" data-target="#filtersModal">
+                                    <i class="fas fa-filter"></i> Filtres
                                 </button>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <!-- Filtre par catégorie -->
-                            <div class="form-group">
-                                <label>Catégories</label>
-                                <a href="" style="float:right;" class="text-primary" data-toggle="modal" data-target="#createCategorieModal">Ajouter </a>
-                                @foreach(\App\Models\AgendaCategory::all() as $categorie)
-                                 <div class="custom-control custom-checkbox category-item">
-                                <span class="legend-color" style="background-color: {{$categorie->couleur}}; margin-right:30px;"></span>
-                                    <input class="custom-control-input" type="checkbox" id="filter_{{$categorie->nom}}" checked data-category="{{$categorie->nom}}">
-                                    <label for="filter_{{$categorie->nom}}" class="custom-control-label">{{$categorie->nom}}</label>
-                                    <!-- Bouton Supprimer -->
-    <a href="#" class="delete-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}">
-        <i class="fa fa-trash text-danger" style="float:right;" tooltip="Supprimer"></i>
-    </a>
-    
-    <!-- Bouton Modifier -->
-    <a href="#" class="edit-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}" data-color="{{$categorie->couleur}}">
-        <i class="fa fa-edit text-info" style="float:right; margin-right: 10px;" tooltip="Modifier"></i>
-    </a>
-                                </div>
-                                @endforeach
-                            </div>
+                    </div>
+                </div>
 
-                            <!-- Filtre par utilisateur -->
-                            <div class="form-group">
-                                <label for="filter_utilisateur">Utilisateur</label>
-                                <select class="form-control" id="filter_utilisateur">
-                                    <option value="">Tous les utilisateurs</option>
-                                    @foreach($users as $user)
-                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <!-- Filtre par dossier -->
-                            <div class="form-group">
-                                <label for="filter_dossier">Dossier</label>
-                                <select class="form-control" id="filter_dossier">
-                                    <option value="">Tous les dossiers</option>
-                                        <option value="{{ $dossier->id }}" selected>{{ $dossier->numero_dossier }}</option>
-                                </select>
+                <div class="row">
+                    <!-- Calendar - Prend toute la largeur -->
+                    <div class="col-12" id="calendarContainer">
+                        <!-- Calendar -->
+                        <div class="card card-primary">
+                            <div class="card-body p-0">
+                                <div id="calendar" style="height: auto; min-height: 700px; max-height: 80vh; overflow-y: auto;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Calendar - Prend toute la largeur -->
-                <div class="col-12" id="calendarContainer">
-                    <!-- Calendar -->
-                    <div class="card card-primary">
-                        <div class="card-body p-0">
-                           <div id="calendar" style="height: auto; min-height: 700px; max-height: 80vh; overflow-y: auto;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div><!-- /.container-fluid -->
-    </section>
-    <!-- /.content -->
-     </div>
+            </div><!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
 </div>
 
+<!-- Modal pour les filtres -->
+<div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-labelledby="filtersModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filtersModalLabel">Filtres</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtre par catégorie -->
+                <div class="form-group">
+                    <label>Catégories</label>
+                    <a href="" style="float:right;" class="text-primary" data-toggle="modal" data-target="#createCategorieModal">Ajouter </a>
+                    @foreach(\App\Models\AgendaCategory::all() as $categorie)
+                    <div class="custom-control custom-checkbox category-item">
+                        <span class="legend-color" style="background-color: {{$categorie->couleur}}; margin-right:30px;"></span>
+                        <input class="custom-control-input" type="checkbox" id="filter_{{$categorie->nom}}" checked data-category="{{$categorie->nom}}">
+                        <label for="filter_{{$categorie->nom}}" class="custom-control-label">{{$categorie->nom}}</label>
+                        <!-- Bouton Supprimer -->
+                        <a href="#" class="delete-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}">
+                            <i class="fa fa-trash text-danger" style="float:right;" tooltip="Supprimer"></i>
+                        </a>
+                        
+                        <!-- Bouton Modifier -->
+                        <a href="#" class="edit-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}" data-color="{{$categorie->couleur}}">
+                            <i class="fa fa-edit text-info" style="float:right; margin-right: 10px;" tooltip="Modifier"></i>
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
 
+                <!-- Filtre par utilisateur -->
+                <div class="form-group">
+                    <label for="filter_utilisateur">Utilisateur</label>
+                    <select class="form-control" id="filter_utilisateur">
+                        <option value="">Tous les utilisateurs</option>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Filtre par dossier -->
+                <div class="form-group">
+                    <label for="filter_dossier">Dossier</label>
+                    <select class="form-control" id="filter_dossier">
+                        <option value="">Tous les dossiers</option>
+                        <option value="{{ $dossier->id }}" selected>{{ $dossier->numero_dossier }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="applyFilters">Appliquer les filtres</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Les autres modals restent inchangés -->
 <!-- Modal pour les détails de l'événement -->
 <div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -222,6 +225,7 @@
         </div>
     </div>
 </div>
+
 <!-- Modal pour créer un événement -->
 <div class="modal fade" id="createEventModal" tabindex="-1" role="dialog" aria-labelledby="createEventModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -247,7 +251,7 @@
                                 <label for="categorie">Catégorie *</label>
                                 <select class="form-control" id="categorie" name="categorie" required>
                                     <option value="">Sélectionnez une catégorie</option>
-                                     @foreach(\App\Models\AgendaCategory::all() as $categorie)
+                                    @foreach(\App\Models\AgendaCategory::all() as $categorie)
                                     <option value="{{$categorie->nom}}">{{$categorie->nom}}</option>
                                     @endforeach
                                 </select>
@@ -317,7 +321,7 @@
                             <div class="form-group">
                                 <label for="dossier_id">Dossier 11</label>
                                 <select class="form-control" id="dossier_id" name="dossier_id">
-                                        <option value="{{ $dossier->id }}" selected>{{ $dossier->numero_dossier }}</option>
+                                    <option value="{{ $dossier->id }}" selected>{{ $dossier->numero_dossier }}</option>
                                 </select>
                             </div>
                         </div>
@@ -374,7 +378,7 @@
                                 <label for="edit_categorie">Catégorie *</label>
                                 <select class="form-control" id="edit_categorie" name="categorie" required>
                                     <option value="">Sélectionnez une catégorie</option>
-                                     @foreach(\App\Models\AgendaCategory::all() as $categorie)
+                                    @foreach(\App\Models\AgendaCategory::all() as $categorie)
                                     <option value="{{$categorie->nom}}">{{$categorie->nom}}</option>
                                     @endforeach
                                 </select>
@@ -444,7 +448,7 @@
                             <div class="form-group">
                                 <label for="edit_dossier_id">Dossier</label>
                                 <select class="form-control" id="edit_dossier_id" name="dossier_id">
-                                        <option value="{{ $dossier->id }}" selected>{{ $dossier->numero_dossier }}</option>
+                                    <option value="{{ $dossier->id }}" selected>{{ $dossier->numero_dossier }}</option>
                                 </select>
                             </div>
                         </div>
@@ -527,11 +531,6 @@
     font-size: 14px;
 }
 
-/* Animation pour l'ouverture/fermeture des filtres */
-#filtersSidebar {
-    transition: all 0.3s ease;
-}
-
 /* Style pour les boutons en mode responsive */
 @media (max-width: 768px) {
     .btn-group {
@@ -550,12 +549,12 @@
     min-height: 600px;
 }
 </style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     var currentEventId = null;
     var currentEventTitle = null;
-    var filtersVisible = false;
     var calendar;
 
     // Set today's date as default for new events
@@ -705,49 +704,14 @@ document.addEventListener('DOMContentLoaded', function() {
         calendar.render();
     }
 
-    // Rest of your code remains exactly the same...
     // Initialiser le calendrier
     initializeCalendar();
 
-    // Fonction pour afficher/masquer les filtres
-    $('#toggleFiltersBtn').click(function() {
-        if (filtersVisible) {
-            closeFilters();
-        } else {
-            openFilters();
-        }
+    // Appliquer les filtres depuis la modal
+    $('#applyFilters').click(function() {
+        $('#filtersModal').modal('hide');
+        calendar.refetchEvents();
     });
-
-    // Fermer les filtres
-    $('#closeFiltersBtn').click(function() {
-        closeFilters();
-    });
-
-    function openFilters() {
-        $('#filtersSidebar').removeClass('d-none');
-        $('#calendarContainer').removeClass('col-12').addClass('col-md-9');
-        filtersVisible = true;
-        
-        // Redimensionner le calendrier après un court délai pour permettre le rendu CSS
-        setTimeout(function() {
-            if (calendar) {
-                calendar.updateSize();
-            }
-        }, 100);
-    }
-
-    function closeFilters() {
-        $('#filtersSidebar').addClass('d-none');
-        $('#calendarContainer').removeClass('col-md-9').addClass('col-12');
-        filtersVisible = false;
-        
-        // Redimensionner le calendrier après un court délai pour permettre le rendu CSS
-        setTimeout(function() {
-            if (calendar) {
-                calendar.updateSize();
-            }
-        }, 100);
-    }
 
     // Fonction pour afficher les alertes
     function showAlert(title, message, type = 'info') {
@@ -965,11 +929,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Événements des filtres
     $('input[data-category]').change(function() {
-        calendar.refetchEvents();
+        // Les filtres s'appliquent quand on clique sur "Appliquer les filtres"
     });
 
     $('#filter_utilisateur, #filter_dossier').change(function() {
-        calendar.refetchEvents();
+        // Les filtres s'appliquent quand on clique sur "Appliquer les filtres"
     });
 
     // Bouton aujourd'hui
@@ -979,6 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Bouton réinitialiser
     $('#btn_reset_filters').click(function() {
+        // Reset all filters in the modal
         $('input[data-category]').prop('checked', true);
         $('#filter_utilisateur').val('').trigger('change');
         $('#filter_dossier').val('').trigger('change');
@@ -994,7 +959,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    
     // AJAX function to create new category
     $('#createCategorieForm').submit(function(e) {
         e.preventDefault();
@@ -1051,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add event listener for the new checkbox
         $('#' + categoryId).change(function() {
-            calendar.refetchEvents();
+            // Les filtres s'appliquent quand on clique sur "Appliquer les filtres"
         });
     }
 

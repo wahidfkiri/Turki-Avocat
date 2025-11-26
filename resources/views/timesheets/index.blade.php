@@ -45,9 +45,9 @@
                             <h3 class="card-title">Liste des feuilles de temps</h3>
                             <div class="card-tools">
                                 @if(auth()->user()->hasPermission('create_timesheets'))
-                                    <a href="{{ route('time-sheets.create') }}" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-plus"></i> Nouvelle feuille de temps
-                                    </a>
+                                     <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createTimesheetModal">
+                                    <i class="fas fa-plus"></i> Nouvelle Feuille de Temps
+                                </button>
                                 @endif
                             </div>
                         </div>
@@ -347,6 +347,7 @@ $(document).ready(function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
         },
+        
         drawCallback: function(settings) {
             // Calculate total
             var api = this.api();
@@ -535,4 +536,5 @@ $(document).ready(function() {
         transform: scale(1.05);
     }
 </style>
+@include('timesheets.create')
 @endsection

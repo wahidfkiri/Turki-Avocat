@@ -186,9 +186,15 @@ class TaskController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+  public function store(Request $request)
 {
     if(!auth()->user()->hasPermission('create_tasks')){
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.'
+            ], 403);
+        }
         return abort(403, 'Unauthorized action.');
     }
     
@@ -224,15 +230,25 @@ class TaskController extends Controller
 
     // Create notification for this task
     if($task->utilisateur_id){
-    \App\Models\Notification::create([
-        'task_id' => $task->id,
-        'user_id' => $task->utilisateur_id,
-        'title' => 'Nouvelle Tache',
-        'message' => 'Nouvelle tache a été crée',
-        'is_read' => 0
-    ]);
+        \App\Models\Notification::create([
+            'task_id' => $task->id,
+            'user_id' => $task->utilisateur_id,
+            'title' => 'Nouvelle Tache',
+            'message' => 'Nouvelle tache a été crée',
+            'is_read' => 0
+        ]);
     }
 
+    // Réponse pour requête AJAX
+    if ($request->ajax()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Tâche créée avec succès.',
+            'task_id' => $task->id
+        ]);
+    }
+
+    // Réponse normale pour les requêtes non-AJAX
     return redirect()->route('tasks.index')
         ->with('success', 'Tâche créée avec succès.');
 }
@@ -252,12 +268,53 @@ class TaskController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-  public function edit(Task $task)
+public function edit(Task $task)
 {
     if(!auth()->user()->hasPermission('edit_tasks')){
+        if (request()->ajax()) {
+            return response()->json(['error' => 'Unauthorized action.'], 403);
+        }
         return abort(403, 'Unauthorized action.');
     }
     
+    // Charger les relations nécessaires pour le modal
+    $task->load(['dossier', 'intervenant', 'user']);
+    
+    // Si c'est une requête AJAX (pour le modal)
+    if (request()->ajax() || request()->wantsJson()) {
+        return response()->json([
+            'id' => $task->id,
+            'titre' => $task->titre,
+            'description' => $task->description,
+            'date_debut' => $task->date_debut,
+            'date_fin' => $task->date_fin,
+            'priorite' => $task->priorite,
+            'statut' => $task->statut,
+            'dossier_id' => $task->dossier_id,
+            'intervenant_id' => $task->intervenant_id,
+            'utilisateur_id' => $task->utilisateur_id,
+            'note' => $task->note,
+            'file_path' => $task->file_path,
+            'file_name' => $task->file_name,
+            'created_at' => $task->created_at,
+            'updated_at' => $task->updated_at,
+            'dossier' => $task->dossier ? [
+                'id' => $task->dossier->id,
+                'numero_dossier' => $task->dossier->numero_dossier,
+                'nom_dossier' => $task->dossier->nom_dossier,
+            ] : null,
+            'intervenant' => $task->intervenant ? [
+                'id' => $task->intervenant->id,
+                'identite_fr' => $task->intervenant->identite_fr,
+            ] : null,
+            'user' => $task->user ? [
+                'id' => $task->user->id,
+                'name' => $task->user->name,
+            ] : null,
+        ]);
+    }
+    
+    // Pour les requêtes normales (page d'édition complète)
     $users = User::where('is_active', true)->get();
     $dossiers = Dossier::all();
     $intervenants = Intervenant::all();
@@ -265,6 +322,56 @@ class TaskController extends Controller
     return view('tasks.edit', compact('task', 'users', 'dossiers', 'intervenants'));
 }
 
+
+public function getTaskData(Task $task)
+{
+    if(!auth()->user()->hasPermission('view_tasks')){
+        return response()->json([
+            'success' => false,
+            'error' => 'Unauthorized action.'
+        ], 403);
+    }
+
+    // Charger les relations nécessaires
+    $task->load(['dossier', 'intervenant', 'user']);
+
+    // Retourner les données formatées
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'id' => $task->id,
+            'titre' => $task->titre,
+            'description' => $task->description,
+            'date_debut' => $task->date_debut,
+            'date_fin' => $task->date_fin,
+            'priorite' => $task->priorite,
+            'statut' => $task->statut,
+            'dossier_id' => $task->dossier_id,
+            'intervenant_id' => $task->intervenant_id,
+            'utilisateur_id' => $task->utilisateur_id,
+            'note' => $task->note,
+            'file_path' => $task->file_path,
+            'file_name' => $task->file_name,
+            'created_at' => $task->created_at,
+            'updated_at' => $task->updated_at,
+            'dossier' => $task->dossier ? [
+                'id' => $task->dossier->id,
+                'numero_dossier' => $task->dossier->numero_dossier,
+                'nom_dossier' => $task->dossier->nom_dossier,
+            ] : null,
+            'intervenant' => $task->intervenant ? [
+                'id' => $task->intervenant->id,
+                'identite_fr' => $task->intervenant->identite_fr,
+            ] : null,
+            'user' => $task->user ? [
+                'id' => $task->user->id,
+                'name' => $task->user->name,
+                'email' => $task->user->email,
+                'fonction' => $task->user->fonction,
+            ] : null,
+        ]
+    ]);
+}
     /**
      * Update the specified resource in storage.
      */
@@ -324,6 +431,15 @@ class TaskController extends Controller
     unset($updateData['remove_file']);
 
     $task->update($updateData);
+
+    // Réponse pour requête AJAX
+    if ($request->ajax()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Tâche modifiée avec succès.',
+            'task_id' => $task->id
+        ]);
+    }
 
     return redirect()->route('tasks.index')
         ->with('success', 'Tâche mise à jour avec succès.');

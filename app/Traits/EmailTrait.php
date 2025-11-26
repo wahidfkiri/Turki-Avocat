@@ -230,26 +230,78 @@ trait EmailTrait
     }
 
     private function getEmailBody($imap, $messageNumber) {
-        // Essayer de récupérer le texte brut d'abord
-        $body = imap_fetchbody($imap, $messageNumber, 1);
-        
-        if (empty(trim($body))) {
-            // Si vide, essayer la partie 1.1 (alternative)
-            $body = imap_fetchbody($imap, $messageNumber, "1.1");
-        }
-        
-        if (empty(trim($body))) {
-            // Si toujours vide, prendre le corps complet
-            $body = imap_body($imap, $messageNumber);
-        }
-        
-        // Décoder le texte quoted-printable si nécessaire
+    $structure = imap_fetchstructure($imap, $messageNumber);
+    
+    if (!$structure) {
+        return 'Contenu non disponible';
+    }
+    
+    $body = '';
+    
+    // Essayer de récupérer le HTML d'abord
+    if ($this->getPart($imap, $messageNumber, $structure, 'text/html')) {
+        $body = $this->getPart($imap, $messageNumber, $structure, 'text/html');
+    } 
+    // Sinon prendre le texte brut
+    else if ($this->getPart($imap, $messageNumber, $structure, 'text/plain')) {
+        $plainText = $this->getPart($imap, $messageNumber, $structure, 'text/plain');
+        // Convertir le texte brut en HTML basique
+        $body = nl2br(htmlspecialchars($plainText));
+    } 
+    // Fallback
+    else {
+        $body = imap_body($imap, $messageNumber);
+        // Décoder quoted-printable si nécessaire
         if (preg_match('/=\?([^?]+)\?Q\?(.+)\?=/i', $body)) {
             $body = imap_qprint($body);
-        } 
-        
-        return $body;
+        }
     }
+    
+    return $body;
+}
+
+private function getPart($imap, $messageNumber, $structure, $mimeType, $partNumber = '') {
+    if ($structure->type == 1) { // MULTIPART
+        foreach ($structure->parts as $index => $part) {
+            $prefix = $partNumber ? $partNumber . '.' : '';
+            $result = $this->getPart($imap, $messageNumber, $part, $mimeType, $prefix . ($index + 1));
+            if ($result) {
+                return $result;
+            }
+        }
+    } else if ($structure->type == 0 && isset($structure->subtype)) { // TEXT
+        $subtype = strtolower($structure->subtype);
+        $currentMimeType = "text/{$subtype}";
+        
+        if ($currentMimeType == $mimeType) {
+            $body = imap_fetchbody($imap, $messageNumber, $partNumber ?: 1);
+            
+            // Décoder selon l'encodage
+            if (isset($structure->parameters)) {
+                foreach ($structure->parameters as $param) {
+                    if (strtolower($param->attribute) == 'charset') {
+                        $charset = $param->value;
+                        $body = mb_convert_encoding($body, 'UTF-8', $charset);
+                        break;
+                    }
+                }
+            }
+            
+            // Décoder quoted-printable
+            if (isset($structure->encoding) && $structure->encoding == 4) {
+                $body = quoted_printable_decode($body);
+            }
+            // Décoder base64
+            else if (isset($structure->encoding) && $structure->encoding == 3) {
+                $body = base64_decode($body);
+            }
+            
+            return $body;
+        }
+    }
+    
+    return null;
+}
 
     private function decodeMimeString($string) {
         if (empty($string)) {

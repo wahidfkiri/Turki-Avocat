@@ -34,6 +34,7 @@
                             @csrf
                             @method('PUT')
                             <div class="card-body">
+                                <!-- Vos champs de formulaire existants restent inchangés -->
                                 <div class="row">
                                     <!-- Type de pièce -->
                                     <div class="col-md-4">
@@ -212,24 +213,26 @@
                                 </div>
 
                                 <!-- Pièce jointe existante -->
-                                @if($facture->piece_jointe)
-                                <div class="form-group">
-                                    <label>Pièce jointe actuelle</label>
-                                    <div class="alert alert-success">
-                                        <i class="fas fa-file"></i>
-                                        <a href="{{ $facture->piece_jointe_url }}" target="_blank" class="ml-2">
-                                            {{ $facture->piece_jointe }}
-                                        </a>
-                                        <span class="badge badge-info ml-2">
-                                            {{ strtoupper($facture->piece_jointe_extension) }}
-                                        </span>
-                                        <button type="button" class="btn btn-sm btn-danger float-right" onclick="confirmDeleteFile()">
-                                            <i class="fas fa-trash"></i> Supprimer
-                                        </button>
+                                <div id="current_file_section">
+                                    @if($facture->piece_jointe)
+                                    <div class="form-group">
+                                        <label>Pièce jointe actuelle</label>
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-file"></i>
+                                            <a href="{{ $facture->piece_jointe_url }}" target="_blank" class="ml-2">
+                                                {{ $facture->piece_jointe }}
+                                            </a>
+                                            <span class="badge badge-info ml-2">
+                                                {{ strtoupper($facture->piece_jointe_extension) }}
+                                            </span>
+                                            <button type="button" class="btn btn-sm btn-danger float-right" onclick="confirmDeleteFile()">
+                                                <i class="fas fa-trash"></i> Supprimer
+                                            </button>
+                                        </div>
+                                        <input type="hidden" name="current_piece_jointe" value="{{ $facture->piece_jointe }}">
                                     </div>
-                                    <input type="hidden" name="current_piece_jointe" value="{{ $facture->piece_jointe }}">
+                                    @endif
                                 </div>
-                                @endif
 
                                 <!-- Nouvelle pièce jointe -->
                                 <div class="form-group">
@@ -304,7 +307,7 @@
                             <!-- /.card-body -->
 
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary btn-lg">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                                     <i class="fas fa-save"></i> Mettre à jour
                                 </button>
                                 <a href="{{ url()->previous() }}" class="btn btn-default btn-lg">
@@ -359,277 +362,345 @@
         </div>
     </div>
 </div>
-<!-- jQuery -->
+
+<!-- Div pour les messages AJAX -->
+<div id="ajaxMessage" style="display: none;"></div>
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
 <script>
-    $(document).ready(function() {
-        // Initialize Select2
-        $('.select2').select2({
-            theme: 'bootstrap4'
-        });
+// Fonction pour effacer l'input file
+function clearFileInput() {
+    $('#piece_jointe').val('');
+    $('#piece_jointe_label').text('Choisir un fichier (PDF, images, Word, Excel) - Max 10MB');
+    $('#file_preview').hide();
+}
 
-        // Fonction pour effacer l'input file
-        function clearFileInput() {
-            $('#piece_jointe').val('');
-            $('#piece_jointe_label').text('Choisir un fichier (PDF, images, Word, Excel) - Max 10MB');
-            $('#file_preview').hide();
+// Fonction pour afficher les messages
+function showMessage(message, type = 'success') {
+    const messageDiv = $('#ajaxMessage');
+    messageDiv.removeClass('alert-success alert-danger alert-warning')
+              .addClass(`alert-${type === 'error' ? 'danger' : type}`)
+              .html(message)
+              .show()
+              .delay(5000)
+              .fadeOut();
+}
+
+// Fonction pour mettre à jour l'affichage du fichier actuel
+function updateCurrentFileDisplay() {
+    $('#current_file_section').hide();
+}
+
+$(document).ready(function() {
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap4'
+    });
+
+    // Événement pour le bouton de fermeture de l'aperçu
+    $(document).on('click', '#file_preview .close', function() {
+        clearFileInput();
+    });
+
+    // Auto-sélection du client basé sur le dossier
+    $('#dossier_id').change(function() {
+        var selectedOption = $(this).find('option:selected');
+        var clientId = selectedOption.data('client-id');
+        
+        if (clientId) {
+            $('#client_id').val(clientId).trigger('change');
         }
+    });
 
-        // Événement pour le bouton de fermeture de l'aperçu
-        $(document).on('click', '#file_preview .close', function() {
-            clearFileInput();
-        });
-
-        // Auto-sélection du client basé sur le dossier
-        $('#dossier_id').change(function() {
-            var selectedOption = $(this).find('option:selected');
-            var clientId = selectedOption.data('client-id');
+    // Gestion de l'input file
+    $('#piece_jointe').on('change', function(e) {
+        var file = e.target.files[0];
+        if (file) {
+            var fileName = file.name;
+            var fileSize = (file.size / 1024 / 1024).toFixed(2);
             
-            if (clientId) {
-                $('#client_id').val(clientId).trigger('change');
+            $('#piece_jointe_label').text(fileName);
+            $('#file_name').text(fileName + ' (' + fileSize + ' MB)');
+            $('#file_preview').show();
+            
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('Le fichier est trop volumineux. Taille maximum: 10MB', 'error');
+                clearFileInput();
             }
-        });
+        }
+    });
 
-        // Gestion de l'input file
-        $('#piece_jointe').on('change', function(e) {
-            var file = e.target.files[0];
-            if (file) {
-                var fileName = file.name;
-                var fileSize = (file.size / 1024 / 1024).toFixed(2); // Taille en MB
-                
-                // Mettre à jour le label
-                $('#piece_jointe_label').text(fileName);
-                
-                // Afficher l'aperçu
-                $('#file_name').text(fileName + ' (' + fileSize + ' MB)');
-                $('#file_preview').show();
-                
-                // Vérifier la taille du fichier
-                if (file.size > 10 * 1024 * 1024) { // 10MB en bytes
-                    alert('Le fichier est trop volumineux. Taille maximum: 10MB');
-                    clearFileInput();
-                }
+    // Validation pour le fichier
+    $.validator.addMethod('fileSize', function(value, element, param) {
+        return this.optional(element) || (element.files[0].size <= param);
+    }, 'La taille du fichier doit être inférieure à {0}');
+
+    $.validator.addMethod('fileType', function(value, element, param) {
+        return this.optional(element) || (element.files[0].type.match(param) || element.files[0].name.match(param));
+    }, 'Type de fichier non supporté');
+
+    // Calcul automatique du montant TTC
+    function calculateMontantTTC() {
+        var montantHT = parseFloat($('#montant_ht').val()) || 0;
+        var montantTVA = parseFloat($('#montant_tva').val()) || 0;
+        var montantTTC = montantHT + montantTVA;
+        
+        $('#montant').val(montantTTC.toFixed(2));
+        
+        var tolerance = 0.01;
+        var difference = Math.abs(montantTTC - parseFloat($('#montant').val()));
+        
+        if (difference > tolerance) {
+            $('#montantAlert').show();
+            $('#montantAlertText').text('Attention : Le montant TTC calculé (' + montantTTC.toFixed(2) + ' DT) est différent du montant saisi. Vérifiez les montants HT et TVA.');
+        } else {
+            $('#montantAlert').hide();
+        }
+    }
+
+    // Écouter les changements sur HT et TVA
+    $('#montant_ht, #montant_tva').on('input', function() {
+        calculateMontantTTC();
+    });
+
+    // Calcul initial
+    calculateMontantTTC();
+
+    // Validation côté client
+    $('#factureForm').validate({
+        rules: {
+            type_piece: {
+                required: true
+            },
+            numero: {
+                required: true,
+                minlength: 3
+            },
+            date_emission: {
+                required: true
+            },
+            montant_ht: {
+                required: true,
+                min: 0
+            },
+            montant_tva: {
+                required: true,
+                min: 0
+            },
+            montant: {
+                required: true,
+                min: 0
+            },
+            statut: {
+                required: true
+            },
+            piece_jointe: {
+                fileSize: 10 * 1024 * 1024,
+                fileType: /\.(pdf|jpg|jpeg|png|doc|docx|xls|xlsx)$/i
             }
-        });
-
-        // Validation pour le fichier
-        $.validator.addMethod('fileSize', function(value, element, param) {
-            return this.optional(element) || (element.files[0].size <= param);
-        }, 'La taille du fichier doit être inférieure à {0}');
-
-        $.validator.addMethod('fileType', function(value, element, param) {
-            return this.optional(element) || (element.files[0].type.match(param) || element.files[0].name.match(param));
-        }, 'Type de fichier non supporté');
-
-        // Calcul automatique du montant TTC
-        function calculateMontantTTC() {
+        },
+        messages: {
+            type_piece: {
+                required: "Le type de pièce est obligatoire"
+            },
+            numero: {
+                required: "Le numéro est obligatoire",
+                minlength: "Le numéro doit contenir au moins 3 caractères"
+            },
+            date_emission: {
+                required: "La date d'émission est obligatoire"
+            },
+            montant_ht: {
+                required: "Le montant HT est obligatoire",
+                min: "Le montant HT doit être positif"
+            },
+            montant_tva: {
+                required: "Le montant TVA est obligatoire",
+                min: "Le montant TVA doit être positif"
+            },
+            montant: {
+                required: "Le montant TTC est obligatoire",
+                min: "Le montant TTC doit être positif"
+            },
+            statut: {
+                required: "Le statut est obligatoire"
+            },
+            piece_jointe: {
+                fileSize: "Le fichier ne doit pas dépasser 10MB",
+                fileType: "Formats acceptés: PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX"
+            }
+        },
+        errorElement: 'span',
+        errorPlacement: function (error, element) {
+            error.addClass('invalid-feedback');
+            element.closest('.form-group').append(error);
+        },
+        highlight: function (element, errorClass, validClass) {
+            $(element).addClass('is-invalid');
+        },
+        unhighlight: function (element, errorClass, validClass) {
+            $(element).removeClass('is-invalid');
+        },
+        submitHandler: function(form) {
+            // Vérification finale de la cohérence des montants
             var montantHT = parseFloat($('#montant_ht').val()) || 0;
             var montantTVA = parseFloat($('#montant_tva').val()) || 0;
-            var montantTTC = montantHT + montantTVA;
+            var montantTTC = parseFloat($('#montant').val()) || 0;
+            var calculatedTTC = montantHT + montantTVA;
             
-            $('#montant').val(montantTTC.toFixed(2));
-            
-            // Vérifier la cohérence
-            var tolerance = 0.01; // Tolérance de 0.01 DT
-            var difference = Math.abs(montantTTC - parseFloat($('#montant').val()));
-            
-            if (difference > tolerance) {
-                $('#montantAlert').show();
-                $('#montantAlertText').text('Attention : Le montant TTC calculé (' + montantTTC.toFixed(2) + ' DT) est différent du montant saisi. Vérifiez les montants HT et TVA.');
-            } else {
-                $('#montantAlert').hide();
+            if (Math.abs(calculatedTTC - montantTTC) > 0.01) {
+                showMessage('Erreur : Le montant TTC doit être égal à HT + TVA.\nHT: ' + montantHT.toFixed(2) + ' DT\nTVA: ' + montantTVA.toFixed(2) + ' DT\nTTC calculé: ' + calculatedTTC.toFixed(2) + ' DT\nTTC saisi: ' + montantTTC.toFixed(2) + ' DT', 'error');
+                return false;
             }
+            
+            // Soumission AJAX
+            submitFormAjax(form);
+            return false; // Empêcher la soumission normale
         }
-
-        // Écouter les changements sur HT et TVA
-        $('#montant_ht, #montant_tva').on('input', function() {
-            calculateMontantTTC();
-        });
-
-        // Calcul initial
-        calculateMontantTTC();
-
-        // Validation côté client
-        $('#factureForm').validate({
-            rules: {
-                type_piece: {
-                    required: true
-                },
-                numero: {
-                    required: true,
-                    minlength: 3
-                },
-                date_emission: {
-                    required: true
-                },
-                // dossier_id: {
-                //     required: true
-                // },
-                // client_id: {
-                //     required: true
-                // },
-                montant_ht: {
-                    required: true,
-                    min: 0
-                },
-                montant_tva: {
-                    required: true,
-                    min: 0
-                },
-                montant: {
-                    required: true,
-                    min: 0
-                },
-                statut: {
-                    required: true
-                },
-                piece_jointe: {
-                    fileSize: 10 * 1024 * 1024, // 10MB
-                    fileType: /\.(pdf|jpg|jpeg|png|doc|docx|xls|xlsx)$/i
-                }
-            },
-            messages: {
-                type_piece: {
-                    required: "Le type de pièce est obligatoire"
-                },
-                numero: {
-                    required: "Le numéro est obligatoire",
-                    minlength: "Le numéro doit contenir au moins 3 caractères"
-                },
-                date_emission: {
-                    required: "La date d'émission est obligatoire"
-                },
-                // dossier_id: {
-                //     required: "Le dossier est obligatoire"
-                // },
-                // client_id: {
-                //     required: "Le client est obligatoire"
-                // },
-                montant_ht: {
-                    required: "Le montant HT est obligatoire",
-                    min: "Le montant HT doit être positif"
-                },
-                montant_tva: {
-                    required: "Le montant TVA est obligatoire",
-                    min: "Le montant TVA doit être positif"
-                },
-                montant: {
-                    required: "Le montant TTC est obligatoire",
-                    min: "Le montant TTC doit être positif"
-                },
-                statut: {
-                    required: "Le statut est obligatoire"
-                },
-                piece_jointe: {
-                    fileSize: "Le fichier ne doit pas dépasser 10MB",
-                    fileType: "Formats acceptés: PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX"
-                }
-            },
-            errorElement: 'span',
-            errorPlacement: function (error, element) {
-                error.addClass('invalid-feedback');
-                element.closest('.form-group').append(error);
-            },
-            highlight: function (element, errorClass, validClass) {
-                $(element).addClass('is-invalid');
-            },
-            unhighlight: function (element, errorClass, validClass) {
-                $(element).removeClass('is-invalid');
-            },
-            submitHandler: function(form) {
-                // Vérification finale de la cohérence des montants
-                var montantHT = parseFloat($('#montant_ht').val()) || 0;
-                var montantTVA = parseFloat($('#montant_tva').val()) || 0;
-                var montantTTC = parseFloat($('#montant').val()) || 0;
-                var calculatedTTC = montantHT + montantTVA;
-                
-                if (Math.abs(calculatedTTC - montantTTC) > 0.01) {
-                    alert('Erreur : Le montant TTC doit être égal à HT + TVA.\nHT: ' + montantHT.toFixed(2) + ' DT\nTVA: ' + montantTVA.toFixed(2) + ' DT\nTTC calculé: ' + calculatedTTC.toFixed(2) + ' DT\nTTC saisi: ' + montantTTC.toFixed(2) + ' DT');
-                    return false;
-                }
-                
-                // Afficher un loader ou désactiver le bouton pendant la soumission
-                $('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mise à jour...');
-                form.submit();
-            }
-        });
-
-        // Formater les montants à la sortie des champs
-        $('#montant_ht, #montant_tva').on('blur', function() {
-            var value = parseFloat($(this).val()) || 0;
-            $(this).val(value.toFixed(2));
-        });
     });
 
-    // Fonction pour confirmer la suppression de la facture
-    function confirmDelete(factureId) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.')) {
-            document.getElementById('delete-form-' + factureId).submit();
-        }
+    // Fonction de soumission AJAX
+    function submitFormAjax(form) {
+        const submitBtn = $('#submitBtn');
+        const originalText = submitBtn.html();
+        
+        // Désactiver le bouton et afficher le loader
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mise à jour...');
+        
+        // Créer FormData pour gérer les fichiers
+        const formData = new FormData(form);
+        
+        $.ajax({
+            url: $(form).attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage(response.message, 'success');
+                    
+                    // Redirection après un délai
+                    setTimeout(function() {
+                        window.location.href = response.redirect_url;
+                    }, 1500);
+                    
+                } else {
+                    showMessage(response.message, 'error');
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Une erreur est survenue lors de la mise à jour.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.status === 422) {
+                    // Gestion des erreurs de validation
+                    const errors = xhr.responseJSON.errors;
+                    errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
+                    for (const field in errors) {
+                        errorMessage += `- ${errors[field][0]}<br>`;
+                    }
+                } else if (xhr.status === 403) {
+                    errorMessage = 'Vous n\'avez pas la permission de modifier des factures.';
+                }
+                
+                showMessage(errorMessage, 'error');
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
     }
 
-    // Fonction pour confirmer la suppression du fichier
-    function confirmDeleteFile() {
-        $('#deleteFileModal').modal('show');
-    }
-
-    // Suppression du fichier
-    $('#btnConfirmDeleteFile').click(function() {
-        // Créer un champ caché pour indiquer la suppression du fichier
-        $('<input>').attr({
-            type: 'hidden',
-            name: 'delete_piece_jointe',
-            value: '1'
-        }).appendTo('#factureForm');
-        
-        // Masquer l'affichage du fichier actuel
-        $('.alert-success').hide();
-        
-        $('#deleteFileModal').modal('hide');
+    // Formater les montants à la sortie des champs
+    $('#montant_ht, #montant_tva').on('blur', function() {
+        var value = parseFloat($(this).val()) || 0;
+        $(this).val(value.toFixed(2));
     });
+});
+
+// Fonction pour confirmer la suppression de la facture
+function confirmDelete(factureId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.')) {
+        document.getElementById('delete-form-' + factureId).submit();
+    }
+}
+
+// Fonction pour confirmer la suppression du fichier
+function confirmDeleteFile() {
+    $('#deleteFileModal').modal('show');
+}
+
+// Suppression du fichier
+$('#btnConfirmDeleteFile').click(function() {
+    // Créer un champ caché pour indiquer la suppression du fichier
+    $('<input>').attr({
+        type: 'hidden',
+        name: 'delete_piece_jointe',
+        value: '1'
+    }).appendTo('#factureForm');
+    
+    // Masquer l'affichage du fichier actuel
+    $('#current_file_section').hide();
+    
+    $('#deleteFileModal').modal('hide');
+    showMessage('La pièce jointe sera supprimée lors de la sauvegarde.', 'warning');
+});
 </script>
+
 <style>
-    .select2-container .select2-selection--single {
-        height: 38px;
-    }
-    .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
-        line-height: 36px;
-    }
-    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
-        height: 36px;
-    }
-    .btn-lg {
-        padding: 0.75rem 1.5rem;
-        font-size: 1.1rem;
-    }
-    .alert-info {
-        background-color: #e8f4fd;
-        border-color: #b6e0fe;
-    }
-    #montant {
-        color: #28a745;
-        font-size: 1.1em;
-    }
-    .custom-file-label::after {
-        content: "Parcourir";
-    }
-    #file_preview .alert {
-        padding: 8px 15px;
-        margin-bottom: 0;
-    }
-    #file_preview .close {
-        float: right;
-        font-size: 1.2rem;
-        font-weight: bold;
-        line-height: 1;
-        color: #000;
-        text-shadow: 0 1px 0 #fff;
-        opacity: .5;
-        background: transparent;
-        border: 0;
-    }
-    #file_preview .close:hover {
-        opacity: .75;
-    }
+.select2-container .select2-selection--single {
+    height: 38px;
+}
+.select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+    line-height: 36px;
+}
+.select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+}
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+.alert-info {
+    background-color: #e8f4fd;
+    border-color: #b6e0fe;
+}
+#montant {
+    color: #28a745;
+    font-size: 1.1em;
+}
+.custom-file-label::after {
+    content: "Parcourir";
+}
+#file_preview .alert {
+    padding: 8px 15px;
+    margin-bottom: 0;
+}
+#file_preview .close {
+    float: right;
+    font-size: 1.2rem;
+    font-weight: bold;
+    line-height: 1;
+    color: #000;
+    text-shadow: 0 1px 0 #fff;
+    opacity: .5;
+    background: transparent;
+    border: 0;
+}
+#file_preview .close:hover {
+    opacity: .75;
+}
+
+/* Style pour les messages AJAX */
+#ajaxMessage {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+}
 </style>
 @endsection

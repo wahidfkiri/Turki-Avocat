@@ -116,6 +116,8 @@ Route::get('dossiers/{dossierId}/time-sheets', [TimeSheetController::class, 'byD
 Route::get('users/{userId}/time-sheets', [TimeSheetController::class, 'byUser']);
 Route::get('time-sheets/report', [TimeSheetController::class, 'report']);
 Route::get('/timesheets/data', [TimesheetController::class, 'getTimesheetsData'])->name('timesheets.data');
+// Routes pour les feuilles de temps
+Route::get('/time-sheets/{time_sheet}/data', [TimeSheetController::class, 'getTimeSheetData'])->name('time-sheets.data.get');
 Route::get('/get/categories', [TimesheetController::class, 'getCategories']);
 Route::get('/get/types', [TimesheetController::class, 'getTypes']);
 Route::resource('agendas', AgendaController::class);
@@ -136,7 +138,7 @@ Route::get('users/{userId}/tasks', [TaskController::class, 'byUser']);
 Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus']);
 Route::get('/get/tasks/data', [TaskController::class, 'getTasksData'])->name('tasks.data');
 Route::get('tasks/{taskId}/download', [TaskController::class, 'downloadFile'])->name('tasks.download');
-
+Route::get('/tasks/{task}/data', [TaskController::class, 'getTaskData'])->name('tasks.data.get');
 Route::get('tasks/download/{id}', [TaskController::class,'downloadFile']);
 Route::get('tasks/display/{id}', [TaskController::class,'displayFile']);
 
@@ -153,7 +155,7 @@ Route::patch('factures/{facture}/status', [FactureController::class, 'updateStat
 Route::get('factures/generate-number', [FactureController::class, 'generateNumber']);
 Route::get('factures/download/{id}', [FactureController::class,'downloadFile']);
 Route::get('factures/display/{id}', [FactureController::class,'displayFile']);
-
+Route::get('/factures/{facture}/data', [FactureController::class, 'getFactureData'])->name('factures.data.get');
 
 
 // Routes profil

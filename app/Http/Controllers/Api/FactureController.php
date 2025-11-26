@@ -451,8 +451,9 @@ class FactureController extends Controller
     ->get();
         }
         $clients = Intervenant::where('categorie', 'client')->get();
-        
-        return view('factures.index', compact('dossiers', 'clients'));
+         $lastFacture = Facture::orderBy('id', 'desc')->first();
+        $nextNumber = 'FACT-' . date('Y') . '-' . str_pad(($lastFacture ? $lastFacture->id + 1 : 1), 4, '0', STR_PAD_LEFT);
+        return view('factures.index', compact('dossiers', 'clients', 'nextNumber'));
     }
     
     public function indexPaid()
@@ -500,65 +501,77 @@ class FactureController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        if(!auth()->user()->hasPermission('create_factures')) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-        
-        $validated = $request->validate([
-            'dossier_id' => 'nullable|exists:dossiers,id',
-            'client_id' => 'nullable|exists:intervenants,id',
-            'type_piece' => 'required|in:facture,note_frais,note_provision,avoir',
-            'numero' => 'required|string|max:100|unique:factures,numero',
-            'date_emission' => 'required|date',
-            'montant_ht' => 'required|numeric|min:0',
-            'montant_tva' => 'required|numeric|min:0',
-            'montant' => 'required|numeric|min:0',
-            'statut' => 'required|in:payé,non_payé',
-            'commentaires' => 'nullable|string',
-            'piece_jointe' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx|max:10240', 
-        ]);
+ public function store(Request $request)
+{
+    if(!auth()->user()->hasPermission('create_factures')) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    
+    $validated = $request->validate([
+        'dossier_id' => 'nullable|exists:dossiers,id',
+        'client_id' => 'nullable|exists:intervenants,id',
+        'type_piece' => 'required|in:facture,note_frais,note_provision,avoir',
+        'numero' => 'required|string|max:100|unique:factures,numero',
+        'date_emission' => 'required|date',
+        'montant_ht' => 'required|numeric|min:0',
+        'montant_tva' => 'required|numeric|min:0',
+        'montant' => 'required|numeric|min:0',
+        'statut' => 'required|in:payé,non_payé',
+        'commentaires' => 'nullable|string',
+        'piece_jointe' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx|max:10240', 
+    ]);
 
-        // Vérifier la cohérence des montants
-        $calculatedMontant = $validated['montant_ht'] + $validated['montant_tva'];
-        if (abs($calculatedMontant - $validated['montant']) > 0.01) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Le montant TTC doit être égal à HT + TVA.');
-        }
+    // Vérifier la cohérence des montants
+    $calculatedMontant = $validated['montant_ht'] + $validated['montant_tva'];
+    if (abs($calculatedMontant - $validated['montant']) > 0.01) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Le montant TTC doit être égal à HT + TVA.'
+        ], 422);
+    }
 
+    try {
         // Gestion de la pièce jointe
         if ($request->hasFile('piece_jointe')) {
-    $file = $request->file('piece_jointe');
-    
-    // Créer la structure : factures/année/statut/
-    $currentYear = date('Y');
-    $statut = $validated['type_piece']; // "payé" ou "non_payé"
-    
-    // Chemin personnalisé : factures/2025/payé/ ou factures/2025/non_payé/
-    $customPath = "factures/{$currentYear}/{$statut}";
-    
-    // Générer le nom du fichier
-    $fileName = time() . '_' . $file->getClientOriginalName();
-    
-    // Stocker le fichier dans le chemin personnalisé
-    $filePath = $file->storeAs($customPath, $fileName, 'public');
-    
-    // Stocker le chemin complet dans la base de données
-    $validated['piece_jointe'] = $filePath;
-}
+            $file = $request->file('piece_jointe');
+            
+            // Créer la structure : factures/année/statut/
+            $currentYear = date('Y');
+            $statut = $validated['type_piece'];
+            
+            // Chemin personnalisé : factures/2025/payé/ ou factures/2025/non_payé/
+            $customPath = "factures/{$currentYear}/{$statut}";
+            
+            // Générer le nom du fichier
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            
+            // Stocker le fichier dans le chemin personnalisé
+            $filePath = $file->storeAs($customPath, $fileName, 'public');
+            
+            // Stocker le chemin complet dans la base de données
+            $validated['piece_jointe'] = $filePath;
+        }
 
         $facture = Facture::create($validated);
 
         if($request->hasFile('piece_jointe')) {
-        $facture->file_name = $file->getClientOriginalName();
-        $facture->save();
+            $facture->file_name = $file->getClientOriginalName();
+            $facture->save();
         }
 
-        return redirect()->route('factures.index')
-            ->with('success', 'Facture créée avec succès.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Facture créée avec succès.',
+            'redirect_url' => route('factures.index')
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la création de la facture: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Display the specified resource.
@@ -591,58 +604,78 @@ class FactureController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, Facture $facture)
-    {
-       if(!auth()->user()->hasPermission('edit_factures')){
-         abort(403, 'Unauthorized action.');
-       }
-        
-        $validated = $request->validate([
-            'dossier_id' => 'nullable|exists:dossiers,id',
-            'client_id' => 'nullable|exists:intervenants,id',
-            'type_piece' => 'required|in:facture,note_frais,note_provision,avoir',
-            'numero' => 'required|string|max:100|unique:factures,numero,' . $facture->id,
-            'date_emission' => 'required|date',
-            'montant_ht' => 'required|numeric|min:0',
-            'montant_tva' => 'required|numeric|min:0',
-            'montant' => 'required|numeric|min:0',
-            'statut' => 'required|in:payé,non_payé',
-            'commentaires' => 'nullable|string',
-            'piece_jointe' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx|max:10240', 
-        ]);
-
-        // Vérifier la cohérence des montants
-        $calculatedMontant = $validated['montant_ht'] + $validated['montant_tva'];
-        if (abs($calculatedMontant - $validated['montant']) > 0.01) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Le montant TTC doit être égal à HT + TVA.');
-        }
-        // Gestion de la pièce jointe
-        if ($request->hasFile('piece_jointe')) {
-    // Supprimer l'ancien fichier s'il existe
-    if ($facture->piece_jointe) {
-        Storage::disk('public')->delete($facture->piece_jointe);
+{
+    if(!auth()->user()->hasPermission('edit_factures')){
+        return response()->json(['error' => 'Unauthorized'], 403);
     }
     
-    $file = $request->file('piece_jointe');
-    
-    // Structure : factures/année/statut/
-    $currentYear = date('Y');
-    $statut = $validated['type_piece'] ?? $facture->type_piece; // Nouveau statut ou ancien
-    
-    $customPath = "factures/{$currentYear}/{$statut}";
-    
-    $fileName = time() . '_' . $file->getClientOriginalName();
-    $filePath = $file->storeAs($customPath, $fileName, 'public');
-    $validated['piece_jointe'] = $filePath;
-}
+    $validated = $request->validate([
+        'dossier_id' => 'nullable|exists:dossiers,id',
+        'client_id' => 'nullable|exists:intervenants,id',
+        'type_piece' => 'required|in:facture,note_frais,note_provision,avoir',
+        'numero' => 'required|string|max:100|unique:factures,numero,' . $facture->id,
+        'date_emission' => 'required|date',
+        'montant_ht' => 'required|numeric|min:0',
+        'montant_tva' => 'required|numeric|min:0',
+        'montant' => 'required|numeric|min:0',
+        'statut' => 'required|in:payé,non_payé',
+        'commentaires' => 'nullable|string',
+        'piece_jointe' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx|max:10240', 
+    ]);
+
+    // Vérifier la cohérence des montants
+    $calculatedMontant = $validated['montant_ht'] + $validated['montant_tva'];
+    if (abs($calculatedMontant - $validated['montant']) > 0.01) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Le montant TTC doit être égal à HT + TVA.'
+        ], 422);
+    }
+
+    try {
+        // Gestion de la suppression du fichier existant
+        if ($request->has('delete_piece_jointe')) {
+            if ($facture->piece_jointe) {
+                Storage::disk('public')->delete($facture->piece_jointe);
+                $validated['piece_jointe'] = null;
+            }
+        }
+
+        // Gestion du nouveau fichier
+        if ($request->hasFile('piece_jointe')) {
+            // Supprimer l'ancien fichier s'il existe
+            if ($facture->piece_jointe) {
+                Storage::disk('public')->delete($facture->piece_jointe);
+            }
+            
+            $file = $request->file('piece_jointe');
+            
+            // Structure : factures/année/statut/
+            $currentYear = date('Y');
+            $statut = $validated['type_piece'] ?? $facture->type_piece;
+            
+            $customPath = "factures/{$currentYear}/{$statut}";
+            
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs($customPath, $fileName, 'public');
+            $validated['piece_jointe'] = $filePath;
+        }
 
         $facture->update($validated);
 
-        return redirect()->route('factures.index')
-            ->with('success', 'Facture mise à jour avec succès.');
-    }
+        return response()->json([
+            'success' => true,
+            'message' => 'Facture mise à jour avec succès.',
+            'redirect_url' => route('factures.index')
+        ]);
 
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la mise à jour de la facture: ' . $e->getMessage()
+        ], 500);
+    }
+}
     /**
      * Remove the specified resource from storage.
      */
@@ -751,4 +784,42 @@ class FactureController extends Controller
         // Pour les autres types, forcer le téléchargement
         return response()->download($filePath, $displayName, $headers);
     }
+
+    public function getFactureData(Facture $facture)
+{
+    if(!auth()->user()->hasPermission('view_factures')){
+        return response()->json([
+            'success' => false,
+            'error' => 'Unauthorized action.'
+        ], 403);
+    }
+
+    // Charger les relations nécessaires
+    $facture->load(['dossier', 'client']);
+
+    // Retourner les données formatées
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'id' => $facture->id,
+            'numero' => $facture->numero,
+            'date_emission' => $facture->date_emission,
+            'montant_ht' => $facture->montant_ht,
+            'montant_tva' => $facture->montant_tva,
+            'montant' => $facture->montant,
+            'statut' => $facture->statut,
+            'piece_jointe' => $facture->piece_jointe,
+            'dossier' => $facture->dossier ? [
+                'id' => $facture->dossier->id,
+                'numero_dossier' => $facture->dossier->numero_dossier,
+            ] : null,
+            'user' => $facture->user ? [
+                'id' => $facture->user->id,
+                'name' => $facture->user->name,
+            ] : null,
+            'created_at' => $facture->created_at,
+            'updated_at' => $facture->updated_at,
+        ]
+    ]);
+}
 }

@@ -65,11 +65,12 @@ public function create()
                     
         return response()->json($types);
     }
-    public function store(Request $request)
+ public function store(Request $request)
 {
     if (!auth()->user()->hasPermission('create_timesheets')) {
-            abort(403, 'Unauthorized action.');
-        }
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
     $validated = $request->validate([
         'date_timesheet' => 'required|date',
         'utilisateur_id' => 'required|exists:users,id',
@@ -82,8 +83,9 @@ public function create()
         'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:2048', // max 2MB
     ]);
 
-    // Calculer le total
-    $validated['total'] = $validated['quantite'] * $validated['prix'];
+    try {
+        // Calculer le total
+        $validated['total'] = $validated['quantite'] * $validated['prix'];
 
         if($request->hasFile('file')){
             $file = $request->file('file');
@@ -92,10 +94,20 @@ public function create()
             $validated['file_name'] = $file->getClientOriginalName();
         }
 
-    Timesheet::create($validated);
+        Timesheet::create($validated);
 
-    return redirect()->route('time-sheets.index')
-        ->with('success', 'Feuille de temps créée avec succès.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Feuille de temps créée avec succès.',
+            'redirect_url' => route('time-sheets.index')
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la création de la feuille de temps: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
     public function show(TimeSheet $time_sheet)
@@ -119,11 +131,11 @@ public function edit(Timesheet $time_sheet)
     
     return view('timesheets.edit', compact('timesheet', 'users', 'dossiers', 'categories', 'types'));
 }
-   public function update(Request $request, Timesheet $time_sheet)
+  public function update(Request $request, Timesheet $time_sheet)
 {
     if (!auth()->user()->hasPermission('edit_timesheets')) {
-            abort(403, 'Unauthorized action.');
-        }
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
     
     $validated = $request->validate([
         'date_timesheet' => 'required|date',
@@ -137,21 +149,36 @@ public function edit(Timesheet $time_sheet)
         'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:2048', // max 2MB
     ]);
 
-    
+    try {
+        // Calculer le total
+        $validated['total'] = $validated['quantite'] * $validated['prix'];
+
         if($request->hasFile('file')){
+            // Supprimer l'ancien fichier s'il existe
+            if ($time_sheet->file_path) {
+                Storage::disk('public')->delete($time_sheet->file_path);
+            }
+            
             $file = $request->file('file');
-            $path = $file->store('agenda_files', 'public');
+            $path = $file->store('timesheet_files', 'public');
             $validated['file_path'] = $path;
             $validated['file_name'] = $file->getClientOriginalName();
         }
 
-    // Calculer le total
-    $validated['total'] = $validated['quantite'] * $validated['prix'];
+        $time_sheet->update($validated);
 
-    $time_sheet->update($validated);
+        return response()->json([
+            'success' => true,
+            'message' => 'Feuille de temps mise à jour avec succès.',
+            'redirect_url' => route('time-sheets.index')
+        ]);
 
-    return redirect()->route('time-sheets.index')
-        ->with('success', 'Feuille de temps mise à jour avec succès.');
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la mise à jour de la feuille de temps: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
 public function destroy(Timesheet $time_sheet)
@@ -223,6 +250,52 @@ public function destroy(Timesheet $time_sheet)
         return TimeSheetResource::collection($timeSheets);
     }
 
+    public function getTimeSheetData(TimeSheet $time_sheet)
+{
+    if(!auth()->user()->hasPermission('view_timesheets')){
+        return response()->json([
+            'success' => false,
+            'error' => 'Unauthorized action.'
+        ], 403);
+    }
+
+    // Charger les relations nécessaires
+    $time_sheet->load(['dossier', 'user', 'categorieRelation', 'typeRelation']);
+
+    // Retourner les données formatées
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'id' => $time_sheet->id,
+            'date_timesheet' => $time_sheet->date_timesheet,
+            'description' => $time_sheet->description,
+            'quantite' => $time_sheet->quantite,
+            'prix' => $time_sheet->prix,
+            'total' => $time_sheet->total,
+            'dossier' => $time_sheet->dossier ? [
+                'id' => $time_sheet->dossier->id,
+                'numero_dossier' => $time_sheet->dossier->numero_dossier,
+                'nom_dossier' => $time_sheet->dossier->nom_dossier,
+            ] : null,
+            'user' => $time_sheet->user ? [
+                'id' => $time_sheet->user->id,
+                'name' => $time_sheet->user->name,
+                'email' => $time_sheet->user->email,
+                'fonction' => $time_sheet->user->fonction,
+            ] : null,
+            'categorierelation' => $time_sheet->categorieRelation ? [
+                'id' => $time_sheet->categorieRelation->id,
+                'name' => $time_sheet->categorieRelation->nom,
+            ] : null,
+            'typeRelation' => $time_sheet->typeRelation ? [
+                'id' => $time_sheet->typeRelation->id,
+                'name' => $time_sheet->typeRelation->nom,
+            ] : null,
+            'created_at' => $time_sheet->created_at,
+            'updated_at' => $time_sheet->updated_at,
+        ]
+    ]);
+}
    public function getTimesheetsData(Request $request)
 {
     $this->authorize('view_timesheets', Timesheet::class);

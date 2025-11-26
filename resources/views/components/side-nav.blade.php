@@ -79,6 +79,12 @@
                     </a>
                 </li>
                 @endif
+                <li class="nav-item">
+                    <a href="{{ route('apps.index') }}" class="nav-link {{ request()->routeIs('apps.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-th"></i>
+                        <p>Apps</p>
+                    </a>
+                </li>
                 <li class="nav-item d-none">
                     <a href="{{ route('email.index') }}" class="nav-link {{ request()->routeIs('email.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-envelope"></i>

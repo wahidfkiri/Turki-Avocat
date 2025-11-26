@@ -38,7 +38,7 @@
                                     <i class="fas fa-plus"></i> Créer un événement
                                 </button>
                             @endif
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="toggleFiltersBtn">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="toggleFiltersBtn" data-toggle="modal" data-target="#filtersModal">
                                 <i class="fas fa-filter"></i> Filtres
                             </button>
                         </div>
@@ -47,90 +47,12 @@
             </div>
 
             <div class="row">
-                <!-- Filtres - Caché par défaut -->
-                <div class="col-md-3 d-none" id="filtersSidebar">
-                    <!-- Filtres -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Filtres</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" id="closeFiltersBtn">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <!-- Filtre par catégorie -->
-                            <div class="form-group">
-                                <label>Catégories</label>
-                                <a href="#" style="float:right;" class="text-primary" data-toggle="modal" data-target="#createCategorieModal"><i class="fa fa-plus text-primary"></i> Ajouter </a>
-                                @foreach($categories as $categorie)
-                                <div class="custom-control custom-checkbox category-item">
-                                <span class="legend-color" style="background-color: {{$categorie->couleur}}; margin-right:30px;"></span>
-                                    <input class="custom-control-input" type="checkbox" id="filter_{{$categorie->nom}}" checked data-category="{{$categorie->nom}}">
-                                    <label for="filter_{{$categorie->nom}}" class="custom-control-label">{{$categorie->nom}}</label>
-                                    <!-- Bouton Supprimer -->
-    <a href="#" class="delete-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}">
-        <i class="fa fa-trash text-danger" style="float:right;" tooltip="Supprimer"></i>
-    </a>
-    
-    <!-- Bouton Modifier -->
-    <a href="#" class="edit-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}" data-color="{{$categorie->couleur}}">
-        <i class="fa fa-edit text-info" style="float:right; margin-right: 10px;" tooltip="Modifier"></i>
-    </a>
-                                </div>
-                                @endforeach
-                                <!-- <div class="custom-control custom-checkbox">
-                                    <input class="custom-control-input" type="checkbox" id="filter_audience" checked data-category="audience">
-                                    <label for="filter_audience" class="custom-control-label">Audience</label>
-                                </div>
-                                <div class="custom-control custom-checkbox">
-                                    <input class="custom-control-input" type="checkbox" id="filter_delai" checked data-category="delai">
-                                    <label for="filter_delai" class="custom-control-label">Délai</label>
-                                </div>
-                                <div class="custom-control custom-checkbox">
-                                    <input class="custom-control-input" type="checkbox" id="filter_tache" checked data-category="tache">
-                                    <label for="filter_tache" class="custom-control-label">Tâche</label>
-                                </div>
-                                <div class="custom-control custom-checkbox">
-                                    <input class="custom-control-input" type="checkbox" id="filter_autre" checked data-category="autre">
-                                    <label for="filter_autre" class="custom-control-label">Autre</label>
-                                </div> -->
-                            </div>
-
-                            <!-- Filtre par utilisateur -->
-                            <div class="form-group">
-                                <label for="filter_utilisateur">Utilisateur</label>
-                                <select class="form-control" id="filter_utilisateur">
-                                    <option value="">Tous les utilisateurs</option>
-                                    @foreach($users as $user)
-                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <!-- Filtre par dossier -->
-                            <div class="form-group">
-                                <label for="filter_dossier">Dossier</label>
-                                <select class="form-control" id="filter_dossier">
-                                    <option value="">Tous les dossiers</option>
-                                    @foreach($dossiers as $dossier)
-                                        <option value="{{ $dossier->id }}">{{ $dossier->numero_dossier }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-
-                </div>
-
                 <!-- Calendar - Prend toute la largeur -->
-                <div class="col-12 w-100" id="calendarContainer">
+                <div class="col-12" id="calendarContainer">
                     <!-- Calendar -->
-                    <div class="card card-primary w-100">
-                        <div class="card-body p-0 w-100">
-                           <div id="calendar" style="height: auto; min-height: 700px; max-height: 80vh; overflow-y: auto;width:100%;"></div>
+                    <div class="card card-primary">
+                        <div class="card-body p-0">
+                           <div id="calendar" style="height: auto; min-height: 700px; max-height: 80vh; overflow-y: auto;"></div>
                         </div>
                     </div>
                 </div>
@@ -140,6 +62,70 @@
     <!-- /.content -->
 </div>
 
+<!-- Modal pour les filtres -->
+<div class="modal fade" id="filtersModal" tabindex="-1" role="dialog" aria-labelledby="filtersModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filtersModalLabel">Filtres</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Filtre par catégorie -->
+                <div class="form-group">
+                    <label>Catégories</label>
+                    <a href="#" style="float:right;" class="text-primary" data-toggle="modal" data-target="#createCategorieModal"><i class="fa fa-plus text-primary"></i> Ajouter </a>
+                    @foreach($categories as $categorie)
+                    <div class="custom-control custom-checkbox category-item">
+                        <span class="legend-color" style="background-color: {{$categorie->couleur}}; margin-right:30px;"></span>
+                        <input class="custom-control-input" type="checkbox" id="filter_{{$categorie->nom}}" checked data-category="{{$categorie->nom}}">
+                        <label for="filter_{{$categorie->nom}}" class="custom-control-label">{{$categorie->nom}}</label>
+                        <!-- Bouton Supprimer -->
+                        <a href="#" class="delete-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}">
+                            <i class="fa fa-trash text-danger" style="float:right;" tooltip="Supprimer"></i>
+                        </a>
+                        
+                        <!-- Bouton Modifier -->
+                        <a href="#" class="edit-category" data-id="{{$categorie->id}}" data-name="{{$categorie->nom}}" data-color="{{$categorie->couleur}}">
+                            <i class="fa fa-edit text-info" style="float:right; margin-right: 10px;" tooltip="Modifier"></i>
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
+
+                <!-- Filtre par utilisateur -->
+                <div class="form-group">
+                    <label for="filter_utilisateur">Utilisateur</label>
+                    <select class="form-control" id="filter_utilisateur">
+                        <option value="">Tous les utilisateurs</option>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Filtre par dossier -->
+                <div class="form-group">
+                    <label for="filter_dossier">Dossier</label>
+                    <select class="form-control" id="filter_dossier">
+                        <option value="">Tous les dossiers</option>
+                        @foreach($dossiers as $dossier)
+                            <option value="{{ $dossier->id }}">{{ $dossier->numero_dossier }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" id="applyFilters">Appliquer les filtres</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rest of your modals (eventModal, createEventModal, createCategorieModal, etc.) remain the same -->
 <!-- Modal pour les détails de l'événement -->
 <div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -544,19 +530,10 @@
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js'></script>
 
-<<style>
+<style>
 /* Styles pour le conteneur principal */
 .content-wrapper {
     overflow-x: hidden;
-}
-
-/* Styles pour les filtres et le calendrier */
-#filtersSidebar {
-    transition: all 0.3s ease-in-out;
-}
-
-#calendarContainer {
-    transition: all 0.3s ease-in-out;
 }
 
 /* Assurer que le calendrier prend toute la largeur */
@@ -564,56 +541,17 @@
     width: 100% !important;
 }
 
-.card-body.p-0.w-100 {
+.card-body.p-0 {
     width: 100% !important;
 }
 
-/* Correction pour le responsive */
-@media (max-width: 768px) {
-    #filtersSidebar {
-        position: fixed;
-        top: 0;
-        left: -100%;
-        width: 80%;
-        height: 100vh;
-        z-index: 1050;
-        background: white;
-        overflow-y: auto;
-        transition: left 0.3s ease-in-out;
-    }
-    
-    #filtersSidebar.d-none {
-        left: -100%;
-    }
-    
-    #filtersSidebar:not(.d-none) {
-        left: 0;
-    }
-    
-    /* Sur mobile, le calendrier prend toujours 100% */
-    #calendarContainer {
-        width: 100% !important;
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
-    }
-}
-
-/* Overlay pour mobile */
-.filters-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1049;
-}
-
-@media (max-width: 768px) {
-    .filters-overlay.active {
-        display: block;
-    }
+/* Styles pour les légendes de couleur */
+.legend-color {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    vertical-align: middle;
 }
 </style>
 
@@ -622,186 +560,143 @@ document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     var currentEventId = null;
     var currentEventTitle = null;
-    var filtersVisible = false;
     var calendar;
-
 
     // Set today's date as default for new events
     $('#date_debut').val(new Date().toISOString().split('T')[0]);
 
     // Initialize Calendar
-   // Initialize Calendar
-function initializeCalendar() {
-    calendar = new FullCalendar.Calendar(calendarEl, {
-        
-  initialView: 'timeGridDay',
-  scrollTime: '08:00:00', // scrolls to 8 AM by default
-  slotMinTime: '06:00:00', // earliest time visible
-  defaultTimedEventDuration: '01:00:00', // default event length (optional)
+    function initializeCalendar() {
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridDay',
+            scrollTime: '08:00:00', // scrolls to 8 AM by default
+            slotMinTime: '06:00:00', // earliest time visible
+            defaultTimedEventDuration: '01:00:00', // default event length (optional)
 
-        locale: 'fr',
-        timeZone: 'local',
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-        },
-        views: {
-            dayGridMonth: { 
-                buttonText: 'Mois',
-                dayMaxEventRows: 3,
-                dayMaxEvents: true
+            locale: 'fr',
+            timeZone: 'local',
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
             },
-            timeGridWeek: { buttonText: 'Semaine' },
-            timeGridDay: { buttonText: 'Jour' },
-            listWeek: { buttonText: 'Liste' ,
-                listDayFormat: { 
+            views: {
+                dayGridMonth: { 
+                    buttonText: 'Mois',
+                    dayMaxEventRows: 3,
+                    dayMaxEvents: true
+                },
+                timeGridWeek: { buttonText: 'Semaine' },
+                timeGridDay: { buttonText: 'Jour' },
+                listWeek: { 
+                    buttonText: 'Liste',
+                    listDayFormat: { 
                         month: 'long', 
                         day: 'numeric', 
                         year: 'numeric',
                         weekday: 'short'
                     },
+                },
             },
-        },
-        buttonText: {
-            today: 'Aujourd\'hui',
-            month: 'Mois',
-            week: 'Semaine',
-            day: 'Jour',
-            list: 'Liste',
-        },
-        navLinks: true,
-        editable: false,
-        selectable: true,
-        nowIndicator: true,
-        dayMaxEvents: true,
-        height: 'auto',
-        contentHeight: 'auto',
-        events: {
-            url: '{{ route("agendas.data") }}',
-            method: 'GET',
-            extraParams: function() {
-                return {
-                    categories: getSelectedCategories(),
-                    utilisateur_id: $('#filter_utilisateur').val(),
-                    dossier_id: $('#filter_dossier').val()
-                };
+            buttonText: {
+                today: 'Aujourd\'hui',
+                month: 'Mois',
+                week: 'Semaine',
+                day: 'Jour',
+                list: 'Liste',
             },
-            failure: function() {
-                showAlert('Erreur', 'Erreur lors du chargement des événements', 'error');
-            }
-        },
-        eventClick: function(info) {
-            currentEventId = info.event.id;
-            currentEventTitle = info.event.title;
-            showEventDetails(info.event);
-        },
-        dateClick: function(info) {
-            @if(auth()->user()->hasPermission('create_agendas'))
-                $('#date_debut').val(info.dateStr);
-                $('#createEventModal').modal('show');
-            @endif
-        },
-        eventDidMount: function(info) {
-            // Apply custom colors and tooltips
-            var event = info.event;
-            
-            // Tooltip avec les détails de l'événement
-            var tooltipContent = event.title;
-            if (event.extendedProps.description) {
-                tooltipContent += '<br>' + event.extendedProps.description;
-            }
-            if (event.extendedProps.dossier) {
-                tooltipContent += '<br>Dossier: ' + event.extendedProps.dossier;
-            }
-            if (event.extendedProps.intervenant) {
-                tooltipContent += '<br>Intervenant: ' + event.extendedProps.intervenant;
-            }
-            
-            $(info.el).tooltip({
-                title: tooltipContent,
-                html: true,
-                placement: 'top'
-            });
-            
-            // Ensure colors are applied correctly
-            if (event.backgroundColor) {
-                info.el.style.backgroundColor = event.backgroundColor;
-            }
-            if (event.textColor) {
-                info.el.style.color = event.textColor;
-            }
-        },
-        windowResize: function(view) {
-            calendar.updateSize();
-        },
-        eventContent: function(arg) {
-            // Custom event content to ensure colors display properly
-            var title = arg.event.title;
-            var timeText = '';
-            
-            if (!arg.event.allDay && arg.event.start) {
-                var startTime = arg.event.start.toLocaleTimeString('fr-FR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+            navLinks: true,
+            editable: false,
+            selectable: true,
+            nowIndicator: true,
+            dayMaxEvents: true,
+            height: 'auto',
+            contentHeight: 'auto',
+            events: {
+                url: '{{ route("agendas.data") }}',
+                method: 'GET',
+                extraParams: function() {
+                    return {
+                        categories: getSelectedCategories(),
+                        utilisateur_id: $('#filter_utilisateur').val(),
+                        dossier_id: $('#filter_dossier').val()
+                    };
+                },
+                failure: function() {
+                    showAlert('Erreur', 'Erreur lors du chargement des événements', 'error');
+                }
+            },
+            eventClick: function(info) {
+                currentEventId = info.event.id;
+                currentEventTitle = info.event.title;
+                showEventDetails(info.event);
+            },
+            dateClick: function(info) {
+                @if(auth()->user()->hasPermission('create_agendas'))
+                    $('#date_debut').val(info.dateStr);
+                    $('#createEventModal').modal('show');
+                @endif
+            },
+            eventDidMount: function(info) {
+                // Apply custom colors and tooltips
+                var event = info.event;
+                
+                // Tooltip avec les détails de l'événement
+                var tooltipContent = event.title;
+                if (event.extendedProps.description) {
+                    tooltipContent += '<br>' + event.extendedProps.description;
+                }
+                if (event.extendedProps.dossier) {
+                    tooltipContent += '<br>Dossier: ' + event.extendedProps.dossier;
+                }
+                if (event.extendedProps.intervenant) {
+                    tooltipContent += '<br>Intervenant: ' + event.extendedProps.intervenant;
+                }
+                
+                $(info.el).tooltip({
+                    title: tooltipContent,
+                    html: true,
+                    placement: 'top'
                 });
-                timeText = startTime + ' ';
+                
+                // Ensure colors are applied correctly
+                if (event.backgroundColor) {
+                    info.el.style.backgroundColor = event.backgroundColor;
+                }
+                if (event.textColor) {
+                    info.el.style.color = event.textColor;
+                }
+            },
+            windowResize: function(view) {
+                calendar.updateSize();
+            },
+            eventContent: function(arg) {
+                // Custom event content to ensure colors display properly
+                var title = arg.event.title;
+                var timeText = '';
+                
+                if (!arg.event.allDay && arg.event.start) {
+                    var startTime = arg.event.start.toLocaleTimeString('fr-FR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    timeText = startTime + ' ';
+                }
+                
+                return {
+                    html: `<div class="fc-event-main-frame">
+                             <div class="fc-event-title">${title}</div>
+                           </div>`
+                };
             }
-            
-            return {
-                html: `<div class="fc-event-main-frame">
-                         <div class="fc-event-title">${title}</div>
-                       </div>`
-            };
-        }
-    });
+        });
 
-    calendar.render();
-}
+        calendar.render();
+    }
 
     // Initialiser le calendrier
     initializeCalendar();
-
-    // Fonction pour afficher/masquer les filtres
-    $('#toggleFiltersBtn').click(function() {
-        if (filtersVisible) {
-            closeFilters();
-        } else {
-            openFilters();
-        }
-    });
-
-    // Fermer les filtres
-    $('#closeFiltersBtn').click(function() {
-        closeFilters();
-    });
-
-    function openFilters() {
-        $('#filtersSidebar').removeClass('d-none');
-        $('#calendarContainer').removeClass('col-12').addClass('col-md-9');
-        filtersVisible = true;
-        
-        // Redimensionner le calendrier après un court délai pour permettre le rendu CSS
-        setTimeout(function() {
-            if (calendar) {
-                calendar.updateSize();
-            }
-        }, 100);
-    }
-
-    function closeFilters() {
-        $('#filtersSidebar').addClass('d-none');
-        $('#calendarContainer').removeClass('col-md-9').addClass('col-12');
-        filtersVisible = false;
-        
-        // Redimensionner le calendrier après un court délai pour permettre le rendu CSS
-        setTimeout(function() {
-            if (calendar) {
-                calendar.updateSize();
-            }
-        }, 100);
-    }
 
     // Fonction pour afficher les alertes
     function showAlert(title, message, type = 'info') {
@@ -1011,12 +906,9 @@ function initializeCalendar() {
         });
     });
 
-    // Événements des filtres
-    $('input[data-category]').change(function() {
-        calendar.refetchEvents();
-    });
-
-    $('#filter_utilisateur, #filter_dossier').change(function() {
+    // Appliquer les filtres depuis la modal
+    $('#applyFilters').click(function() {
+        $('#filtersModal').modal('hide');
         calendar.refetchEvents();
     });
 
@@ -1027,6 +919,7 @@ function initializeCalendar() {
 
     // Bouton réinitialiser
     $('#btn_reset_filters').click(function() {
+        // Reset all filters in the modal
         $('input[data-category]').prop('checked', true);
         $('#filter_utilisateur').val('').trigger('change');
         $('#filter_dossier').val('').trigger('change');
@@ -1043,100 +936,100 @@ function initializeCalendar() {
     });
 
     // AJAX function to create new category
-$('#createCategorieForm').submit(function(e) {
-    e.preventDefault();
+    $('#createCategorieForm').submit(function(e) {
+        e.preventDefault();
 
-    var formData = {
-        nom: $('#categorie_name').val(),
-        couleur: $('#color').val(),
-        _token: '{{ csrf_token() }}'
-    };
+        var formData = {
+            nom: $('#categorie_name').val(),
+            couleur: $('#color').val(),
+            _token: '{{ csrf_token() }}'
+        };
 
-    $.ajax({
-        url: '{{ route("agenda-categories.store") }}',
-        type: 'POST',
-        data: formData,
-        success: function(response) {
-            $('#createCategorieModal').modal('hide');
-            $('#createCategorieForm')[0].reset();
-            
-            // Add the new category to the filter list
-            addCategoryToFilter(response.category);
-            
-            // Add the new category to event creation form
-            addCategoryToEventForm(response.category);
-            
-            showAlert('Succès', 'Catégorie créée avec succès', 'success');
-        },
-        error: function(xhr) {
-            let errorMessage = 'Erreur de validation:\n';
-            if (xhr.responseJSON && xhr.responseJSON.errors) {
-                $.each(xhr.responseJSON.errors, function(key, value) {
-                    errorMessage += '• ' + value[0] + '\n';
-                });
-            } else {
-                errorMessage += 'Une erreur est survenue.';
+        $.ajax({
+            url: '{{ route("agenda-categories.store") }}',
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                $('#createCategorieModal').modal('hide');
+                $('#createCategorieForm')[0].reset();
+                
+                // Add the new category to the filter list
+                addCategoryToFilter(response.category);
+                
+                // Add the new category to event creation form
+                addCategoryToEventForm(response.category);
+                
+                showAlert('Succès', 'Catégorie créée avec succès', 'success');
+            },
+            error: function(xhr) {
+                let errorMessage = 'Erreur de validation:\n';
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    $.each(xhr.responseJSON.errors, function(key, value) {
+                        errorMessage += '• ' + value[0] + '\n';
+                    });
+                } else {
+                    errorMessage += 'Une erreur est survenue.';
+                }
+                showAlert('Erreur', errorMessage, 'error');
             }
-            showAlert('Erreur', errorMessage, 'error');
-        }
+        });
     });
-});
 
-// Function to add new category to filter list
-function addCategoryToFilter(category) {
-    var categoryId = 'filter_' + category.id;
-    var checkboxHtml = `
-        <div class="custom-control custom-checkbox">
-            <span class="legend-color" style="background-color: ${category.couleur}; margin-right:30px;"></span>
-            <input class="custom-control-input" type="checkbox" id="${categoryId}" checked data-category="${category.id}">
-            <label for="${categoryId}" class="custom-control-label">${category.nom}</label>
-        </div>
-    `;
-    
-    // Append to the filter categories container
-    $('.form-group:has(label:contains("Catégories"))').append(checkboxHtml);
-    
-    // Add event listener for the new checkbox
-    $('#' + categoryId).change(function() {
-        calendar.refetchEvents();
-    });
-}
+    // Function to add new category to filter list
+    function addCategoryToFilter(category) {
+        var categoryId = 'filter_' + category.id;
+        var checkboxHtml = `
+            <div class="custom-control custom-checkbox">
+                <span class="legend-color" style="background-color: ${category.couleur}; margin-right:30px;"></span>
+                <input class="custom-control-input" type="checkbox" id="${categoryId}" checked data-category="${category.id}">
+                <label for="${categoryId}" class="custom-control-label">${category.nom}</label>
+            </div>
+        `;
+        
+        // Append to the filter categories container
+        $('.form-group:has(label:contains("Catégories"))').append(checkboxHtml);
+        
+        // Add event listener for the new checkbox
+        $('#' + categoryId).change(function() {
+            calendar.refetchEvents();
+        });
+    }
 
-// Function to add new category to event creation form
-function addCategoryToEventForm(category) {
-    var optionHtml = `<option value="${category.id}">${category.nom}</option>`;
-    
-    // Add to create event form
-    $('#categorie').append(optionHtml);
-    
-    // Add to edit event form
-    $('#edit_categorie').append(optionHtml);
-}
+    // Function to add new category to event creation form
+    function addCategoryToEventForm(category) {
+        var optionHtml = `<option value="${category.id}">${category.nom}</option>`;
+        
+        // Add to create event form
+        $('#categorie').append(optionHtml);
+        
+        // Add to edit event form
+        $('#edit_categorie').append(optionHtml);
+    }
 
-// Function to load categories dynamically (optional - if you want to refresh categories)
-function loadCategories() {
-    $.ajax({
-        url: '{{ route("agenda-categories.api") }}',
-        type: 'GET',
-        success: function(response) {
-            // Clear existing categories from forms
-            $('#categorie').find('option:not(:first)').remove();
-            $('#edit_categorie').find('option:not(:first)').remove();
-            
-            // Clear filter categories (keep the "Ajouter" link)
-            $('.form-group:has(label:contains("Catégories")) .custom-control.custom-checkbox').remove();
-            
-            // Add all categories
-            response.forEach(function(category) {
-                addCategoryToFilter(category);
-                addCategoryToEventForm(category);
-            });
-        },
-        error: function() {
-            showAlert('Erreur', 'Erreur lors du chargement des catégories', 'error');
-        }
-    });
-}
+    // Function to load categories dynamically (optional - if you want to refresh categories)
+    function loadCategories() {
+        $.ajax({
+            url: '{{ route("agenda-categories.api") }}',
+            type: 'GET',
+            success: function(response) {
+                // Clear existing categories from forms
+                $('#categorie').find('option:not(:first)').remove();
+                $('#edit_categorie').find('option:not(:first)').remove();
+                
+                // Clear filter categories (keep the "Ajouter" link)
+                $('.form-group:has(label:contains("Catégories")) .custom-control.custom-checkbox').remove();
+                
+                // Add all categories
+                response.forEach(function(category) {
+                    addCategoryToFilter(category);
+                    addCategoryToEventForm(category);
+                });
+            },
+            error: function() {
+                showAlert('Erreur', 'Erreur lors du chargement des catégories', 'error');
+            }
+        });
+    }
 
 });
 </script>
@@ -1256,8 +1149,8 @@ $(document).ready(function() {
             $('.alert').alert('close');
         }, 3000);
         setTimeout(function() {
-    window.location.reload();
-}, 1500);
+            window.location.reload();
+        }, 1500);
     }
 });
 </script>
