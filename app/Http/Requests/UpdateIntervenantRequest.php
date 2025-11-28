@@ -17,7 +17,7 @@ class UpdateIntervenantRequest extends FormRequest
             'rne' => 'nullable|string|max:50',
             'numero_cnss' => 'nullable|string|max:50',
             'forme_sociale_id' => 'nullable|exists:forme_sociales,id',
-            'categorie' => 'sometimes|in:contact,client,avocat,notaire,huissier,juridiction,administrateur_judiciaire,mandataire_judiciaire,adversaire,expert_judiciaire',
+            'categorie' => 'sometimes|in:contact,client,avocat,notaire,huissier,juridiction,administrateur_judiciaire,mandataire_judiciaire,adversaire,expert_judiciaire,traducteur',
             'fonction' => 'nullable|string|max:255',
             'adresse1' => 'nullable|string|max:255',
             'adresse2' => 'nullable|string|max:255',
