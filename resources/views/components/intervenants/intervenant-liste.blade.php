@@ -16,7 +16,9 @@
                             <th>Intervenant</th>
                             <th>Relation</th>
                             <th>Type</th>
+                            @if(auth()->user()->hasRole('admin'))
                             <th>Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -39,6 +41,7 @@
                             </td>
                             <td>{{ $intervenantLie->pivot->relation ?? 'N/A' }}</td>
                             <td>{{ $intervenantLie->type ?? 'N/A' }}</td>
+                            @if(auth()->user()->hasRole('admin'))
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     @if(auth()->user()->hasPermission('view_intervenants'))
@@ -55,6 +58,7 @@
                                     @endif
                                 </div>
                             </td>
+                            @endif
                         </tr>
                         @endforeach
                     </tbody>

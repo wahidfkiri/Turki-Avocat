@@ -40,6 +40,19 @@ trait EmailTrait
         ];
     }
 
+    private function sendEmail($email, $subject, $htmlContent)
+{
+    try {
+        // Using Laravel's Mail facade with raw HTML
+        Mail::html($htmlContent, function ($message) use ($email, $subject) {
+            $message->to($email)
+                   ->subject($subject);
+        });
+    } catch (\Exception $e) {
+        \Log::error('Email sending failed: ' . $e->getMessage());
+    }
+}
+
     public function createImapFolderSafe($dossier)
 {
     // Nouveau nom attendu

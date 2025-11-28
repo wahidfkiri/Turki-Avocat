@@ -35,7 +35,7 @@
                                     <span class="badge badge-warning ml-2">Archivé</span>
                                 @endif
                             </h3>
-                            <div class="card-tools">
+                            <div class="card-tools d-none">
                                 @if(auth()->user()->hasPermission('edit_intervenants'))
                                 <a href="{{ route('intervenants.edit', $intervenant->id ?? '') }}" class="btn btn-warning btn-sm">
                                     <i class="fas fa-edit"></i> Modifier
@@ -155,7 +155,7 @@
                                                             </tr>
                                                             <tr>
                                                                 <th>Forme Sociale</th>
-                                                                <td>{{ $intervenant->forme_sociale->nom ?? 'Non renseigné' }}</td>
+                                                                <td>{{ $intervenant->formeSociale->nom ?? 'Non renseigné' }}</td>
                                                             </tr>
                                                             <tr>
                                                                 <th>Numéro CNI</th>

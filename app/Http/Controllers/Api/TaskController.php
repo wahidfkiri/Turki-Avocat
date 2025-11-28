@@ -10,9 +10,12 @@ use App\Models\Intervenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
+use App\Traits\EmailTrait;
+use App\Notifications\TaskAssignedNotification;
 
 class TaskController extends Controller
 {
+    use EmailTrait;
     /**
      * Get tasks data for DataTable
      */
@@ -237,6 +240,11 @@ class TaskController extends Controller
             'message' => 'Nouvelle tache a été crée',
             'is_read' => 0
         ]);
+    }
+
+    if(auth()->user()->hasRole('admin')){
+       $user = User::find($task->utilisateur_id);
+       $user->notify(new TaskAssignedNotification($task));
     }
 
     // Réponse pour requête AJAX

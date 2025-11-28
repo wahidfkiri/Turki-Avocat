@@ -13,7 +13,9 @@
                             <th>Nom Dossier</th>
                             <th>Objet</th>
                             <th>Archivé</th>
+                            @if(auth()->user()->hasRole('admin'))
                             <th>Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -23,6 +25,7 @@
                             <td>{{ $dossier->nom_dossier ?? 'N/A' }}</td>
                             <td>{{ $dossier->objet ?? 'N/A' }}</td>
                             <td>{{ ($dossier->archive ?? false) ? 'Oui' : 'Non' }}</td>
+                            @if(auth()->user()->hasRole('admin'))
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     @if(auth()->user()->hasPermission('view_dossiers'))
@@ -39,6 +42,7 @@
                                     @endif
                                 </div>
                             </td>
+                            @endif
                         </tr>
                         @endforeach
                     </tbody>

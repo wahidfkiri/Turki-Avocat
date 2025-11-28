@@ -11,7 +11,9 @@
                             <th>Numéro Dossier</th>
                             <th>Nom Dossier</th>
                             <th>Date Entrée</th>
+                            @if(auth()->user()->hasRole('admin'))
                             <th>Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -20,11 +22,13 @@
                             <td>{{ $dossierLie->numero_dossier }}</td>
                             <td>{{ $dossierLie->nom_dossier }}</td>
                             <td>{{ $dossierLie->date_entree->format('d/m/Y') }}</td>
+                            @if(auth()->user()->hasRole('admin'))
                             <td>
                                 <a href="{{ route('dossiers.show', $dossierLie) }}" class="btn btn-sm btn-info" title="Voir">
                                     <i class="fas fa-eye"></i>
                                 </a>
                             </td>
+                            @endif
                         </tr>
                         @endforeach
                     </tbody>

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\DesktopDatabaseController;
 use App\Http\Controllers\ExplorerController;
 use App\Http\Controllers\OnlyOfficeController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,20 +75,32 @@ Route::get('/dossiers/{dossier}/files', [DossierController::class, 'getFiles'])-
 Route::post('/dossiers/{dossier}/upload', [DossierController::class, 'uploadFiles'])->name('dossiers.upload');
 // Route pour le téléchargement via POST
 Route::post('/dossier/download', [DossierController::class, 'downloadFile'])->name('dossier.download');
+Route::post('/intervenant/download', [IntervenantController::class, 'downloadFile'])->name('intervenant.download');
 // Route::post('/dossier/view', [DossierController::class, 'viewFile'])->name('dossier.view');
 
 // POST: select file
 Route::post('/dossier/view', [DossierController::class, 'viewFilePost'])->name('dossier.view.post');
 
 Route::post('/dossier/view/chrome', [DossierController::class, 'viewFileChrome'])->name('dossier.view.chrome');
+Route::post('/intervenant/view/chrome', [IntervenantController::class, 'viewFileChrome'])->name('intervenant.view.chrome');
 
 // GET: open OnlyOffice editor
 Route::get('/dossier/view/{dossier}/{file}', [DossierController::class, 'viewFile'])
     ->where('file', '.*')
     ->name('dossier.view');
 
-
-
+// Notification routes
+Route::prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/{notificationId}', [NotificationController::class, 'show'])->name('notification.show');
+    Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::post('/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.markAsUnread');
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+    Route::post('/mark-multiple-read', [NotificationController::class, 'markMultipleRead'])->name('notifications.markMultipleRead');
+    Route::post('/delete-multiple', [NotificationController::class, 'deleteMultiple'])->name('notifications.deleteMultiple');
+    Route::post('/delete-all-read', [NotificationController::class, 'deleteAllRead'])->name('notifications.deleteAllRead');
+});
 
 // Gardez l'ancienne route GET pour la compatibilité si nécessaire
 Route::get('/dossier/download/{dossierId}/{fileName}', [DossierController::class, 'downloadFile'])->name('dossier.download.get');
