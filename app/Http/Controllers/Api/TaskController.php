@@ -48,7 +48,11 @@ class TaskController extends Controller
 
         // Filtre par statut
         if ($request->has('statut') && !empty($request->statut)) {
-            $query->where('statut', $request->statut);
+            if($request->statut == 'all'){
+                $query->where('statut', '!=', 'terminee');
+            } else {
+                $query->where('statut', $request->statut);
+            }
         }
 
         // Filtre par utilisateur

@@ -540,10 +540,10 @@ class FactureController extends Controller
             $statut = $validated['type_piece'];
             
             // Chemin personnalisé : factures/2025/payé/ ou factures/2025/non_payé/
-            $customPath = "factures/{$currentYear}/{$statut}";
+            $customPath = "factures/{$statut}/{$currentYear}";
             
             // Générer le nom du fichier
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $fileName = $file->getClientOriginalName();
             
             // Stocker le fichier dans le chemin personnalisé
             $filePath = $file->storeAs($customPath, $fileName, 'public');
@@ -654,9 +654,9 @@ class FactureController extends Controller
             $currentYear = date('Y');
             $statut = $validated['type_piece'] ?? $facture->type_piece;
             
-            $customPath = "factures/{$currentYear}/{$statut}";
+            $customPath = "factures/{$statut}/{$currentYear}";
             
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $fileName = $file->getClientOriginalName();
             $filePath = $file->storeAs($customPath, $fileName, 'public');
             $validated['piece_jointe'] = $filePath;
         }

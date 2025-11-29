@@ -1391,14 +1391,14 @@
                  html += `
                     <div class="list-item" ${folderClick}>
                         <div class="list-item-content">
-                            <div class="list-file-icon ${fileType === 'folder' ? 'text-warning' : (fileExtension === 'docx' ? 'text-primary' : (fileExtension === 'xlsx' ? 'text-success' : (fileExtension === 'pptx' ? 'text-warning' : 'text-secondary')))}">${icon}</div>
+                            <div class="list-file-icon ${fileType === 'folder' ? 'text-warning' : (fileExtension === 'docx' || fileExtension === 'doc' ? 'text-primary' : (fileExtension === 'xlsx' || fileExtension === 'xls' ? 'text-success' : (fileExtension === 'pptx' ? 'text-warning' : 'text-secondary')))}">${icon}</div>
                             <div>
                                 <div class="file-name">
-                                ${fileType === 'file' ? `${fileExtension === 'docx' ? 
+                                ${fileType === 'file' ? `${fileExtension === 'docx' || fileExtension === 'doc' ? 
                                 `<a href="" onclick="window.location = this.dataset.url" data-url="ms-word:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans Word">
                                     ${fileName}  
                                 </a>` :
-                                (fileExtension === 'xlsx' ?
+                                (fileExtension === 'xlsx' || fileExtension === 'xls' ?
                                     `<a href="" onclick="window.location = this.dataset.url" data-url="ms-excel:ofe|u|file:///I:/${originalPath}/${fileName}" title="Ouvrir dans Excel">
                                         ${fileName}
                                     </a>` :

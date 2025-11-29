@@ -74,7 +74,7 @@
                                 <div class="col-md-3">
                                     <label for="filter_statut">Statut</label>
                                     <select class="form-control" id="filter_statut">
-                                        <option value="">Tous les statuts</option>
+                                        <option value="all">Tous les statuts</option>
                                         <option value="a_faire">À faire</option>
                                         <option value="en_cours">En cours</option>
                                         <option value="terminee">Terminée</option>

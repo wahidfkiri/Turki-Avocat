@@ -110,7 +110,11 @@
                       <td>{{ $intervenant->identite_fr }}</td>
                       <td>{{ $intervenant->identite_ar ?? 'N/A' }}</td>
                       <!-- <td>{{ $intervenant->type }}</td> -->
-                      <td>{{ $intervenant->categorie }}</td>
+                      <td>@if($intervenant->categorie == 'administrateur_judiciaire') Administrateur Judiciaire
+                          @elseif($intervenant->categorie == 'mandataire_judiciaire') Mandataire Judiciaire
+                          @elseif($intervenant->categorie == 'expert_judiciaire') Expert Judiciaire
+                          @else {{ ucfirst($intervenant->categorie) }}
+                          @endif
                       <!-- <td>{{ $intervenant->fonction ?? 'N/A' }}</td> -->
                       <td>{{ $intervenant->portable1 ?? $intervenant->fixe1 ?? 'N/A' }}</td>
                       <td>{{ $intervenant->mail1 ?? 'N/A' }}</td>

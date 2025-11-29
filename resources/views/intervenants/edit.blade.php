@@ -171,7 +171,7 @@
                                                                     <option value="administrateur_judiciaire" {{ old('categorie', $intervenant->categorie) == 'administrateur_judiciaire' ? 'selected' : '' }}>Administrateur Judiciaire</option>
                                                                     <option value="mandataire_judiciaire" {{ old('categorie', $intervenant->categorie) == 'mandataire_judiciaire' ? 'selected' : '' }}>Mandataire Judiciaire</option>
                                                                     <option value="expert_judiciaire" {{ old('categorie', $intervenant->categorie) == 'expert_judiciaire' ? 'selected' : '' }}>Expert Judiciaire</option>
-                                                                    <option value="contact" {{ old('categorie', $intervenant->categorie) == 'traducteur' ? 'selected' : '' }}>Traducteur</option>
+                                                                    <option value="traducteur" {{ old('categorie', $intervenant->categorie) == 'traducteur' ? 'selected' : '' }}>Traducteur</option>
                                                                 </select>
                                                                 @error('categorie')
                                                                     <span class="invalid-feedback" role="alert">

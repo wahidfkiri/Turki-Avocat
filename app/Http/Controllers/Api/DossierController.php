@@ -985,10 +985,10 @@ public function getDossiersData(Request $request)
     $statut = $validated['type_piece']; // "payé" ou "non_payé"
     
     // Chemin personnalisé : factures/2025/payé/ ou factures/2025/non_payé/
-    $customPath = "factures/{$currentYear}/{$statut}";
+    $customPath = "factures/{$statut}/{$currentYear}";
     
     // Générer le nom du fichier
-    $fileName = time() . '_' . $file->getClientOriginalName();
+    $fileName = $file->getClientOriginalName();
     
     // Stocker le fichier dans le chemin personnalisé
     $filePath = $file->storeAs($customPath, $fileName, 'public');

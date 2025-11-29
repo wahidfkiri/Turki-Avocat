@@ -122,7 +122,7 @@
                                                                     <option value="administrateur_judiciaire" {{ old('categorie') == 'administrateur_judiciaire' ? 'selected' : '' }}>Administrateur Judiciaire</option>
                                                                     <option value="mandataire_judiciaire" {{ old('categorie') == 'mandataire_judiciaire' ? 'selected' : '' }}>Mandataire Judiciaire</option>
                                                                     <option value="expert_judiciaire" {{ old('categorie') == 'expert_judiciaire' ? 'selected' : '' }}>Expert Judiciaire</option>
-                                                                    <option value="contact" {{ old('categorie') == 'traducteur' ? 'selected' : '' }}>Traducteur</option>
+                                                                    <option value="traducteur" {{ old('categorie') == 'traducteur' ? 'selected' : '' }}>Traducteur</option>
                                                                 </select>
                                                             </div>
                                                         </div>
