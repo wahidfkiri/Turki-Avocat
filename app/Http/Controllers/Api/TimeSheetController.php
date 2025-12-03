@@ -16,6 +16,7 @@ use App\Models\Categorie;
 use App\Models\Type;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class TimeSheetController extends Controller
 {
@@ -130,6 +131,144 @@ public function edit(Timesheet $time_sheet)
 
     
     return view('timesheets.edit', compact('timesheet', 'users', 'dossiers', 'categories', 'types'));
+}
+
+public function getTimesheetAjax($id)  // Accepte l'ID directement
+{
+    \Log::info('AJAX Request for timesheet ID:', ['id' => $id]);
+    
+    if (!auth()->user()->hasPermission('edit_timesheets')) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    
+    try {
+        // Trouver la feuille de temps par ID
+        $timesheet = Timesheet::find($id);
+        
+        if (!$timesheet) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Feuille de temps non trouvée'
+            ], 404);
+        }
+        
+        // Préparer les données
+        $timesheetData = [
+            'id' => $timesheet->id,
+            'date_timesheet' => $timesheet->date_timesheet ? $timesheet->date_timesheet->format('Y-m-d') : null,
+            'utilisateur_id' => $timesheet->utilisateur_id,
+            'dossier_id' => $timesheet->dossier_id,
+            'categorie' => $timesheet->categorie,
+            'type' => $timesheet->type,
+            'quantite' => (float) $timesheet->quantite,
+            'prix' => (float) $timesheet->prix,
+            'total' => (float) $timesheet->total,
+            'description' => $timesheet->description,
+            'created_at' => $timesheet->created_at ? $timesheet->created_at->format('d/m/Y H:i') : null,
+            'updated_at' => $timesheet->updated_at ? $timesheet->updated_at->format('d/m/Y H:i') : null,
+        ];
+        
+        \Log::info('AJAX Response Data:', $timesheetData);
+        
+        return response()->json([
+            'success' => true,
+            'timesheet' => $timesheetData,
+            'dossiers' => Dossier::all()->map(function($dossier) {
+                return ['id' => $dossier->id, 'numero_dossier' => $dossier->numero_dossier];
+            }),
+            'categories' => Categorie::all()->map(function($categorie) {
+                return ['id' => $categorie->id, 'nom' => $categorie->nom];
+            }),
+            'types' => Type::all()->map(function($type) {
+                return ['id' => $type->id, 'nom' => $type->nom, 'categorie_id' => $type->categorie_id];
+            }),
+            'users' => User::where('is_active', true)->get()->map(function($user) {
+                return ['id' => $user->id, 'name' => $user->name, 'fonction' => $user->fonction];
+            })
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Erreur dans getTimesheetAjax', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'error' => 'Erreur interne: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Récupérer les détails d'une feuille de temps via AJAX
+ */
+public function getTimesheetDetailsAjax($id)
+{
+    \Log::info('AJAX Show Request for timesheet ID:', ['id' => $id]);
+    
+    if (!auth()->user()->hasPermission('view_timesheets')) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    
+    try {
+        // Trouver la feuille de temps avec ses relations
+        $timesheet = Timesheet::with(['user', 'dossier', 'categorieRelation', 'typeRelation'])->find($id);
+        
+        if (!$timesheet) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Feuille de temps non trouvée'
+            ], 404);
+        }
+        
+        // Préparer les données pour la vue
+        $timesheetData = [
+            'id' => $timesheet->id,
+            'date_timesheet' => $timesheet->date_timesheet ? $timesheet->date_timesheet->format('d/m/Y') : 'N/A',
+            'user' => [
+                'name' => $timesheet->user->name ?? 'N/A',
+                'fonction' => $timesheet->user->fonction ?? null,
+            ],
+            'dossier' => $timesheet->dossier ? [
+                'id' => $timesheet->dossier->id,
+                'numero_dossier' => $timesheet->dossier->numero_dossier ?? 'N/A',
+                'nom_dossier' => $timesheet->dossier->nom_dossier ?? null,
+            ] : null,
+            'quantite' => number_format($timesheet->quantite ?? 0, 2, ',', ' '),
+            'prix' => number_format($timesheet->prix ?? 0, 2, ',', ' ') . ' DT',
+            'total' => number_format($timesheet->total ?? 0, 2, ',', ' ') . ' DT',
+            'categorie' => $timesheet->categorieRelation->nom ?? 'Non spécifiée',
+            'type' => $timesheet->typeRelation->nom ?? 'Non spécifié',
+            'description' => $timesheet->description ?? 'Aucune description fournie',
+            'created_at' => $timesheet->created_at ? $timesheet->created_at->format('d/m/Y à H:i') : 'N/A',
+            'updated_at' => $timesheet->updated_at ? $timesheet->updated_at->format('d/m/Y à H:i') : 'N/A',
+            'file_path' => $timesheet->file_path,
+            'file_name' => $timesheet->file_name,
+        ];
+        
+        \Log::info('AJAX Show Response Data:', $timesheetData);
+        
+        return response()->json([
+            'success' => true,
+            'timesheet' => $timesheetData,
+            'edit_url' => route('time-sheets.edit', $timesheet->id),
+            'delete_url' => route('time-sheets.destroy', $timesheet->id),
+            'has_edit_permission' => auth()->user()->hasPermission('edit_timesheets'),
+            'has_delete_permission' => auth()->user()->hasPermission('delete_timesheets'),
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Erreur dans getTimesheetDetailsAjax', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'error' => 'Erreur interne: ' . $e->getMessage()
+        ], 500);
+    }
 }
   public function update(Request $request, Timesheet $time_sheet)
 {

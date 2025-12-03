@@ -474,6 +474,189 @@
             targetPath: null
         };
 
+        // Function to handle folder upload
+        function handleFolderUpload(files) {
+            const folder = files[0];
+            
+            if (!folder) return;
+
+            // Vérifier si c'est un dossier (webkitRelativePath existe pour les dossiers)
+            if (!folder.webkitRelativePath) {
+                alert('Veuillez sélectionner un dossier, pas des fichiers individuels.');
+                return;
+            }
+
+            // Afficher un indicateur de chargement
+            $('#uploadBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Traitement du dossier...');
+
+            // Construire la structure du dossier
+            buildFolderStructure(files).then(folderStructure => {
+                // Envoyer la structure au serveur
+                uploadFolderStructure(folderStructure);
+            }).catch(error => {
+                console.error('Erreur construction dossier:', error);
+                $('#uploadBtn').prop('disabled', false).html('<i class="fas fa-upload"></i> Importer les fichiers');
+                $(document).Toasts('create', {
+                    class: 'bg-danger',
+                    title: 'Erreur',
+                    body: 'Erreur lors du traitement du dossier',
+                    autohide: true,
+                    delay: 3000
+                });
+            });
+        }
+
+        // Build folder structure from FileList
+        function buildFolderStructure(files) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const folderStructure = {
+                        name: getFolderName(files),
+                        files: [],
+                        folders: []
+                    };
+
+                    // Organiser les fichiers par chemin
+                    const pathMap = {};
+
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const relativePath = file.webkitRelativePath;
+                        const pathParts = relativePath.split('/');
+                        
+                        // Le premier élément est le nom du dossier racine
+                        const fileName = pathParts.pop();
+                        const folderPath = pathParts.join('/');
+
+                        if (!pathMap[folderPath]) {
+                            pathMap[folderPath] = [];
+                        }
+                        
+                        pathMap[folderPath].push({
+                            file: file,
+                            name: fileName,
+                            path: folderPath
+                        });
+                    }
+
+                    // Traiter le dossier racine
+                    await processFolder('', pathMap, folderStructure);
+
+                    resolve(folderStructure);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        // Process folder recursively
+        async function processFolder(currentPath, pathMap, parentFolder) {
+            const currentFiles = pathMap[currentPath] || [];
+
+            // Traiter les fichiers du dossier courant
+            for (const item of currentFiles) {
+                const fileData = await readFileAsBase64(item.file);
+                parentFolder.files.push({
+                    name: item.name,
+                    type: item.file.type,
+                    size: item.file.size,
+                    content: fileData
+                });
+            }
+
+            // Trouver les sous-dossiers
+            const subFolders = {};
+            Object.keys(pathMap).forEach(path => {
+                if (path.startsWith(currentPath) && path !== currentPath) {
+                    const remainingPath = path.substring(currentPath ? currentPath.length + 1 : 0);
+                    const nextSegment = remainingPath.split('/')[0];
+                    
+                    if (nextSegment && !subFolders[nextSegment]) {
+                        subFolders[nextSegment] = path;
+                    }
+                }
+            });
+
+            // Traiter les sous-dossiers
+            for (const [folderName, folderPath] of Object.entries(subFolders)) {
+                const subFolder = {
+                    name: folderName,
+                    files: [],
+                    folders: []
+                };
+                
+                parentFolder.folders.push(subFolder);
+                await processFolder(folderPath, pathMap, subFolder);
+            }
+        }
+
+        // Read file as base64
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Get folder name from FileList
+        function getFolderName(files) {
+            if (files.length > 0 && files[0].webkitRelativePath) {
+                return files[0].webkitRelativePath.split('/')[0];
+            }
+            return 'Nouveau_Dossier_' + Date.now();
+        }
+
+        // Upload folder structure to server
+        function uploadFolderStructure(folderStructure) {
+            $.ajax({
+                url: `/dossiers/${dossierId}/upload-folder`,
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    folder: folderStructure,
+                    path: currentPath
+                },
+                beforeSend: function() {
+                    $('#uploadBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Upload du dossier...');
+                },
+                success: function(response) {
+                    $('#uploadModal').modal('hide');
+                    resetUploadForm();
+                    
+                    if (response.success) {
+                        loadFiles(currentPath);
+                        $(document).Toasts('create', {
+                            class: 'bg-success',
+                            title: 'Succès',
+                            body: `Dossier "${response.folder_name}" uploadé avec ${response.count} éléments!`,
+                            autohide: true,
+                            delay: 4000
+                        });
+                    } else {
+                        $(document).Toasts('create', {
+                            class: 'bg-danger',
+                            title: 'Erreur',
+                            body: response.message || 'Erreur lors de l\'upload du dossier',
+                            autohide: true,
+                            delay: 3000
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#uploadBtn').prop('disabled', false).html('<i class="fas fa-upload"></i> Importer les fichiers');
+                    $(document).Toasts('create', {
+                        class: 'bg-danger',
+                        title: 'Erreur',
+                        body: 'Erreur lors de l\'upload du dossier',
+                        autohide: true,
+                        delay: 3000
+                    });
+                }
+            });
+        }
+
         // Load files function with path support
         function loadFiles(path = '') {
             $('#filesContainer').html(`
@@ -1290,76 +1473,105 @@
         }
 
         // Render grid view
-        function renderGridView(files) {
-            let html = '';
-            files.forEach(function(file) {
-                const fileName = file.name;
-                const fileType = file.type;
-                const fileSize = formatFileSize(file.size);
-                const lastModified = new Date(file.last_modified * 1000).toLocaleDateString();
-                const fileExtension = file.extension.toLowerCase();
-                const filePath = file.path;
-                
-                let fileCategory = 'file';
-                if (fileType === 'folder') {
-                    fileCategory = 'folder';
-                } else if (['pdf'].includes(fileExtension)) {
-                    fileCategory = 'pdf';
-                } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(fileExtension)) {
-                    fileCategory = 'image';
-                } else if (['doc', 'docx', 'txt', 'rtf'].includes(fileExtension)) {
-                    fileCategory = 'document';
-                } else if (['xls', 'xlsx', 'csv'].includes(fileExtension)) {
-                    fileCategory = 'spreadsheet';
-                } else if (['zip', 'rar', '7z', 'tar'].includes(fileExtension)) {
-                    fileCategory = 'archive';
-                }
+       // Render grid view
+function renderGridView(files) {
+    let html = '';
 
-                const icon = getFileIcon(fileType, fileExtension);
-
-                const safeFilePath = filePath.replace(/'/g, "\\'");
-                const safeFileName = fileName.replace(/'/g, "\\'");
-
-                html += `
-                    <div class="file-card ${fileCategory}" data-file-type="${fileType}" 
-                         ${fileType === 'folder' ? `onclick="handleFolderClick('${safeFilePath}', '${safeFileName}')" style="cursor: pointer;"` : ''}>
-                        <div class="file-actions">
-                            ${fileExtension === 'pdf' ? 
-                                `<button type="button" class="action-btn preview-btn text-danger" onclick="previewFile('${safeFilePath}', '${safeFileName}')" title="Aperçu">
-                                    <i class="fas fa-eye"></i>
-                                </button>` : ''
-                            }
-                            ${fileType === 'file' ? 
-                                `<button type="button" class="action-btn download-btn text-success" onclick="downloadFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
-                                    <i class="fas fa-download"></i>
-                                </button>` : 
-                                ''
-                            }
-                            <button type="button" class="action-btn rename-btn text-primary" onclick="showRenameModal('${safeFilePath}', '${safeFileName}', '${fileType}', event)" title="Renommer">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="action-btn move-btn text-info" onclick="showMoveModal('${safeFilePath}', '${safeFileName}', '${fileType}', event)" title="Déplacer">
-                                <i class="fas fa-arrows-alt"></i>
-                            </button>
-                            <button type="button" class="action-btn delete-btn text-danger" onclick="showDeleteConfirmation('${safeFilePath}', '${safeFileName}', '${fileType}', event)" title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        <div class="file-icon">
-                            ${icon}
-                        </div>
-                        <div class="file-name">${fileName}</div>
-                        <div class="file-meta">
-                            <span>${fileType === 'folder' ? 'Dossier' : fileExtension.toUpperCase()}</span>
-                            ${fileType === 'file' ? `<span>${fileSize}</span>` : ''}
-                            <span>${lastModified}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            $('#filesContainer').html(html);
+    files.forEach(function(file) {
+        const fileName = file.name;
+        const fileType = file.type;
+        const originalPath = file.original_path;
+        const fileSize = file.type === 'folder' ? '-' : formatFileSize(file.size);
+        const lastModified = new Date(file.last_modified * 1000).toLocaleDateString();
+        const fileExtension = file.extension.toLowerCase();
+        const filePath = file.path;
+        
+        let fileCategory = 'file';
+        if (fileType === 'folder') {
+            fileCategory = 'folder';
+        } else if (['pdf'].includes(fileExtension)) {
+            fileCategory = 'pdf';
+        } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(fileExtension)) {
+            fileCategory = 'image';
+        } else if (['doc', 'docx', 'txt', 'rtf'].includes(fileExtension)) {
+            fileCategory = 'document';
+        } else if (['xls', 'xlsx', 'csv'].includes(fileExtension)) {
+            fileCategory = 'spreadsheet';
+        } else if (['zip', 'rar', '7z', 'tar'].includes(fileExtension)) {
+            fileCategory = 'archive';
         }
+
+        const icon = getFileIcon(fileType, fileExtension);
+
+        const safeFilePath = filePath.replace(/'/g, "\\'");
+        const safeFileName = fileName.replace(/'/g, "\\'");
+
+        // Logique de lien pour les fichiers (identique à renderListView)
+        let fileNameDisplay = fileName;
+        if (fileType === 'file') {
+            let fileUrl = '';
+            
+            if (fileExtension === 'docx' || fileExtension === 'doc') {
+                fileUrl = `ms-word:ofe|u|file:///P:/${originalPath}/${fileName}`;
+                fileNameDisplay = `<a href="" onclick="window.location = this.dataset.url" data-url="${fileUrl}" title="Ouvrir dans Word">${fileName}</a>`;
+            } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+                fileUrl = `ms-excel:ofe|u|file:///P:/${originalPath}/${fileName}`;
+                fileNameDisplay = `<a href="" onclick="window.location = this.dataset.url" data-url="${fileUrl}" title="Ouvrir dans Excel">${fileName}</a>`;
+            } else if (fileExtension === 'pptx') {
+                fileUrl = `ms-powerpoint:ofe|u|file:///P:/${originalPath}/${fileName}`;
+                fileNameDisplay = `<a href="" onclick="window.location = this.dataset.url" data-url="${fileUrl}" title="Ouvrir dans PowerPoint">${fileName}</a>`;
+            } else {
+                // Pour les autres fichiers, garder le lien d'aperçu
+                fileNameDisplay = `<a href="#" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')">${fileName}</a>`;
+            }
+            
+            // Garder le lien d'aperçu Chrome en backup (identique à renderListView)
+            fileNameDisplay += `<a href="#" class="d-none" onclick="previewFileChrome('${safeFilePath}', '${safeFileName}')">${fileName}</a>`;
+        }
+
+        // Garder l'ancien style d'événement onclick sur la carte pour les dossiers
+        const folderClick = fileType === 'folder' ? `onclick="handleFolderClick('${safeFilePath}', '${safeFileName}')" style="cursor: pointer;"` : '';
+
+        html += `
+            <div class="file-card ${fileCategory}" data-file-type="${fileType}" 
+                 ${folderClick}>
+                <div class="file-actions">
+                    ${fileExtension === 'pdf' ? 
+                        `<button type="button" class="action-btn preview-btn text-danger" onclick="previewFile('${safeFilePath}', '${safeFileName}')" title="Aperçu">
+                            <i class="fas fa-eye"></i>
+                        </button>` : ''
+                    }
+                    ${fileType === 'file' ? 
+                        `<button type="button" class="action-btn download-btn text-success" onclick="downloadFile('${safeFilePath}', '${safeFileName}')" title="Télécharger">
+                            <i class="fas fa-download"></i>
+                        </button>` : 
+                        ''
+                    }
+                    <button type="button" class="action-btn rename-btn text-primary" onclick="showRenameModal('${safeFilePath}', '${safeFileName}', '${fileType}', event)" title="Renommer">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="action-btn move-btn text-info" onclick="showMoveModal('${safeFilePath}', '${safeFileName}', '${fileType}', event)" title="Déplacer">
+                        <i class="fas fa-arrows-alt"></i>
+                    </button>
+                    <button type="button" class="action-btn delete-btn text-danger" onclick="showDeleteConfirmation('${safeFilePath}', '${safeFileName}', '${fileType}', event)" title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="file-icon">
+                    ${icon}
+                </div>
+                <div class="file-name">${fileNameDisplay}</div>
+                <div class="file-meta">
+                    <span>${fileType === 'folder' ? 'Dossier' : fileExtension.toUpperCase()}</span>
+                    ${fileType === 'file' ? `<span>${fileSize}</span>` : ''}
+                    <span>${lastModified}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    $('#filesContainer').html(html);
+}
 
         // Render list view
         function renderListView(files) {
@@ -1485,16 +1697,17 @@
 
         // Event handlers for modal buttons
         // Upload folder button
-$('#uploadFolderBtn').on('click', function() {
-    $('#folderInput').click();
-});
+        $('#uploadFolderBtn').on('click', function() {
+            $('#folderInput').click();
+        });
 
-// Folder input change
-$('#folderInput').on('change', function(e) {
-    if (e.target.files.length > 0) {
-        handleFolderUpload(e.target.files);
-    }
-});
+        // Folder input change
+        $('#folderInput').on('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleFolderUpload(e.target.files);
+            }
+        });
+        
         $('#confirmDeleteBtn').on('click', function() {
             executeDelete();
         });
@@ -1749,81 +1962,82 @@ $('#folderInput').on('change', function(e) {
             loadFiles();
         }
 
-    const createFileBtn = document.getElementById('createFileBtn');
-    const dropdown = document.getElementById('fileTypeDropdown');
-    const modal = document.getElementById('createFileModal');
-    const fileTypeInput = document.getElementById('file_type');
+        const createFileBtn = document.getElementById('createFileBtn');
+        const dropdown = document.getElementById('fileTypeDropdown');
+        const modal = document.getElementById('createFileModal');
+        const fileTypeInput = document.getElementById('file_type');
 
-    // Toggle dropdown
-    createFileBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        dropdown.classList.toggle('show');
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(){
-        dropdown.classList.remove('show');
-    });
-
-    // Dropdown item click -> open modal
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', function(e){
-            e.preventDefault();
-            fileTypeInput.value = this.dataset.fileType;
-            modal.classList.add('show'); // show modal
-            dropdown.classList.remove('show'); // hide dropdown
+        // Toggle dropdown
+        createFileBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            dropdown.classList.toggle('show');
         });
-    });
 
-    // Cancel button
-    document.getElementById('cancelBtn').addEventListener('click', function(){
-        modal.classList.remove('show');
-        document.getElementById('file_name').value = '';
-    });
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(){
+            dropdown.classList.remove('show');
+        });
 
-    // Submit button
-    document.getElementById('submitBtn').addEventListener('click', function(){
-        const fileName = document.getElementById('file_name').value.trim();
-        const fileType = fileTypeInput.value;
-        const dossierId = document.getElementById('dossier_id').value;
+        // Dropdown item click -> open modal
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e){
+                e.preventDefault();
+                fileTypeInput.value = this.dataset.fileType;
+                modal.classList.add('show'); // show modal
+                dropdown.classList.remove('show'); // hide dropdown
+            });
+        });
 
-        if(!fileName){ alert('Veuillez saisir un nom de fichier.'); return; }
-
-        const formData = new FormData();
-        formData.append('file_name', fileName + '.' + fileType);
-        formData.append('dossier_id', dossierId);
-
-        fetch('{{ route("dossier.create.file.backend") }}', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            body: formData
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success){
-                
-                $(document).Toasts('create', {
-                    class: 'bg-success',
-                    title: 'Succès',
-                    body: `"${data.message}"`,
-                    autohide: true,
-                    delay: 4000
-                });
-                modal.classList.remove('show');
-                loadFiles(currentPath);
-            } else {
-                alert(data.error || 'Erreur lors de la création du fichier.');
-            }
-        })
-        .catch(err => { console.error(err); alert('Erreur serveur.'); });
-    });
-
-    // Close modal when clicking outside modal content
-    modal.addEventListener('click', function(e){
-        if(e.target === modal){
+        // Cancel button
+        document.getElementById('cancelBtn').addEventListener('click', function(){
             modal.classList.remove('show');
-        }
-    });
+            document.getElementById('file_name').value = '';
+        });
+
+        // Submit button - CORRECTION AJOUTÉE POUR INCLURE LE CHEMIN
+        document.getElementById('submitBtn').addEventListener('click', function(){
+            const fileName = document.getElementById('file_name').value.trim();
+            const fileType = fileTypeInput.value;
+            const dossierId = document.getElementById('dossier_id').value;
+
+            if(!fileName){ alert('Veuillez saisir un nom de fichier.'); return; }
+
+            const formData = new FormData();
+            formData.append('file_name', fileName + '.' + fileType);
+            formData.append('dossier_id', dossierId);
+            // AJOUT: Inclure le chemin actuel
+            formData.append('path', currentPath);
+
+            fetch('{{ route("dossier.create.file.backend") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success){
+                    $(document).Toasts('create', {
+                        class: 'bg-success',
+                        title: 'Succès',
+                        body: `"${data.message}"`,
+                        autohide: true,
+                        delay: 4000
+                    });
+                    modal.classList.remove('show');
+                    loadFiles(currentPath);
+                } else {
+                    alert(data.error || 'Erreur lors de la création du fichier.');
+                }
+            })
+            .catch(err => { console.error(err); alert('Erreur serveur.'); });
+        });
+
+        // Close modal when clicking outside modal content
+        modal.addEventListener('click', function(e){
+            if(e.target === modal){
+                modal.classList.remove('show');
+            }
+        });
         
         // Make functions globally available
         window.handleFolderClick = handleFolderClick;
@@ -1836,193 +2050,5 @@ $('#folderInput').on('change', function(e) {
         window.showMoveModal = showMoveModal;
         window.showCreateFolderModal = showCreateFolderModal;
     });
-   
-</script>
-<script>
-    // Function to handle folder upload
-        const dossierId = {{ $dossier->id }};
-let currentPath = '';
-function handleFolderUpload(files) {
-    const folder = files[0];
-    
-    
-    if (!folder) return;
-
-    // Vérifier si c'est un dossier (webkitRelativePath existe pour les dossiers)
-    if (!folder.webkitRelativePath) {
-        alert('Veuillez sélectionner un dossier, pas des fichiers individuels.');
-        return;
-    }
-
-    // Afficher un indicateur de chargement
-    $('#uploadBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Traitement du dossier...');
-
-    // Construire la structure du dossier
-    buildFolderStructure(files).then(folderStructure => {
-        // Envoyer la structure au serveur
-        uploadFolderStructure(folderStructure);
-    }).catch(error => {
-        console.error('Erreur construction dossier:', error);
-        $('#uploadBtn').prop('disabled', false).html('<i class="fas fa-upload"></i> Importer les fichiers');
-        $(document).Toasts('create', {
-            class: 'bg-danger',
-            title: 'Erreur',
-            body: 'Erreur lors du traitement du dossier',
-            autohide: true,
-            delay: 3000
-        });
-    });
-}
-
-// Build folder structure from FileList
-function buildFolderStructure(files) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const folderStructure = {
-                name: getFolderName(files),
-                files: [],
-                folders: []
-            };
-
-            // Organiser les fichiers par chemin
-            const pathMap = {};
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const relativePath = file.webkitRelativePath;
-                const pathParts = relativePath.split('/');
-                
-                // Le premier élément est le nom du dossier racine
-                const fileName = pathParts.pop();
-                const folderPath = pathParts.join('/');
-
-                if (!pathMap[folderPath]) {
-                    pathMap[folderPath] = [];
-                }
-                
-                pathMap[folderPath].push({
-                    file: file,
-                    name: fileName,
-                    path: folderPath
-                });
-            }
-
-            // Traiter le dossier racine
-            await processFolder('', pathMap, folderStructure);
-
-            resolve(folderStructure);
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
-// Process folder recursively
-async function processFolder(currentPath, pathMap, parentFolder) {
-    const currentFiles = pathMap[currentPath] || [];
-
-    // Traiter les fichiers du dossier courant
-    for (const item of currentFiles) {
-        const fileData = await readFileAsBase64(item.file);
-        parentFolder.files.push({
-            name: item.name,
-            type: item.file.type,
-            size: item.file.size,
-            content: fileData
-        });
-    }
-
-    // Trouver les sous-dossiers
-    const subFolders = {};
-    Object.keys(pathMap).forEach(path => {
-        if (path.startsWith(currentPath) && path !== currentPath) {
-            const remainingPath = path.substring(currentPath ? currentPath.length + 1 : 0);
-            const nextSegment = remainingPath.split('/')[0];
-            
-            if (nextSegment && !subFolders[nextSegment]) {
-                subFolders[nextSegment] = path;
-            }
-        }
-    });
-
-    // Traiter les sous-dossiers
-    for (const [folderName, folderPath] of Object.entries(subFolders)) {
-        const subFolder = {
-            name: folderName,
-            files: [],
-            folders: []
-        };
-        
-        parentFolder.folders.push(subFolder);
-        await processFolder(folderPath, pathMap, subFolder);
-    }
-}
-
-// Read file as base64
-function readFileAsBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
-// Get folder name from FileList
-function getFolderName(files) {
-    if (files.length > 0 && files[0].webkitRelativePath) {
-        return files[0].webkitRelativePath.split('/')[0];
-    }
-    return 'Nouveau_Dossier_' + Date.now();
-}
-
-// Upload folder structure to server
-function uploadFolderStructure(folderStructure) {
-    $.ajax({
-        url: `/dossiers/${dossierId}/upload-folder`,
-        type: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content'),
-            folder: folderStructure,
-            path: currentPath
-        },
-        beforeSend: function() {
-            $('#uploadBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Upload du dossier...');
-        },
-        success: function(response) {
-            $('#uploadModal').modal('hide');
-            resetUploadForm();
-            
-            if (response.success) {
-                loadFiles(currentPath);
-                $(document).Toasts('create', {
-                    class: 'bg-success',
-                    title: 'Succès',
-                    body: `Dossier "${response.folder_name}" uploadé avec ${response.count} éléments!`,
-                    autohide: true,
-                    delay: 4000
-                });
-            } else {
-                $(document).Toasts('create', {
-                    class: 'bg-danger',
-                    title: 'Erreur',
-                    body: response.message || 'Erreur lors de l\'upload du dossier',
-                    autohide: true,
-                    delay: 3000
-                });
-            }
-        },
-        error: function(xhr, status, error) {
-            $('#uploadBtn').prop('disabled', false).html('<i class="fas fa-upload"></i> Importer les fichiers');
-            $(document).Toasts('create', {
-                class: 'bg-danger',
-                title: 'Erreur',
-                body: 'Erreur lors de l\'upload du dossier',
-                autohide: true,
-                delay: 3000
-            });
-        }
-    });
-}
 </script>
 

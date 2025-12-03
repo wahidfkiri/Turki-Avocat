@@ -114,7 +114,7 @@ $(document).ready(function() {
                 
                 <div class="row">
                     <!-- Date -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="date_timesheet" class="font-weight-bold">Date *</label>
                             <input type="date" class="${cssClass}" 
@@ -124,8 +124,17 @@ $(document).ready(function() {
                         </div>
                     </div>
 
+                    <!-- Dossier (lecture seule) -->
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label for="dossier" class="font-weight-bold">Dossier</label>
+                            <input type="text" class="form-control-plaintext bg-light p-2 rounded" 
+                                   value="${escapeHtml(timesheet.dossier?.numero_dossier + ' ' + timesheet.dossier?.nom_dossier || 'Non lié')}" readonly>
+                        </div>
+                    </div>
+
                     <!-- Utilisateur -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="user_id" class="font-weight-bold">Utilisateur</label>
                             ${isViewMode ? `
@@ -144,17 +153,8 @@ $(document).ready(function() {
                         </div>
                     </div>
 
-                    <!-- Dossier (lecture seule) -->
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="dossier" class="font-weight-bold">Dossier</label>
-                            <input type="text" class="form-control-plaintext bg-light p-2 rounded" 
-                                   value="${escapeHtml(timesheet.dossier?.numero_dossier || 'Non lié')}" readonly>
-                        </div>
-                    </div>
-
                     <!-- Catégorie -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="categorie_id" class="font-weight-bold">Catégorie</label>
                             ${isViewMode ? `
@@ -174,7 +174,7 @@ $(document).ready(function() {
                     </div>
 
                     <!-- Type -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="type_id" class="font-weight-bold">Type</label>
                             ${isViewMode ? `
@@ -194,7 +194,7 @@ $(document).ready(function() {
                     </div>
 
                     <!-- Quantité -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="quantite" class="font-weight-bold">Quantité *</label>
                             <input type="number" step="0.01" class="${cssClass}" 
@@ -205,7 +205,7 @@ $(document).ready(function() {
                     </div>
 
                     <!-- Prix -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="prix" class="font-weight-bold">Prix Unitaire *</label>
                             <input type="number" step="0.01" class="${cssClass}" 
@@ -216,7 +216,7 @@ $(document).ready(function() {
                     </div>
 
                     <!-- Total (calculé automatiquement) -->
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label for="total" class="font-weight-bold">Total</label>
                             <input type="text" class="form-control-plaintext bg-light p-2 rounded" 
@@ -229,7 +229,7 @@ $(document).ready(function() {
                 <div class="form-group">
                     <label for="description" class="font-weight-bold">Description</label>
                     <textarea class="${cssClass}" id="description" name="description" 
-                              rows="4" ${readOnlyAttr}>${escapeHtml(timesheet.description || '')}</textarea>
+                              rows="2" ${readOnlyAttr}>${escapeHtml(timesheet.description || '')}</textarea>
                 </div>
 
                 <!-- Informations de suivi -->

@@ -68,15 +68,15 @@
                   </div>
                   <div class="col-md-6">
                     <div class="row">
-                      <div class="col-md-6">
+                      <div class="col-md-12">
                         <select class="form-control" id="categorieFilter">
                           <option value="">Toutes les catégories</option>
                           @foreach(['contact','client','avocat','notaire','huissier','juridiction','administrateur judiciaire','mandataire judiciaire','adversaire','expert judiciaire','traducteur'] as $categorie)
-                            <option value="{{ $categorie }}">{{ ucfirst($categorie) }}</option>
+                            <option value="{{ mb_strtoupper(mb_substr($categorie, 0, 1), 'UTF-8') . mb_substr($categorie, 1, null, 'UTF-8') }}">{{ ucfirst($categorie) }}</option>
                           @endforeach
                         </select>
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-md-6 d-none">
                         <select class="form-control" id="typeFilter">
                           <option value="">Tous les types</option>
                           @foreach(['personne physique','personne morale','entreprise individuelle'] as $type)
@@ -110,11 +110,28 @@
                       <td>{{ $intervenant->identite_fr }}</td>
                       <td>{{ $intervenant->identite_ar ?? 'N/A' }}</td>
                       <!-- <td>{{ $intervenant->type }}</td> -->
-                      <td>@if($intervenant->categorie == 'administrateur_judiciaire') Administrateur Judiciaire
+                      <td>
+                        <span class="badge 
+                         @if($intervenant->categorie == 'contact') badge-primary
+                         @elseif($intervenant->categorie == 'client') badge-success
+                         @elseif($intervenant->categorie == 'avocat') badge-dark
+                         @elseif($intervenant->categorie == 'notaire') badge-info
+                         @elseif($intervenant->categorie == 'huissier') badge-warning
+                         @elseif($intervenant->categorie == 'administrateur_judiciaire') badge-light
+                         @elseif($intervenant->categorie == 'traducteur') badge-secondary
+                         @elseif($intervenant->categorie == 'mandataire_judiciaire') badge-light
+                         @elseif($intervenant->categorie == 'expert_judiciaire') badge-light
+                         @elseif($intervenant->categorie == 'adversaire') badge-danger
+                         @elseif($intervenant->categorie == 'juridiction') badge-warning
+                         @else badge-light
+                         @endif">
+                        @if($intervenant->categorie == 'administrateur_judiciaire') Administrateur Judiciaire
                           @elseif($intervenant->categorie == 'mandataire_judiciaire') Mandataire Judiciaire
                           @elseif($intervenant->categorie == 'expert_judiciaire') Expert Judiciaire
-                          @else {{ ucfirst($intervenant->categorie) }}
+                            @else {{ mb_strtoupper(mb_substr($intervenant->categorie, 0, 1), 'UTF-8') . mb_substr($intervenant->categorie, 1, null, 'UTF-8') }}
                           @endif
+                          </span>
+                      </td>
                       <!-- <td>{{ $intervenant->fonction ?? 'N/A' }}</td> -->
                       <td>{{ $intervenant->portable1 ?? $intervenant->fixe1 ?? 'N/A' }}</td>
                       <td>{{ $intervenant->mail1 ?? 'N/A' }}</td>

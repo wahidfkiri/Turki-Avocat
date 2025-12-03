@@ -92,8 +92,8 @@
                                 </div>
                                 @if(auth()->user()->hasRole('admin'))
                                 <div class="col-md-2">
-                                    <label for="filter_utilisateur">Utilisateur</label>
-                                    <select class="form-control" id="filter_utilisateur">
+                                    <label for="filter_utilisateur search_utilisateur">Utilisateur</label>
+                                    <select class="form-control search_utilisateur" id="filter_utilisateur">
                                         <option value="">Tous les utilisateurs</option>
                                         @foreach($users as $user)
                                             <option value="{{ $user->id }}">{{ $user->name }}</option>
@@ -103,7 +103,7 @@
                                 @endif
                                 <div class="col-md-2">
                                     <label for="filter_dossier">Dossier</label>
-                                    <select class="form-control" id="filter_dossier">
+                                    <select class="form-control search_dossier" id="filter_dossier">
                                         <option value="">Tous les dossiers</option>
                                         @foreach($dossiers as $dossier)
                                             <option value="{{ $dossier->id }}">{{ $dossier->numero_dossier }}</option>
@@ -111,8 +111,8 @@
                                     </select>
                                 </div>
                                 <div class="col-md-2">
-                                    <label for="filter_categorie">Catégorie</label>
-                                    <select class="form-control" id="filter_categorie">
+                                    <label for="filter_categorie search_categorie">Catégorie</label>
+                                    <select class="form-control search_categorie" id="filter_categorie">
                                         <option value="">Toutes les catégories</option>
                                         @foreach($categories as $categorie)
                                             <option value="{{ $categorie->id }}">{{ $categorie->nom }}</option>
@@ -121,7 +121,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label for="filter_type">Type</label>
-                                    <select class="form-control" id="filter_type">
+                                    <select class="form-control search_type" id="filter_type">
                                         <option value="">Tous les types</option>
                                         @foreach($types as $type)
                                             <option value="{{ $type->id }}">{{ $type->nom }}</option>
@@ -218,18 +218,23 @@
         </div>
     </div>
 </div>
-
 <!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.sumoselect/3.0.2/jquery.sumoselect.min.js"></script>
 <script>
+    $('.search_utilisateur').SumoSelect({search: true, searchText: 'Sélectionner un utilisateur...'});
+    $('.search_dossier').SumoSelect({search: true, searchText: 'Sélectionner un dossier...'});
+    $('.search_categorie').SumoSelect({search: true, searchText: 'Sélectionner une catégorie...'});
+    $('.search_type').SumoSelect({search: true, searchText: 'Sélectionner un type...'});
+   
 $(document).ready(function() {
     let timesheetToDelete = null;
     let timesheetRowToDelete = null;
 
     // Initialize Select2
-    $('.select2').select2({
-        theme: 'bootstrap4'
-    });
+    // $('.select2').select2({
+    //     theme: 'bootstrap4'
+    // });
 
     // DataTable initialization
     var table = $('#timesheets-table').DataTable({
@@ -319,29 +324,29 @@ $(document).ready(function() {
                 }
             },
             {
-                data: 'action',
-                name: 'action',
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    var actions = '<div class="btn-group">';
-                    
-                    @if(auth()->user()->hasPermission('view_timesheets'))
-                        actions += '<a href="/time-sheets/' + row.id + '" class="btn btn-info btn-sm" title="Voir"><i class="fas fa-eye"></i></a>';
-                    @endif
-                    
-                    @if(auth()->user()->hasPermission('edit_timesheets'))
-                        actions += '<a href="/time-sheets/' + row.id + '/edit" class="btn btn-primary btn-sm" title="Modifier"><i class="fas fa-edit"></i></a>';
-                    @endif
+    data: 'action',
+    name: 'action',
+    orderable: false,
+    searchable: false,
+    render: function(data, type, row) {
+        var actions = '<div class="btn-group">';
+        
+        @if(auth()->user()->hasPermission('view_timesheets'))
+            actions += '<button type="button" class="btn btn-info btn-sm view-timesheet-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
+        @endif
+        
+        @if(auth()->user()->hasPermission('edit_timesheets'))
+            actions += '<button type="button" class="btn btn-primary btn-sm edit-timesheet-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
+        @endif
 
-                    @if(auth()->user()->hasPermission('delete_timesheets'))
-                        actions += '<button type="button" class="btn btn-danger btn-sm delete-timesheet-btn" data-id="' + row.id + '" data-date="' + (row.date_timesheet || '') + '" data-user="' + (row.user ? row.user.name : '') + '" data-dossier="' + (row.dossier ? row.dossier.numero_dossier : '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
-                    @endif
-                    
-                    actions += '</div>';
-                    return actions;
-                }
-            }
+        @if(auth()->user()->hasPermission('delete_timesheets'))
+            actions += '<button type="button" class="btn btn-danger btn-sm delete-timesheet-btn" data-id="' + row.id + '" data-date="' + (row.date_timesheet || '') + '" data-user="' + (row.user ? row.user.name : '') + '" data-dossier="' + (row.dossier ? row.dossier.numero_dossier : '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
+        @endif
+        
+        actions += '</div>';
+        return actions;
+    }
+}
         ],
         order: [[0, 'desc']],
         language: {
@@ -510,6 +515,642 @@ $(document).ready(function() {
             timesheetRowToDelete = null;
         }
     });
+
+    // ==============================================
+// FONCTIONS POUR LE MODAL "SHOW" (VISUALISATION)
+// ==============================================
+
+// Gestionnaire de clic pour le bouton "Voir"
+$(document).on('click', '.view-timesheet-btn', function() {
+    const timesheetId = $(this).data('id');
+    loadTimesheetDetails(timesheetId);
+});
+
+// Fonction pour charger les détails
+function loadTimesheetDetails(timesheetId) {
+    console.log('Chargement des détails pour ID:', timesheetId);
+    
+    // Afficher le modal
+    $('#showTimesheetModal').modal('show');
+    
+    // Afficher le loader, cacher les détails
+    $('#show-loading-section').show();
+    $('#show-details-section').hide().empty();
+    
+    $.ajax({
+        url: '/time-sheets/details/' + timesheetId,
+        type: 'GET',
+        dataType: 'json',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            console.log('Réponse détails:', response);
+            
+            if (response.success && response.timesheet) {
+                // Générer le HTML des détails
+                generateShowDetails(response);
+            } else {
+                showErrorInModal('show', 'Erreur: ' + (response.error || 'Données non disponibles'));
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur AJAX show:', xhr);
+            showErrorInModal('show', 'Erreur ' + xhr.status + ': ' + error);
+        }
+    });
+}
+
+// Fonction pour générer les détails HTML
+function generateShowDetails(data) {
+    const timesheet = data.timesheet;
+    
+    const detailsHtml = `
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Informations principales -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0 section-title">Informations principales</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr>
+                                    <th>Date</th>
+                                    <td>${timesheet.date_timesheet}</td>
+                                </tr>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <td>
+                                        <strong>${timesheet.user.name}</strong>
+                                        ${timesheet.user.fonction ? `<br><small class="text-muted">${timesheet.user.fonction}</small>` : ''}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Dossier</th>
+                                    <td>
+                                        ${timesheet.dossier ? 
+                                            `<a href="/dossiers/${timesheet.dossier.id}" target="_blank" class="text-primary">
+                                                <i class="fas fa-eye"></i> ${timesheet.dossier.numero_dossier}
+                                            </a>
+                                            ${timesheet.dossier.nom_dossier ? `<br><small class="text-muted">${timesheet.dossier.nom_dossier}</small>` : ''}`
+                                            : '<span class="text-muted">Non assigné</span>'}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails financiers -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0 section-title">Détails financiers</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr>
+                                    <th>Quantité</th>
+                                    <td>${timesheet.quantite}</td>
+                                </tr>
+                                <tr>
+                                    <th>Prix unitaire</th>
+                                    <td>${timesheet.prix}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total</th>
+                                    <td class="font-weight-bold text-success" style="font-size: 1.2em;">
+                                        ${timesheet.total}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <!-- Catégorie et Type -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0 section-title">Classification</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr>
+                                    <th>Catégorie</th>
+                                    <td>${timesheet.categorie}</td>
+                                </tr>
+                                <tr>
+                                    <th>Type</th>
+                                    <td>${timesheet.type}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métadonnées -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0 section-title">Métadonnées</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered mb-0">
+                                <tr>
+                                    <th>Créé le</th>
+                                    <td>${timesheet.created_at}</td>
+                                </tr>
+                                <tr>
+                                    <th>Modifié le</th>
+                                    <td>${timesheet.updated_at}</td>
+                                </tr>
+                                <tr>
+                                    <th>Statut</th>
+                                    <td>
+                                        <span class="badge badge-success">Actif</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0 section-title">Description de l'activité</h6>
+                        </div>
+                        <div class="card-body bg-light">
+                            <p class="mb-0" style="white-space: pre-wrap;">${timesheet.description}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pièce jointe -->
+            ${timesheet.file_path ? `
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0 section-title">Pièce jointe</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-success">
+                                <i class="fas fa-file"></i>
+                                <a href="/storage/${timesheet.file_path}" target="_blank" class="ml-2">
+                                    ${timesheet.file_name}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>` : ''}
+
+            
+        </div>
+    `;
+    
+    // Injecter le HTML
+    $('#show-details-section').html(detailsHtml);
+    
+    // Cacher le loader, montrer les détails
+    $('#show-loading-section').hide();
+    $('#show-details-section').show();
+}
+
+// Fonction pour afficher les erreurs dans le modal
+function showErrorInModal(modalType, message) {
+    const loaderId = modalType === 'show' ? '#show-loading-section' : '#loading-section';
+    $(loaderId).html(`
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+            ${message}
+            <br>
+            <button class="btn btn-sm btn-secondary mt-2" onclick="$('#${modalType}TimesheetModal').modal('hide')">
+                <i class="fas fa-times"></i> Fermer
+            </button>
+        </div>
+    `);
+}
+
+// Fonction pour confirmer la suppression depuis le modal
+function confirmDeleteFromModal(timesheetId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette feuille de temps ? Cette action est irréversible.')) {
+        deleteTimesheet(timesheetId);
+    }
+}
+
+// Fonction pour supprimer une feuille de temps
+function deleteTimesheet(timesheetId) {
+    $.ajax({
+        url: '/time-sheets/' + timesheetId,
+        type: 'DELETE',
+        data: {
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Fermer tous les modals
+                $('#showTimesheetModal').modal('hide');
+                $('#editTimesheetModal').modal('hide');
+                
+                // Afficher le message de succès
+                showAlert('success', response.message || 'Feuille de temps supprimée avec succès!');
+                
+                // Recharger le DataTable
+                table.ajax.reload();
+            } else {
+                showAlert('danger', response.message || 'Erreur lors de la suppression.');
+            }
+        },
+        error: function(xhr) {
+            let errorMessage = 'Une erreur est survenue lors de la suppression de la feuille de temps.';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            showAlert('danger', errorMessage);
+        }
+    });
+}
+
+// Fonction pour ouvrir le modal d'édition depuis le modal show
+function openEditFromShow(timesheetId) {
+    $('#showTimesheetModal').modal('hide');
+    setTimeout(() => {
+        loadTimesheetForEdit(timesheetId);
+    }, 300);
+}
+
+// Initialiser quand le modal show se ferme
+$('#showTimesheetModal').on('hidden.bs.modal', function() {
+    $('#show-loading-section').show().html(`
+        <div class="text-center p-4">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2">Chargement des détails...</p>
+        </div>
+    `);
+    $('#show-details-section').hide().empty();
+});
+
+    // ==============================================
+    // GESTION DU MODAL D'ÉDITION
+    // ==============================================
+
+    // Gestionnaire de clic pour le bouton d'édition
+    $(document).on('click', '.edit-timesheet-btn', function() {
+        const timesheetId = $(this).data('id');
+        loadTimesheetForEdit(timesheetId);
+    });
+
+    // Fonction pour charger les données d'édition
+// Fonction pour charger les données d'édition
+function loadTimesheetForEdit(timesheetId) {
+    console.log('Chargement des données pour ID:', timesheetId);
+    
+    // Afficher le modal avec un loader
+    $('#editTimesheetModal').modal('show');
+    
+    // Réinitialiser le formulaire
+    resetEditForm();
+    
+    // Afficher un message de chargement
+    // $('#edit_tracking_info').html(`
+    //     <div class="text-center">
+    //         <i class="fas fa-spinner fa-spin"></i>
+    //         <p class="mt-2">Chargement des données...</p>
+    //     </div>
+    // `);
+    
+    // URL AJAX
+    const url = '/time-sheets/ajax/' + timesheetId;
+    console.log('URL AJAX:', url);
+    
+    $.ajax({
+        url: url,
+        type: 'GET',
+        dataType: 'json',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            console.log('Réponse AJAX complète:', response);
+            console.log('Données timesheet:', response.timesheet);
+            
+            if (response.success && response.timesheet) {
+                // Vérifier que l'ID n'est pas null
+                if (!response.timesheet.id) {
+                    console.error('ID est null dans la réponse!');
+                    showAlert('danger', 'Erreur: ID non trouvé dans la réponse');
+                    return;
+                }
+                
+                // Remplir le formulaire avec les données
+                fillEditForm(response);
+                showAlert('success', 'Données chargées avec succès!');
+            } else {
+                console.error('Erreur dans la réponse:', response);
+                $('#editTimesheetModal').modal('hide');
+                showAlert('danger', 'Erreur: ' + (response.error || 'Données non disponibles'));
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur AJAX:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText,
+                error: error
+            });
+            
+            showAlert('danger', 'Erreur ' + xhr.status + ': ' + error);
+            $('#editTimesheetModal').modal('hide');
+        }
+    });
+}
+
+// Fonction pour réinitialiser le formulaire
+function resetEditForm() {
+    $('#editTimesheetForm')[0].reset();
+    $('#edit_timesheet_id').val('');
+    $('.select2-edit').val('').trigger('change');
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').text('');
+    $('#edit_total_calcule').val('0,00 DT');
+    $('#created_at').text('');
+    $('#updated_at').text('');
+}
+
+// Fonction pour remplir le formulaire avec TOUTES les données
+function fillEditForm(data) {
+    const timesheet = data.timesheet;
+    
+    console.log('Remplissage du formulaire avec:', timesheet);
+    
+    // Remplir l'ID caché
+    $('#edit_timesheet_id').val(timesheet.id);
+    
+    // Remplir les champs simples
+    $('#edit_date_timesheet').val(timesheet.date_timesheet || '');
+    $('#edit_quantite').val(timesheet.quantite || 0);
+    $('#edit_prix').val(timesheet.prix || 0);
+    $('#edit_description').val(timesheet.description || '');
+    
+    // Mettre à jour le total
+    calculateEditTotal();
+    
+    // Mettre à jour les informations de suivi
+    $('#created_at').text(timesheet.created_at || 'Non disponible');
+    $('#updated_at').text(timesheet.updated_at || 'Non disponible');
+    
+    // Remplir les selects (ATTENDRE que Select2 soit initialisé)
+    setTimeout(function() {
+        // Remplir les options des selects d'abord
+        populateSelectOptions(data);
+        
+        // Puis sélectionner les valeurs
+        if (timesheet.utilisateur_id) {
+            $('#edit_utilisateur_id').val(timesheet.utilisateur_id).trigger('change');
+        }
+        if (timesheet.dossier_id) {
+            $('#edit_dossier_id').val(timesheet.dossier_id).trigger('change');
+        }
+        if (timesheet.categorie) {
+            $('#edit_categorie').val(timesheet.categorie).trigger('change');
+        }
+        if (timesheet.type) {
+            $('#edit_type').val(timesheet.type).trigger('change');
+        }
+    }, 100);
+}
+
+// Fonction pour peupler les options des selects
+function populateSelectOptions(data) {
+    console.log('Peuplement des options de select:', data);
+    
+    // Utilisateurs
+    const utilisateurSelect = $('#edit_utilisateur_id');
+    utilisateurSelect.empty();
+    utilisateurSelect.append('<option value="">Sélectionnez un utilisateur</option>');
+    data.users.forEach(user => {
+        utilisateurSelect.append(new Option(`${user.name} (${user.fonction})`, user.id));
+    });
+    
+    // Dossiers
+    const dossierSelect = $('#edit_dossier_id');
+    dossierSelect.empty();
+    dossierSelect.append('<option value="">Sélectionnez un dossier</option>');
+    data.dossiers.forEach(dossier => {
+        dossierSelect.append(new Option(dossier.numero_dossier, dossier.id));
+    });
+    
+    // Catégories
+    const categorieSelect = $('#edit_categorie');
+    categorieSelect.empty();
+    categorieSelect.append('<option value="">Sélectionnez une catégorie</option>');
+    data.categories.forEach(categorie => {
+        categorieSelect.append(new Option(categorie.nom, categorie.id));
+    });
+    
+    // Types
+    const typeSelect = $('#edit_type');
+    typeSelect.empty();
+    typeSelect.append('<option value="">Sélectionnez un type</option>');
+    data.types.forEach(type => {
+        typeSelect.append(new Option(type.nom, type.id));
+    });
+}
+
+// Fonction pour calculer le total
+function calculateEditTotal() {
+    const quantite = parseFloat($('#edit_quantite').val()) || 0;
+    const prix = parseFloat($('#edit_prix').val()) || 0;
+    const total = quantite * prix;
+    
+    const formattedTotal = total.toLocaleString('fr-FR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    $('#edit_total_calcule').val(formattedTotal + ' DT');
+}
+
+// Initialiser Select2 dans le modal quand il s'ouvre
+$('#editTimesheetModal').on('shown.bs.modal', function() {
+    console.log('Modal ouvert, initialisation Select2');
+    
+    $('.select2-edit').select2({
+        theme: 'bootstrap4',
+        dropdownParent: $('#editTimesheetModal'),
+        width: '100%'
+    });
+    
+    // Écouter les changements sur quantité et prix
+    $('#edit_quantite, #edit_prix').off('input').on('input', function() {
+        calculateEditTotal();
+    });
+});
+
+// Nettoyer le modal quand il se ferme
+$('#editTimesheetModal').on('hidden.bs.modal', function() {
+    console.log('Modal fermé, réinitialisation');
+    resetEditForm();
+});
+
+// Soumission du formulaire d'édition
+$(document).on('submit', '#editTimesheetForm', function(e) {
+    e.preventDefault();
+    submitEditForm();
+});
+
+// Fonction pour soumettre le formulaire
+function submitEditForm() {
+    const form = $('#editTimesheetForm');
+    const timesheetId = $('#edit_timesheet_id').val();
+    const submitBtn = form.find('button[type="submit"]');
+    const originalText = submitBtn.html();
+    
+    if (!timesheetId) {
+        showAlert('danger', 'Erreur: ID de feuille de temps manquant');
+        return;
+    }
+    
+    // Désactiver le bouton et afficher le loader
+    submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enregistrement...');
+    
+    // Valider le formulaire
+    if (!validateEditForm()) {
+        submitBtn.prop('disabled', false).html(originalText);
+        return;
+    }
+    
+    // Créer FormData
+    const formData = new FormData(form[0]);
+    
+    $.ajax({
+        url: '/time-sheets/' + timesheetId,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            console.log('Réponse de mise à jour:', response);
+            
+            if (response.success) {
+                showAlert('success', response.message || 'Feuille de temps modifiée avec succès!');
+                $('#editTimesheetModal').modal('hide');
+                table.ajax.reload();
+            } else {
+                showFormErrors(response.errors || {});
+                showAlert('danger', response.message || 'Erreur lors de la modification.');
+            }
+            submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Enregistrer');
+        },
+        error: function(xhr) {
+            console.error('Erreur de mise à jour:', xhr);
+            
+            let errorMessage = 'Une erreur est survenue lors de la modification.';
+            if (xhr.status === 422) {
+                const errors = xhr.responseJSON.errors;
+                showFormErrors(errors);
+                errorMessage = 'Veuillez corriger les erreurs ci-dessus.';
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            
+            showAlert('danger', errorMessage);
+            submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Enregistrer');
+        }
+    });
+}
+    // Fonction pour valider le formulaire
+    function validateEditForm() {
+        let isValid = true;
+        
+        // Réinitialiser les erreurs
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+        
+        // Valider les champs obligatoires
+        const requiredFields = [
+            { id: 'edit_date_timesheet', name: 'date_timesheet', label: 'Date' },
+            { id: 'edit_utilisateur_id', name: 'utilisateur_id', label: 'Utilisateur' },
+            { id: 'edit_quantite', name: 'quantite', label: 'Quantité' },
+            { id: 'edit_prix', name: 'prix', label: 'Prix' },
+            { id: 'edit_description', name: 'description', label: 'Description' }
+        ];
+        
+        requiredFields.forEach(field => {
+            const element = $(`#${field.id}`);
+            if (!element.val() || element.val().trim() === '') {
+                element.addClass('is-invalid');
+                $(`#${field.id}_error`).text(`${field.label} est obligatoire`);
+                isValid = false;
+            }
+        });
+        
+        // Valider la quantité et le prix (doivent être > 0)
+        const quantite = parseFloat($('#edit_quantite').val());
+        const prix = parseFloat($('#edit_prix').val());
+        
+        if (quantite <= 0) {
+            $('#edit_quantite').addClass('is-invalid');
+            $('#edit_quantite_error').text('La quantité doit être supérieure à 0');
+            isValid = false;
+        }
+        
+        if (prix <= 0) {
+            $('#edit_prix').addClass('is-invalid');
+            $('#edit_prix_error').text('Le prix doit être supérieur à 0');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+
+    // Fonction pour afficher les erreurs de formulaire
+    function showFormErrors(errors) {
+        // Réinitialiser les erreurs
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+        
+        // Afficher les nouvelles erreurs
+        Object.keys(errors).forEach(field => {
+            const errorMessages = errors[field];
+            const fieldId = `edit_${field}`;
+            const errorFieldId = `edit_${field}_error`;
+            const element = $(`#${fieldId}`);
+            
+            if (element.length) {
+                element.addClass('is-invalid');
+                $(`#${errorFieldId}`).text(errorMessages.join(', '));
+            }
+        });
+    }
+
+    // Initialiser Select2 dans le modal quand il s'ouvre
+    $('#editTimesheetModal').on('shown.bs.modal', function () {
+        $('.select2-edit').select2({
+            theme: 'bootstrap4',
+            dropdownParent: $('#editTimesheetModal')
+        });
+    });
+
+    // Nettoyer le modal quand il se ferme
+    $('#editTimesheetModal').on('hidden.bs.modal', function () {
+        resetEditForm();
+    });
 });
 </script>
 <style>
@@ -529,12 +1170,31 @@ $(document).ready(function() {
         font-weight: bold;
         color: #28a745;
     }
-    .delete-timesheet-btn {
+    .delete-timesheet-btn, .edit-timesheet-btn {
         transition: all 0.3s ease;
     }
-    .delete-timesheet-btn:hover {
+    .delete-timesheet-btn:hover, .edit-timesheet-btn:hover {
         transform: scale(1.05);
+    }
+
+    /* Styles spécifiques au modal d'édition */
+    .select2-edit-container {
+        z-index: 9999 !important;
+    }
+
+    .modal-xl {
+        max-width: 1140px;
+    }
+
+    #editTimesheetForm .is-invalid {
+        border-color: #dc3545;
+    }
+
+    #editTimesheetForm .invalid-feedback {
+        display: block;
     }
 </style>
 @include('timesheets.create')
+@include('timesheets.edit')
+@include('timesheets.show')
 @endsection

@@ -34,7 +34,13 @@
             "Database\\Seeders\\": "database/seeders/",
             "Vendor\\Drive\\": "packages/vendor/drive/src",
             "Vendor\\Email\\": "packages/vendor/email/src",
-            "Vendor\\Apps\\": "packages/vendor/apps/src"
+            "Vendor\\Apps\\": "packages/vendor/apps/src",
+            "Vendor\\Intervenant\\": "packages/vendor/intervenant/src",
+            "Vendor\\Timesheet\\": "packages/vendor/timesheet/src",
+            "Vendor\\Facture\\": "packages/vendor/facture/src",
+            "Vendor\\Task\\": "packages/vendor/task/src",
+            "Vendor\\Dossier\\": "packages/vendor/dossier/src",
+            "Vendor\\Agenda\\": "packages/vendor/agenda/src"
         }
     },
     "autoload-dev": {

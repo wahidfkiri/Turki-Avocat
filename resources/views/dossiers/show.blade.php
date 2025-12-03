@@ -26,16 +26,12 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="card card-primary">
+                        
                         <div class="card-header">
-                            <div class="card-tools" style="display:ruby;">
-                            <!-- <x-dossier.folder-network :dossier="$dossier"/> -->
-                                <!-- @if(auth()->user()->hasPermission('edit_dossiers'))
-                                    <a href="{{ route('dossiers.edit', $dossier) }}" class="btn btn-warning btn-sm">
-                                        <i class="fas fa-edit"></i> Modifier
-                                    </a>
-                                @endif -->
-                            </div>
-                             <br><p>{{$dossier->numero_dossier}}/{{$dossier->nom_dossier}}</p>
+                            <h3 class="card-title">
+                                <i class="fas fa-folder mr-2"></i>
+                               {{$dossier->numero_dossier}} {{$dossier->nom_dossier}}
+                            </h3>
                         </div>
                         <div class="card-body">
                             <!-- Navigation par onglets -->

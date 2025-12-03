@@ -97,7 +97,7 @@
                                         <option value="">Sélectionnez un utilisateur</option>
                                         @if(auth()->user()->hasRole('admin'))
                                             @foreach($users as $user)
-                                                <option value="{{ $user->id }}" {{ old('utilisateur_id') == $user->id ? 'selected' : '' }}>
+                                                <option value="{{ $user->id }}" {{ auth()->user()->id == $user->id ? 'selected' : '' }}>
                                                     {{ $user->name }} ({{ $user->fonction }})
                                                 </option>
                                             @endforeach

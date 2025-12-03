@@ -18,6 +18,7 @@ use App\Http\Controllers\DesktopDatabaseController;
 use App\Http\Controllers\ExplorerController;
 use App\Http\Controllers\OnlyOfficeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DomaineController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,46 +49,6 @@ Route::put('/users/{user}/security', [UserController::class, 'updateSecurity'])
 Route::put('/users/{user}/privileges', [UserController::class, 'updatePrivileges'])
     ->name('users.update.privileges');
 
-Route::resource('intervenants', IntervenantController::class);
-Route::get('intervenants/search', [IntervenantController::class, 'search']);
-Route::post('intervenants/{intervenant}/attach-dossier', [IntervenantController::class, 'attachDossier']);
-Route::post('intervenants/detach-intervenant', [IntervenantController::class, 'detachIntervenant'])->name('intervenants.detach-intervenant');
-Route::delete('intervenant-files/{file}', [IntervenantController::class, 'destroyFile'])->name('intervenants.files.destroy');
-Route::get('intervenant/download/{file}', [IntervenantController::class,'downloadFile']);
-Route::get('intervenant/display/{file}', [IntervenantController::class,'displayFile']);
-Route::get('/intervenants/{intervenant}/files', [IntervenantController::class, 'getFiles'])->name('intervenants.files');
-
-Route::resource('dossiers', DossierController::class);
-Route::get('get/dossiers/data', [DossierController::class, 'getDossiersData'])->name('dossiers.data');
-Route::post('dossiers/{dossier}/attach-user', [DossierController::class, 'attachUser']);
-Route::post('dossiers/{dossier}/attach-intervenant', [DossierController::class, 'attachIntervenant']);
-Route::post('dossiers/{dossier}/detach-intervenant', [DossierController::class, 'detachIntervenant']);
-Route::post('dossiers/{dossier}/link-dossier', [DossierController::class, 'linkDossier']);
-Route::get('/sous-domaines/by-domaine', [DossierController::class, 'getSousDomainesByDomaine'])->name('sous-domaines.by-domaine');
-Route::get('/get-sous-domaines', [DossierController::class, 'getSousDomaines'])->name('get.sous-domaines');
-Route::get('dossier/task/create/{dossier}', [DossierController::class, 'createForDossier'])->name('dossiers.tasks.create');
-Route::post('dossier/task/create/{dossier}', [DossierController::class, 'storeForDossier'])->name('dossiers.tasks.store');
-Route::get('dossier/timeSheets/create/{dossier}', [DossierController::class, 'createTimeSheetForDossier'])->name('dossiers.timesheets.create');
-Route::post('dossier/timeSheets/create/{dossier}', [DossierController::class, 'storeTimeSheetForDossier'])->name('dossiers.timesheets.store');
-Route::get('dossier/facturation/create/{dossier}', [DossierController::class, 'createFactureForDossier'])->name('dossiers.facturation.create');
-Route::post('dossier/facturation/create/{dossier}', [DossierController::class, 'storeFactureForDossier'])->name('dossiers.facturation.store');
-Route::get('/dossiers/{dossier}/files', [DossierController::class, 'getFiles'])->name('dossiers.files');
-Route::post('/dossiers/{dossier}/upload', [DossierController::class, 'uploadFiles'])->name('dossiers.upload');
-// Route pour le téléchargement via POST
-Route::post('/dossier/download', [DossierController::class, 'downloadFile'])->name('dossier.download');
-Route::post('/intervenant/download', [IntervenantController::class, 'downloadFile'])->name('intervenant.download');
-// Route::post('/dossier/view', [DossierController::class, 'viewFile'])->name('dossier.view');
-
-// POST: select file
-Route::post('/dossier/view', [DossierController::class, 'viewFilePost'])->name('dossier.view.post');
-
-Route::post('/dossier/view/chrome', [DossierController::class, 'viewFileChrome'])->name('dossier.view.chrome');
-Route::post('/intervenant/view/chrome', [IntervenantController::class, 'viewFileChrome'])->name('intervenant.view.chrome');
-
-// GET: open OnlyOffice editor
-Route::get('/dossier/view/{dossier}/{file}', [DossierController::class, 'viewFile'])
-    ->where('file', '.*')
-    ->name('dossier.view');
 
 // Notification routes
 Route::prefix('notifications')->group(function () {
@@ -102,73 +63,12 @@ Route::prefix('notifications')->group(function () {
     Route::post('/delete-all-read', [NotificationController::class, 'deleteAllRead'])->name('notifications.deleteAllRead');
 });
 
-// Gardez l'ancienne route GET pour la compatibilité si nécessaire
-Route::get('/dossier/download/{dossierId}/{fileName}', [DossierController::class, 'downloadFile'])->name('dossier.download.get');
-Route::post('/dossiers/{dossier}/delete', [DossierController::class, 'deleteFile'])->name('dossiers.delete');
-Route::post('/dossiers/{dossier}/rename', [DossierController::class, 'renameFile'])->name('dossiers.rename');
-Route::post('/dossiers/{dossier}/move', [DossierController::class, 'moveFile'])->name('dossiers.move');
-Route::get('/dossiers/{dossier}/folders', [DossierController::class, 'getFoldersTree'])->name('dossiers.folders');
-Route::post('/dossiers/{dossier}/create-folder', [DossierController::class, 'createFolder'])->name('dossiers.create-folder');
-Route::post('/dossiers/{dossier}/file-url', [DossierController::class, 'getFileUrl'])->name('dossiers.file-url');
-Route::post('/dossiers/{dossier}/upload-folder', [DossierController::class, 'uploadFolder'])->name('dossiers.upload-folder');
-
-// Gardez l'ancienne route GET pour la compatibilité si nécessaire
-Route::get('/intervenants/download/{intervenantId}/{fileName}', [IntervenantController::class, 'downloadFile'])->name('intervenant.download.get');
-Route::post('/intervenants/{intervenant}/delete', [IntervenantController::class, 'deleteFile'])->name('intervenant.delete');
-Route::post('/intervenants/{intervenant}/rename', [IntervenantController::class, 'renameFile'])->name('intervenant.rename');
-Route::post('/intervenants/{intervenant}/move', [IntervenantController::class, 'moveFile'])->name('intervenant.move');
-Route::get('/intervenants/{intervenant}/folders', [IntervenantController::class, 'getFoldersTree'])->name('intervenant.folders');
-Route::post('/intervenants/{intervenant}/create-folder', [IntervenantController::class, 'createFolder'])->name('intervenant.create-folder');
-Route::post('/intervenants/{intervenant}/file-url', [IntervenantController::class, 'getFileUrl'])->name('intervenant.file-url');
-Route::post('/intervenants/{intervenant}/upload-folder', [IntervenantController::class, 'uploadFolder'])->name('intervenant.upload-folder');
-Route::get('/intervenants/{intervenant}/files', [IntervenantController::class, 'getFiles'])->name('intervenant.files');
-Route::post('/intervenants/{intervenant}/upload', [IntervenantController::class, 'uploadFiles'])->name('intervenant.upload');
-
-Route::resource('time-sheets', TimeSheetController::class);
-Route::get('dossiers/{dossierId}/time-sheets', [TimeSheetController::class, 'byDossier']);
-Route::get('users/{userId}/time-sheets', [TimeSheetController::class, 'byUser']);
-Route::get('time-sheets/report', [TimeSheetController::class, 'report']);
-Route::get('/timesheets/data', [TimesheetController::class, 'getTimesheetsData'])->name('timesheets.data');
-// Routes pour les feuilles de temps
-Route::get('/time-sheets/{time_sheet}/data', [TimeSheetController::class, 'getTimeSheetData'])->name('time-sheets.data.get');
-Route::get('/get/categories', [TimesheetController::class, 'getCategories']);
-Route::get('/get/types', [TimesheetController::class, 'getTypes']);
-Route::resource('agendas', AgendaController::class);
-Route::get('agendas/by-date-range', [AgendaController::class, 'byDateRange']);
-Route::get('dossiers/{dossierId}/agendas', [AgendaController::class, 'byDossier']);
-Route::get('/get/agendas/data', [AgendaController::class, 'getAgendasData'])->name('agendas.data');
-Route::get('/get/agendas/data/{dossierId}', [AgendaController::class, 'getAgendasDataByDossierId'])->name('agendas.data.by.dossier');
-Route::post('agenda-categories', [AgendaController::class, 'storeCategorieAgenda'])->name('agenda-categories.store');
-Route::put('agendas/categories/{id}', [AgendaController::class, 'updateCategorieAgenda'])->name('agenda-categories.update');
-Route::delete('agendas/categories/{id}', [AgendaController::class, 'deleteCategorieAgenda'])->name('agenda-categories.delete');
-Route::get('/api/agenda-categories', [AgendaController::class, 'apiIndex'])->name('agenda-categories.api');
-Route::get('agendas/download/{id}', [AgendaController::class, 'downloadFile']);
 
 
-Route::resource('tasks', TaskController::class);
-Route::get('tasks/status/{statut}', [TaskController::class, 'byStatus']);
-Route::get('users/{userId}/tasks', [TaskController::class, 'byUser']);
-Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus']);
-Route::get('/get/tasks/data', [TaskController::class, 'getTasksData'])->name('tasks.data');
-Route::get('tasks/{taskId}/download', [TaskController::class, 'downloadFile'])->name('tasks.download');
-Route::get('/tasks/{task}/data', [TaskController::class, 'getTaskData'])->name('tasks.data.get');
-Route::get('tasks/download/{id}', [TaskController::class,'downloadFile']);
-Route::get('tasks/display/{id}', [TaskController::class,'displayFile']);
-
-Route::resource('factures', FactureController::class);
- Route::get('/get/factures/data', [FactureController::class, 'getFacturesData'])->name('factures.data');
- Route::get('/get/factures/data/paid', [FactureController::class, 'getPaidFacturesData'])->name('factures.paid.data');
- Route::get('/factures/data/paid', [FactureController::class, 'indexpaid'])->name('factures.paid.index');
- Route::get('/get/factures/data/unpaid', [FactureController::class, 'getUnpaidFacturesData'])->name('factures.unpaid.data');
- Route::get('/factures/data/unpaid', [FactureController::class, 'indexUnpaid'])->name('factures.unpaid.index');
- Route::get('/factures/{facture}/pdf', [FactureController::class, 'downloadPDF'])->name('factures.pdf');
-Route::get('dossiers/{dossierId}/factures', [FactureController::class, 'byDossier']);
-Route::get('factures/status/{statut}', [FactureController::class, 'byStatus']);
-Route::patch('factures/{facture}/status', [FactureController::class, 'updateStatus']);
-Route::get('factures/generate-number', [FactureController::class, 'generateNumber']);
-Route::get('factures/download/{id}', [FactureController::class,'downloadFile']);
-Route::get('factures/display/{id}', [FactureController::class,'displayFile']);
-Route::get('/factures/{facture}/data', [FactureController::class, 'getFactureData'])->name('factures.data.get');
+    // Routes pour domaines
+    Route::post('/domaines', [DomaineController::class, 'store'])->name('domaines.store');
+    Route::post('/sous-domaines', [DomaineController::class, 'storeSubdomaine'])->name('sous-domaines.store');
+    Route::get('/sous-domaines/by-domaine', [DomaineController::class, 'getByDomaine'])->name('sous-domaines.by-domaine');
 
 
 // Routes profil

@@ -21,12 +21,12 @@
                     <tbody>
                         @foreach($intervenant->dossiers as $dossier)
                         <tr>
-                            <td>{{ $dossier->numero_dossier ?? 'N/A' }}</td>
+                            <td width="10%">{{ $dossier->numero_dossier ?? 'N/A' }}</td>
                             <td>{{ $dossier->nom_dossier ?? 'N/A' }}</td>
                             <td>{{ $dossier->objet ?? 'N/A' }}</td>
-                            <td>{{ ($dossier->archive ?? false) ? 'Oui' : 'Non' }}</td>
+                            <td width="10%">{{ ($dossier->archive ?? false) ? 'Oui' : 'Non' }}</td>
                             @if(auth()->user()->hasRole('admin'))
-                            <td>
+                            <td width="10%">
                                 <div class="btn-group btn-group-sm">
                                     @if(auth()->user()->hasPermission('view_dossiers'))
                                         <a href="{{ route('dossiers.show', $dossier->id ?? '') }}" 

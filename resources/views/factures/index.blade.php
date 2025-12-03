@@ -79,7 +79,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label for="filter_dossier">Dossier</label>
-                                    <select class="form-control" id="filter_dossier">
+                                    <select class="form-control search_dossier" id="filter_dossier">
                                         <option value="">Tous les dossiers</option>
                                         @foreach($dossiers as $dossier)
                                             <option value="{{ $dossier->id }}">{{ $dossier->numero_dossier }}</option>
@@ -88,7 +88,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label for="filter_client">Client</label>
-                                    <select class="form-control" id="filter_client">
+                                    <select class="form-control search_client" id="filter_client">
                                         <option value="">Tous les clients</option>
                                         @foreach($clients as $client)
                                             <option value="{{ $client->id }}">{{ $client->identite_fr ?? $client->identite_ar }}</option>
@@ -214,10 +214,61 @@
         </div>
     </div>
 </div>
-
+<!-- Modal pour afficher les détails -->
+<div class="modal fade" id="factureDetailsModal" tabindex="-1" role="dialog" aria-labelledby="factureDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="factureDetailsModalLabel">
+                    <i class="fas fa-file-invoice"></i> Détails de la facture
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="factureDetailsModalBody">
+                <!-- Le contenu sera chargé dynamiquement ici -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal pour éditer la facture -->
+<div class="modal fade" id="editFactureModal" tabindex="-1" role="dialog" aria-labelledby="editFactureModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="editFactureModalLabel">
+                    <i class="fas fa-edit"></i> Modifier la facture
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="editFactureModalBody">
+                <!-- Le contenu sera chargé dynamiquement ici -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement du formulaire de modification...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.sumoselect/3.0.2/jquery.sumoselect.min.js"></script>
 <script>
+    $('.search_client').SumoSelect({search: true, searchText: 'Sélectionner un client...'});
+    $('.search_dossier').SumoSelect({search: true, searchText: 'Sélectionner un dossier...'});
+   
 $(document).ready(function() {
     let factureToDelete = null;
     let factureRowToDelete = null;
@@ -353,19 +404,19 @@ $(document).ready(function() {
                     var actions = '<div class="btn-group">';
                     
                     @if(auth()->user()->hasPermission('view_factures'))
-                        actions += '<a href="/factures/' + row.id + '" class="btn btn-info btn-sm" title="Voir"><i class="fas fa-eye"></i></a>';
-                    @endif
+    actions += '<button type="button" class="btn btn-info btn-sm view-facture-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
+@endif
 
-                    @if(auth()->user()->hasPermission('edit_factures'))
-                        actions += '<a href="/factures/' + row.id + '/edit" class="btn btn-primary btn-sm" title="Modifier"><i class="fas fa-edit"></i></a>';
-                    @endif
+                   @if(auth()->user()->hasPermission('edit_factures'))
+    actions += '<button type="button" class="btn btn-warning btn-sm edit-facture-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
+@endif
                     
                     @if(auth()->user()->hasPermission('delete_factures'))
                         actions += '<button type="button" class="btn btn-danger btn-sm delete-facture-btn" data-id="' + row.id + '" data-numero="' + (row.numero || '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
                     @endif
 
                     @if(auth()->user()->hasPermission('export_data'))
-                        actions += '<a href="/factures/download/' + row.id + '" class="btn btn-secondary btn-sm" title="PDF" target="_blank"><i class="fas fa-file-pdf"></i></a>';
+                        actions += '<a href="/factures/display/' + row.id + '" class="btn btn-secondary btn-sm" title="PDF" target="_blank"><i class="fas fa-file-pdf"></i></a>';
                     @endif
                     
                     actions += '</div>';
@@ -567,6 +618,561 @@ $(document).ready(function() {
         }
     });
 });
+</script>
+<script>
+$(document).ready(function() {
+    // Gestion du clic sur le bouton "Voir"
+    $(document).on('click', '.view-facture-btn', function() {
+        const factureId = $(this).data('id');
+        loadFactureDetails(factureId);
+    });
+
+    // Fonction pour charger les détails de la facture
+    function loadFactureDetails(factureId) {
+        // Afficher le spinner de chargement
+        $('#factureDetailsModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Chargement...</span>
+                </div>
+                <p class="mt-2">Chargement des détails...</p>
+            </div>
+        `);
+        
+        // Ouvrir le modal
+        $('#factureDetailsModal').modal('show');
+        
+        // Charger les détails via AJAX
+        $.ajax({
+            url: '/factures/' + factureId,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Parser la réponse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(response, 'text/html');
+                
+                // Extraire le contenu principal - méthode simplifiée
+                let modalContent = '';
+                
+                // Trouver toutes les sections
+                const sections = doc.querySelectorAll('.row > .col-md-6, .row > .col-12');
+                
+                // Parcourir les sections et les organiser
+                sections.forEach((section, index) => {
+                    const sectionHTML = section.innerHTML;
+                    
+                    // Vérifier quel type de section c'est en fonction du contenu
+                    if (sectionHTML.includes('Informations principales')) {
+                        modalContent += `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                        `;
+                    } 
+                    else if (sectionHTML.includes('Détails financiers')) {
+                        modalContent += `
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    else if (sectionHTML.includes('Relations')) {
+                        modalContent += `
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                        `;
+                    }
+                    else if (sectionHTML.includes('Métadonnées')) {
+                        modalContent += `
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    else if (sectionHTML.includes('Commentaires')) {
+                        modalContent += `
+                            <div class="row mt-4">
+                                ${sectionHTML}
+                            </div>
+                        `;
+                    }
+                });
+                
+                // Mettre à jour le contenu du modal
+                $('#factureDetailsModalBody').html(modalContent);
+                
+                // Ajouter les boutons d'action dans le footer
+                const modalFooter = `
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Fermer
+                        </button>
+                       
+                    </div>
+                `;
+                
+                // Ajouter le footer au modal
+                $('#factureDetailsModal .modal-content').append(modalFooter);
+                
+                // Trouver le numéro de facture
+                let factureNumero = '#' + factureId;
+                const numeroElement = doc.querySelector('td.font-weight-bold');
+                if (numeroElement) {
+                    factureNumero = numeroElement.textContent.trim();
+                }
+                
+                // Mettre à jour le titre du modal
+                $('#factureDetailsModalLabel').html(`<i class="fas fa-file-invoice"></i> Détails de la facture ${factureNumero}`);
+            },
+            error: function(xhr, status, error) {
+                $('#factureDetailsModalBody').html(`
+                    <div class="text-center py-5">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Erreur lors du chargement des détails.</p>
+                            <p><small>${xhr.status}: ${xhr.statusText}</small></p>
+                            <a href="/factures/${factureId}" class="btn btn-primary mt-2" target="_blank">
+                                Ouvrir dans une nouvelle fenêtre
+                            </a>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Fonction de confirmation de suppression depuis le modal
+    window.confirmDeleteFromModal = function(factureId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.')) {
+            // Afficher un indicateur de chargement
+            const deleteButton = $('.btn-danger[onclick*="confirmDeleteFromModal"]');
+            const originalHtml = deleteButton.html();
+            deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
+            deleteButton.prop('disabled', true);
+
+            // Soumettre la suppression via AJAX
+            $.ajax({
+                url: '/factures/' + factureId,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    // Fermer le modal
+                    $('#factureDetailsModal').modal('hide');
+                    
+                    // Recharger la DataTable
+                    if (typeof table !== 'undefined' && $.fn.DataTable.isDataTable('#facturesTable')) {
+                        table.ajax.reload(null, false);
+                    }
+                    
+                    // Afficher un message de succès
+                    showAlert('success', 'Facture supprimée avec succès');
+                },
+                error: function(xhr) {
+                    showAlert('danger', 'Erreur lors de la suppression');
+                    
+                    // Réactiver le bouton
+                    deleteButton.html(originalHtml);
+                    deleteButton.prop('disabled', false);
+                }
+            });
+        }
+    };
+
+    // Nettoyer le modal quand il est fermé
+    $('#factureDetailsModal').on('hidden.bs.modal', function() {
+        // Réinitialiser le contenu du modal
+        $(this).find('.modal-content').html(`
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="factureDetailsModalLabel">
+                    <i class="fas fa-file-invoice"></i> Détails de la facture
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="factureDetailsModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails...</p>
+                </div>
+            </div>
+        `);
+    });
+
+    // Fermer le modal avec la touche ESC
+    $(document).keydown(function(e) {
+        if (e.keyCode === 27 && $('#factureDetailsModal').hasClass('show')) {
+            $('#factureDetailsModal').modal('hide');
+        }
+    });
+});
+
+// Fonction pour afficher les alertes
+function showAlert(type, message) {
+    // Supprimer les alertes existantes
+    $('.alert.toast-alert').remove();
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    const title = type === 'success' ? 'Succès' : 'Erreur';
+    
+    const alertHtml = `
+        <div class="alert alert-${type} toast-alert alert-dismissible fade show" role="alert" 
+             style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;">
+            <div class="d-flex align-items-center">
+                <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
+                <div style="flex: 1;">
+                    <strong>${title}</strong>
+                    <div class="small">${message}</div>
+                </div>
+                <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
+                    <span>&times;</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Ajouter la nouvelle alerte
+    $('body').append(alertHtml);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        $('.alert.toast-alert').alert('close');
+    }, 5000);
+}
+</script>
+<script>
+$(document).ready(function() {
+    // Gestion du clic sur le bouton "Modifier"
+    $(document).on('click', '.edit-facture-btn', function() {
+        const factureId = $(this).data('id');
+        loadEditForm(factureId);
+    });
+
+    // Fonction pour charger le formulaire d'édition
+    function loadEditForm(factureId) {
+        // Afficher le spinner de chargement
+        $('#editFactureModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="sr-only">Chargement...</span>
+                </div>
+                <p class="mt-2">Chargement du formulaire de modification...</p>
+            </div>
+        `);
+        
+        // Ouvrir le modal
+        $('#editFactureModal').modal('show');
+        
+        // Charger le formulaire via AJAX
+        $.ajax({
+            url: '/factures/' + factureId + '/edit',
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Parser la réponse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(response, 'text/html');
+                
+                // Extraire le formulaire et son contenu
+                const form = doc.querySelector('form#factureForm');
+                if (form) {
+                    // Extraire le contenu de la carte principale
+                    const cardContent = doc.querySelector('.card-body');
+                    if (cardContent) {
+                        // Créer le contenu du modal
+                        const modalContent = `
+                            <form id="editFactureForm" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="facture_id" value="${factureId}">
+                                <div class="card-body">
+                                    ${cardContent.innerHTML}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                        <i class="fas fa-times"></i> Annuler
+                                    </button>
+                                    <button type="submit" class="btn btn-primary" id="updateFactureBtn">
+                                        <i class="fas fa-save"></i> Mettre à jour
+                                    </button>
+                                </div>
+                            </form>
+                        `;
+                        
+                        $('#editFactureModalBody').html(modalContent);
+                        
+                        // Initialiser les composants JavaScript
+                        initEditFormComponents();
+                        
+                        // Mettre à jour le titre du modal avec le numéro de facture
+                        const factureNumero = doc.querySelector('#numero')?.value || '#' + factureId;
+                        $('#editFactureModalLabel').html(`<i class="fas fa-edit"></i> Modifier la facture ${factureNumero}`);
+                    }
+                } else {
+                    // Fallback: afficher un message d'erreur
+                    $('#editFactureModalBody').html(`
+                        <div class="text-center py-5">
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Impossible de charger le formulaire de modification.</p>
+                                <a href="/factures/${factureId}/edit" class="btn btn-warning mt-2" target="_blank">
+                                    Ouvrir dans une nouvelle fenêtre
+                                </a>
+                            </div>
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#editFactureModalBody').html(`
+                    <div class="text-center py-5">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Erreur lors du chargement du formulaire.</p>
+                            <p><small>${xhr.status}: ${xhr.statusText}</small></p>
+                            <a href="/factures/${factureId}/edit" class="btn btn-warning mt-2" target="_blank">
+                                Ouvrir dans une nouvelle fenêtre
+                            </a>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Fonction pour initialiser les composants du formulaire d'édition
+    function initEditFormComponents() {
+        // Initialiser les événements du formulaire
+        $(document).off('submit', '#editFactureForm').on('submit', '#editFactureForm', function(e) {
+            e.preventDefault();
+            updateFacture();
+        });
+
+        // Gestion de l'input file
+        $(document).off('change', '#editFactureModal input[type="file"]').on('change', '#editFactureModal input[type="file"]', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileName = file.name;
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                const label = $(this).siblings('.custom-file-label');
+                label.text(fileName);
+                
+                // Afficher l'aperçu
+                const preview = $(this).closest('.form-group').find('#file_preview');
+                preview.find('#file_name').text(fileName + ' (' + fileSize + ' MB)');
+                preview.show();
+                
+                // Validation de la taille
+                if (file.size > 10 * 1024 * 1024) {
+                    showAlert('danger', 'Le fichier est trop volumineux. Taille maximum: 10MB');
+                    $(this).val('');
+                    label.text('Choisir un fichier (PDF, images, Word, Excel) - Max 10MB');
+                    preview.hide();
+                }
+            }
+        });
+
+        // Gestion du bouton de suppression de fichier
+        $(document).off('click', '#editFactureModal .btn-danger[onclick*="confirmDeleteFile"]').on('click', '#editFactureModal .btn-danger[onclick*="confirmDeleteFile"]', function() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette pièce jointe ?')) {
+                // Ajouter un champ caché pour indiquer la suppression
+                $('#editFactureForm').append('<input type="hidden" name="delete_piece_jointe" value="1">');
+                $(this).closest('.alert').remove();
+                showAlert('warning', 'La pièce jointe sera supprimée lors de la sauvegarde.');
+            }
+        });
+
+        // Calcul automatique du montant TTC
+        $(document).off('input', '#editFactureModal #montant_ht, #editFactureModal #montant_tva').on('input', '#editFactureModal #montant_ht, #editFactureModal #montant_tva', function() {
+            calculateMontantTTC();
+        });
+
+        // Auto-sélection du client basé sur le dossier
+        $(document).off('change', '#editFactureModal #dossier_id').on('change', '#editFactureModal #dossier_id', function() {
+            const selectedOption = $(this).find('option:selected');
+            const clientId = selectedOption.data('client-id');
+            if (clientId) {
+                $('#editFactureModal #client_id').val(clientId).trigger('change');
+            }
+        });
+
+        // Calcul initial
+        calculateMontantTTC();
+    }
+
+    // Fonction pour calculer le montant TTC
+    function calculateMontantTTC() {
+        const montantHT = parseFloat($('#editFactureModal #montant_ht').val()) || 0;
+        const montantTVA = parseFloat($('#editFactureModal #montant_tva').val()) || 0;
+        const montantTTC = montantHT + montantTVA;
+        
+        $('#editFactureModal #montant').val(montantTTC.toFixed(2));
+        
+        // Vérifier la cohérence
+        const tolerance = 0.01;
+        const difference = Math.abs(montantTTC - parseFloat($('#editFactureModal #montant').val()));
+        
+        if (difference > tolerance) {
+            $('#editFactureModal #montantAlert').show();
+            $('#editFactureModal #montantAlertText').text('Attention : Le montant TTC calculé (' + montantTTC.toFixed(2) + ' DT) est différent du montant saisi. Vérifiez les montants HT et TVA.');
+        } else {
+            $('#editFactureModal #montantAlert').hide();
+        }
+    }
+
+    // Fonction pour mettre à jour la facture via AJAX
+    function updateFacture() {
+        const form = $('#editFactureForm')[0];
+        const formData = new FormData(form);
+        const factureId = formData.get('facture_id');
+        
+        // Désactiver le bouton et afficher le loader
+        const updateBtn = $('#updateFactureBtn');
+        const originalHtml = updateBtn.html();
+        updateBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mise à jour...');
+
+        // Vérification de la cohérence des montants
+        const montantHT = parseFloat($('#editFactureModal #montant_ht').val()) || 0;
+        const montantTVA = parseFloat($('#editFactureModal #montant_tva').val()) || 0;
+        const montantTTC = parseFloat($('#editFactureModal #montant').val()) || 0;
+        const calculatedTTC = montantHT + montantTVA;
+        
+        if (Math.abs(calculatedTTC - montantTTC) > 0.01) {
+            showAlert('danger', `Erreur : Le montant TTC doit être égal à HT + TVA.<br>HT: ${montantHT.toFixed(2)} DT<br>TVA: ${montantTVA.toFixed(2)} DT<br>TTC calculé: ${calculatedTTC.toFixed(2)} DT<br>TTC saisi: ${montantTTC.toFixed(2)} DT`);
+            updateBtn.prop('disabled', false).html(originalHtml);
+            return;
+        }
+
+        // Soumission AJAX
+        $.ajax({
+            url: '/factures/' + factureId,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Fermer le modal
+                    $('#editFactureModal').modal('hide');
+                    
+                    // Recharger la DataTable
+                    if (typeof table !== 'undefined' && $.fn.DataTable.isDataTable('#facturesTable')) {
+                        table.ajax.reload(null, false);
+                    }
+                    
+                    // Afficher un message de succès
+                    showAlert('success', response.message || 'Facture mise à jour avec succès');
+                } else {
+                    showAlert('danger', response.message || 'Erreur lors de la mise à jour');
+                    updateBtn.prop('disabled', false).html(originalHtml);
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Une erreur est survenue lors de la mise à jour.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.status === 422) {
+                    // Gestion des erreurs de validation
+                    const errors = xhr.responseJSON.errors;
+                    errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
+                    for (const field in errors) {
+                        errorMessage += `• ${errors[field][0]}<br>`;
+                    }
+                } else if (xhr.status === 403) {
+                    errorMessage = 'Vous n\'avez pas la permission de modifier des factures.';
+                } else if (xhr.status === 404) {
+                    errorMessage = 'La facture que vous essayez de modifier n\'existe pas.';
+                }
+                
+                showAlert('danger', errorMessage);
+                updateBtn.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+
+    // Nettoyer le modal quand il est fermé
+    $('#editFactureModal').on('hidden.bs.modal', function() {
+        // Réinitialiser le contenu du modal
+        $(this).find('.modal-content').html(`
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="editFactureModalLabel">
+                    <i class="fas fa-edit"></i> Modifier la facture
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="editFactureModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement du formulaire de modification...</p>
+                </div>
+            </div>
+        `);
+    });
+
+    // Fermer le modal avec la touche ESC
+    $(document).keydown(function(e) {
+        if (e.keyCode === 27 && $('#editFactureModal').hasClass('show')) {
+            $('#editFactureModal').modal('hide');
+        }
+    });
+});
+
+// Fonction pour afficher les alertes
+function showAlert(type, message) {
+    // Supprimer les alertes existantes
+    $('.alert.edit-toast-alert').remove();
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    const title = type === 'success' ? 'Succès' : 'Erreur';
+    
+    const alertHtml = `
+        <div class="alert alert-${type} edit-toast-alert alert-dismissible fade show" role="alert" 
+             style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;">
+            <div class="d-flex align-items-center">
+                <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
+                <div style="flex: 1;">
+                    <strong>${title}</strong>
+                    <div class="small">${message}</div>
+                </div>
+                <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
+                    <span>&times;</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Ajouter la nouvelle alerte
+    $('body').append(alertHtml);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        $('.alert.edit-toast-alert').alert('close');
+    }, 5000);
+}
 </script>
 <style>
     .dataTables_wrapper .dataTables_filter {

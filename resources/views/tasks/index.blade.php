@@ -84,7 +84,7 @@
                                 @if(auth()->user()->hasRole('admin'))
                                 <div class="col-md-3">
                                     <label for="filter_utilisateur">Utilisateur</label>
-                                    <select class="form-control" id="filter_utilisateur">
+                                    <select class="form-control search_utilisateur" id="filter_utilisateur">
                                         <option value="">Tous les utilisateurs</option>
                                         @foreach($users as $user)
                                             <option value="{{ $user->id }}">{{ $user->name }}</option>
@@ -96,7 +96,7 @@
                             <div class="row mb-3">
                                 <div class="col-md-3">
                                     <label for="filter_dossier">Dossier</label>
-                                    <select class="form-control" id="filter_dossier">
+                                    <select class="form-control search_dossier" id="filter_dossier">
                                         <option value="">Tous les dossiers</option>
                                         @foreach($dossiers as $dossier)
                                             <option value="{{ $dossier->id }}">{{ $dossier->numero_dossier }}</option>
@@ -189,12 +189,38 @@
         </div>
     </div>
 </div>
-
+<!-- Modal pour afficher les détails de la tâche -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" role="dialog" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="taskDetailsModalLabel">
+                    <i class="fas fa-tasks"></i> Détails de la tâche
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="taskDetailsModalBody">
+                <!-- Le contenu sera chargé dynamiquement ici -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
 @include('tasks.create')
 @include('tasks.edit')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.sumoselect/3.0.2/jquery.sumoselect.min.js"></script>
 <script>
+    $('.search_utilisateur').SumoSelect({search: true, searchText: 'Sélectionner un utilisateur...'});
+    $('.search_dossier').SumoSelect({search: true, searchText: 'Sélectionner un dossier...'});
 $(document).ready(function() {
     let taskToDelete = null;
     let taskRowToDelete = null;
@@ -390,8 +416,8 @@ $(document).ready(function() {
                     var actions = '<div class="btn-group">';
                     
                     @if(auth()->user()->hasPermission('view_tasks'))
-                        actions += '<a href="/tasks/' + row.id + '" class="btn btn-info btn-sm" title="Voir"><i class="fas fa-eye"></i></a>';
-                    @endif
+    actions += '<button type="button" class="btn btn-info btn-sm view-task-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
+@endif
                     
                     @if(auth()->user()->hasPermission('edit_tasks'))
                         // Bouton pour ouvrir le modal d'édition
@@ -822,6 +848,247 @@ function initTaskEditModal() {
 $(document).ready(function() {
     initTaskEditModal();
 });
+</script>
+<script>
+$(document).ready(function() {
+    // Gestion du clic sur le bouton "Voir" des tâches
+    $(document).on('click', '.view-task-btn', function() {
+        const taskId = $(this).data('id');
+        loadTaskDetails(taskId);
+    });
+
+    // Fonction pour charger les détails de la tâche
+    function loadTaskDetails(taskId) {
+        // Afficher le spinner de chargement
+        $('#taskDetailsModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Chargement...</span>
+                </div>
+                <p class="mt-2">Chargement des détails...</p>
+            </div>
+        `);
+        
+        // Ouvrir le modal
+        $('#taskDetailsModal').modal('show');
+        
+        // Charger les détails via AJAX
+        $.ajax({
+            url: '/tasks/' + taskId,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Parser la réponse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(response, 'text/html');
+                
+                // Extraire toutes les sections pertinentes
+                const sections = doc.querySelectorAll('.row > .col-md-6, .row > .col-12');
+                
+                // Construire le contenu du modal
+                let modalContent = '';
+                
+                // Parcourir les sections et les organiser
+                sections.forEach((section) => {
+                    const sectionHTML = section.innerHTML;
+                    
+                    // Identifier le type de section par son contenu
+                    if (sectionHTML.includes('Informations principales')) {
+                        modalContent += `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                        `;
+                    } 
+                    else if (sectionHTML.includes('Détails temporels')) {
+                        modalContent += `
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    else if (sectionHTML.includes('Relations')) {
+                        modalContent += `
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                        `;
+                    }
+                    else if (sectionHTML.includes('Métadonnées')) {
+                        modalContent += `
+                                <div class="col-md-6">
+                                    ${sectionHTML}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    else if (sectionHTML.includes('Description')) {
+                        modalContent += `
+                            <div class="row mt-4">
+                                ${sectionHTML}
+                            </div>
+                        `;
+                    }
+                    else if (sectionHTML.includes('Notes supplémentaires')) {
+                        modalContent += `
+                            <div class="row mt-4">
+                                ${sectionHTML}
+                            </div>
+                        `;
+                    }
+                });
+                
+                // Mettre à jour le contenu du modal
+                $('#taskDetailsModalBody').html(modalContent);
+                
+                // Ajouter les boutons d'action dans le footer
+                const modalFooter = `
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Fermer
+                        </button>
+                        
+                    </div>
+                `;
+                
+                // Ajouter le footer au modal
+                $('#taskDetailsModal .modal-content').append(modalFooter);
+                
+                // Trouver le titre de la tâche pour l'afficher dans le titre du modal
+                let taskTitle = 'Tâche #' + taskId;
+                const titleElement = doc.querySelector('td.font-weight-bold');
+                if (titleElement && titleElement.textContent.trim() !== 'N/A') {
+                    taskTitle = titleElement.textContent.trim();
+                }
+                
+                // Mettre à jour le titre du modal
+                $('#taskDetailsModalLabel').html(`<i class="fas fa-tasks"></i> Détails de la tâche: ${taskTitle}`);
+            },
+            error: function(xhr, status, error) {
+                $('#taskDetailsModalBody').html(`
+                    <div class="text-center py-5">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Erreur lors du chargement des détails de la tâche.</p>
+                            <p><small>${xhr.status}: ${xhr.statusText}</small></p>
+                            <a href="/tasks/${taskId}" class="btn btn-primary mt-2" target="_blank">
+                                Ouvrir dans une nouvelle fenêtre
+                            </a>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Fonction de confirmation de suppression de tâche depuis le modal
+    window.confirmDeleteTaskFromModal = function(taskId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action est irréversible.')) {
+            // Afficher un indicateur de chargement
+            const deleteButton = $('.btn-danger[onclick*="confirmDeleteTaskFromModal"]');
+            const originalHtml = deleteButton.html();
+            deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
+            deleteButton.prop('disabled', true);
+
+            // Soumettre la suppression via AJAX
+            $.ajax({
+                url: '/tasks/' + taskId,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    // Fermer le modal
+                    $('#taskDetailsModal').modal('hide');
+                    
+                    // Recharger la DataTable
+                    if (typeof tasksTable !== 'undefined' && $.fn.DataTable.isDataTable('#tasksTable')) {
+                        tasksTable.ajax.reload(null, false);
+                    }
+                    
+                    // Afficher un message de succès
+                    showTaskAlert('success', 'Tâche supprimée avec succès');
+                },
+                error: function(xhr) {
+                    showTaskAlert('danger', 'Erreur lors de la suppression de la tâche');
+                    
+                    // Réactiver le bouton
+                    deleteButton.html(originalHtml);
+                    deleteButton.prop('disabled', false);
+                }
+            });
+        }
+    };
+
+    // Nettoyer le modal quand il est fermé
+    $('#taskDetailsModal').on('hidden.bs.modal', function() {
+        // Réinitialiser le contenu du modal
+        $(this).find('.modal-content').html(`
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="taskDetailsModalLabel">
+                    <i class="fas fa-tasks"></i> Détails de la tâche
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="taskDetailsModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails...</p>
+                </div>
+            </div>
+        `);
+    });
+
+    // Fermer le modal avec la touche ESC
+    $(document).keydown(function(e) {
+        if (e.keyCode === 27 && $('#taskDetailsModal').hasClass('show')) {
+            $('#taskDetailsModal').modal('hide');
+        }
+    });
+});
+
+// Fonction pour afficher les alertes pour les tâches
+function showTaskAlert(type, message) {
+    // Supprimer les alertes existantes
+    $('.alert.task-toast-alert').remove();
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    const title = type === 'success' ? 'Succès' : 'Erreur';
+    
+    const alertHtml = `
+        <div class="alert alert-${type} task-toast-alert alert-dismissible fade show" role="alert" 
+             style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;">
+            <div class="d-flex align-items-center">
+                <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
+                <div style="flex: 1;">
+                    <strong>${title}</strong>
+                    <div class="small">${message}</div>
+                </div>
+                <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
+                    <span>&times;</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Ajouter la nouvelle alerte
+    $('body').append(alertHtml);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        $('.alert.task-toast-alert').alert('close');
+    }, 5000);
+}
 </script>
 <style>
     .dataTables_wrapper .dataTables_filter {

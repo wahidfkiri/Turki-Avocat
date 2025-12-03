@@ -65,6 +65,15 @@ class AgendaController extends Controller
         $query->where('date_debut', '<=', $end->format('Y-m-d'));
     }
 
+    // Ajouter les filtres année/mois
+    if ($request->has('year') && $request->year != '') {
+        $query->whereYear('date_debut', $request->year);
+    }
+    
+    if ($request->has('month') && $request->month != '') {
+        $query->whereMonth('date_debut', $request->month);
+    }
+
     $agendas = $query->get();
 
     $events = [];

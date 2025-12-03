@@ -280,7 +280,244 @@
         );
     });
 </script>
+<script>
+$(document).ready(function() {
+    // Gestion du clic sur le bouton "Voir"
+    $(document).on('click', '.view-facture-btn', function() {
+        const factureId = $(this).data('id');
+        loadFactureDetails(factureId);
+    });
 
+    // Fonction pour charger les détails de la facture
+    function loadFactureDetails(factureId) {
+        // Afficher le spinner de chargement
+        $('#factureDetailsModalBody').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Chargement...</span>
+                </div>
+                <p class="mt-2">Chargement des détails...</p>
+            </div>
+        `);
+        
+        // Ouvrir le modal
+        $('#factureDetailsModal').modal('show');
+        
+        // Charger les détails via AJAX
+        $.ajax({
+            url: '/factures/' + factureId,
+            type: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                // Parser la réponse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(response, 'text/html');
+                
+                // Extraire le contenu principal
+                let modalContent = '';
+                
+                // Informations principales
+                const mainInfoSection = doc.querySelector('.col-md-6:first-child');
+                if (mainInfoSection) {
+                    modalContent += `
+                        <div class="row">
+                            <div class="col-md-6">
+                                ${mainInfoSection.innerHTML}
+                            </div>
+                    `;
+                }
+                
+                // Détails financiers
+                const financialSection = doc.querySelector('.col-md-6:nth-child(2)');
+                if (financialSection) {
+                    modalContent += `
+                            <div class="col-md-6">
+                                ${financialSection.innerHTML}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Relations
+                const relationsSection = doc.querySelector('.col-md-6:nth-child(1) .section-title:contains("Relations")')?.closest('.col-md-6');
+                if (relationsSection) {
+                    modalContent += `
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                ${relationsSection.innerHTML}
+                            </div>
+                    `;
+                }
+                
+                // Métadonnées
+                const metadataSection = doc.querySelector('.col-md-6:nth-child(2) .section-title:contains("Métadonnées")')?.closest('.col-md-6');
+                if (metadataSection) {
+                    modalContent += `
+                            <div class="col-md-6">
+                                ${metadataSection.innerHTML}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Commentaires
+                const commentsSection = doc.querySelector('.col-12:has(.section-title:contains("Commentaires"))');
+                if (commentsSection) {
+                    modalContent += `
+                        <div class="row mt-4">
+                            ${commentsSection.innerHTML}
+                        </div>
+                    `;
+                }
+                
+                // Mettre à jour le contenu du modal
+                $('#factureDetailsModalBody').html(modalContent);
+                
+                // Ajouter les boutons d'action dans le footer
+                const modalFooter = `
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Fermer
+                        </button>
+                        @if(auth()->user()->hasPermission('edit_factures'))
+                            <a href="/factures/${factureId}/edit" class="btn btn-warning">
+                                <i class="fas fa-edit"></i> Modifier
+                            </a>
+                        @endif
+                        @if(auth()->user()->hasPermission('delete_factures'))
+                            <button type="button" class="btn btn-danger" onclick="confirmDeleteFromModal(${factureId})">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        @endif
+                    </div>
+                `;
+                
+                // Ajouter le footer au modal
+                $('#factureDetailsModal .modal-content').append(modalFooter);
+                
+                // Mettre à jour le titre du modal avec le numéro de facture
+                const factureNumero = doc.querySelector('.font-weight-bold:contains("N/A")')?.textContent || 
+                                     doc.querySelector('td.font-weight-bold')?.textContent || 
+                                     '#' + factureId;
+                $('#factureDetailsModalLabel').html(`<i class="fas fa-file-invoice"></i> Détails de la facture ${factureNumero}`);
+            },
+            error: function(xhr, status, error) {
+                $('#factureDetailsModalBody').html(`
+                    <div class="text-center py-5">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Erreur lors du chargement des détails.</p>
+                            <a href="/factures/${factureId}" class="btn btn-primary mt-2" target="_blank">
+                                Ouvrir dans une nouvelle fenêtre
+                            </a>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // Fonction de confirmation de suppression depuis le modal
+    window.confirmDeleteFromModal = function(factureId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.')) {
+            // Afficher un indicateur de chargement
+            const deleteButton = $('.btn-danger[onclick*="confirmDeleteFromModal"]');
+            deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
+            deleteButton.prop('disabled', true);
+
+            // Soumettre la suppression via AJAX
+            $.ajax({
+                url: '/factures/' + factureId,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    // Fermer le modal
+                    $('#factureDetailsModal').modal('hide');
+                    
+                    // Recharger la DataTable
+                    if (typeof table !== 'undefined' && $.fn.DataTable.isDataTable('#facturesTable')) {
+                        table.ajax.reload(null, false);
+                    }
+                    
+                    // Afficher un message de succès
+                    showAlert('success', 'Facture supprimée avec succès');
+                },
+                error: function(xhr) {
+                    showAlert('danger', 'Erreur lors de la suppression');
+                    
+                    // Réactiver le bouton
+                    deleteButton.html('<i class="fas fa-trash"></i> Supprimer');
+                    deleteButton.prop('disabled', false);
+                }
+            });
+        }
+    };
+
+    // Nettoyer le modal quand il est fermé
+    $('#factureDetailsModal').on('hidden.bs.modal', function() {
+        // Réinitialiser le contenu du modal
+        $(this).find('.modal-content').html(`
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="factureDetailsModalLabel">
+                    <i class="fas fa-file-invoice"></i> Détails de la facture
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="factureDetailsModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails...</p>
+                </div>
+            </div>
+        `);
+    });
+
+    // Fermer le modal avec la touche ESC
+    $(document).keydown(function(e) {
+        if (e.keyCode === 27 && $('#factureDetailsModal').hasClass('show')) {
+            $('#factureDetailsModal').modal('hide');
+        }
+    });
+});
+
+// Fonction pour afficher les alertes
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            <button type="button" class="close" data-dismiss="alert" style="position: absolute; right: 10px; top: 10px;">
+                <span>&times;</span>
+            </button>
+            <div class="d-flex align-items-center">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2" style="font-size: 1.5rem;"></i>
+                <div>
+                    <strong>${type === 'success' ? 'Succès' : 'Erreur'}</strong>
+                    <div class="small">${message}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Supprimer les alertes existantes
+    $('.alert[style*="position: fixed"]').remove();
+    
+    // Ajouter la nouvelle alerte
+    $('body').append(alertHtml);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        $('.alert[style*="position: fixed"]').alert('close');
+    }, 5000);
+}
+</script>
 <style>
     .section-title {
         color: #495057;

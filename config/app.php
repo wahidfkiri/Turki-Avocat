@@ -95,7 +95,7 @@ return [
     |
     */
 
-    'fallback_locale' => 'en',
+    'fallback_locale' => 'fr',
 
     /*
     |--------------------------------------------------------------------------
@@ -108,7 +108,7 @@ return [
     |
     */
 
-    'faker_locale' => 'en_US',
+    'faker_locale' => 'fr_FR',
 
     /*
     |--------------------------------------------------------------------------
@@ -189,6 +189,12 @@ return [
          Vendor\Drive\DriveServiceProvider::class,
          Vendor\Email\EmailServiceProvider::class,
          Vendor\Apps\AppsServiceProvider::class,
+         Vendor\Intervenant\IntervenantServiceProvider::class,
+         Vendor\Timesheet\TimesheetServiceProvider::class,
+         Vendor\Facture\FactureServiceProvider::class,
+         Vendor\Task\TaskServiceProvider::class,
+         Vendor\Dossier\DossierServiceProvider::class,
+         Vendor\Agenda\AgendaServiceProvider::class,
 
         /*
          * Application Service Providers...

@@ -78,14 +78,6 @@
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a class="nav-link" id="fichiers-tab" data-toggle="tab" href="#fichiers" role="tab" aria-controls="fichiers" aria-selected="false">
-                                                    <i class="fas fa-file"></i> Fichiers
-                                                    @if($intervenant->files && count($intervenant->files) > 0)
-                                                        <span class="badge badge-primary ml-1">{{ count($intervenant->files) }}</span>
-                                                    @endif
-                                                </a>
-                                            </li>
-                                            <li class="nav-item">
                                                 <a class="nav-link" id="intervenants-lies-tab" data-toggle="tab" href="#intervenants-lies" role="tab" aria-controls="intervenants-lies" aria-selected="false">
                                                     <i class="fas fa-users"></i> Intervenants Liés
                                                     @if($intervenant->intervenantsLies && count($intervenant->intervenantsLies) > 0)
@@ -452,107 +444,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Onglet Fichiers -->
-                                            <div class="tab-pane fade" id="fichiers" role="tabpanel" aria-labelledby="fichiers-tab">
-                                                <div class="p-3">
-                                                    <h5 class="text-primary mb-3"><i class="fas fa-file-upload"></i> Gestion des fichiers</h5>
-                                                    
-                                                    <!-- Upload de nouveaux fichiers -->
-                                                    <div class="row">
-                                                        <div class="col-md-12">
-                                                            <div class="form-group">
-                                                                <label for="piece_jointe">Nouvelles pièces jointes</label>
-                                                                <div class="custom-file">
-                                                                    <input type="file" class="custom-file-input @error('piece_jointe') is-invalid @enderror" 
-                                                                           id="piece_jointe" name="piece_jointe[]" 
-                                                                           multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
-                                                                    <label class="custom-file-label" for="piece_jointe" id="piece_jointe_label">
-                                                                        Choisir des fichiers (PDF, images, Word, Excel) - Max 10MB par fichier
-                                                                    </label>
-                                                                    @error('piece_jointe')
-                                                                        <span class="invalid-feedback" role="alert">
-                                                                            <strong>{{ $message }}</strong>
-                                                                        </span>
-                                                                    @enderror
-                                                                    @error('piece_jointe.*')
-                                                                        <span class="invalid-feedback d-block" role="alert">
-                                                                            <strong>{{ $message }}</strong>
-                                                                        </span>
-                                                                    @enderror
-                                                                </div>
-                                                                <small class="form-text text-muted">
-                                                                    Formats acceptés: PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX, TXT, ZIP, RAR - Taille max: 10MB par fichier
-                                                                </small>
-                                                                
-                                                                <!-- Aperçu des nouveaux fichiers -->
-                                                                <div id="files_preview" class="mt-3" style="display: none;">
-                                                                    <h6 class="text-info">Nouveaux fichiers sélectionnés :</h6>
-                                                                    <div id="files_list" class="list-group"></div>
-                                                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="clearFileInput()">
-                                                                        <i class="fas fa-times"></i> Effacer tous les nouveaux fichiers
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Liste des fichiers existants -->
-                                                    <div class="row mt-4">
-                                                        <div class="col-md-12">
-                                                            <div class="card">
-                                                                <div class="card-header">
-                                                                    <h5 class="card-title mb-0">
-                                                                        <i class="fas fa-files-o mr-1"></i>
-                                                                        Fichiers existants
-                                                                        <small class="text-muted ml-1">({{ $intervenant->files->count() }} fichiers)</small>
-                                                                    </h5>
-                                                                </div>
-                                                                <div class="card-body">
-                                                                    @if($intervenant->files->count() > 0)
-                                                                        <div class="table-responsive">
-                                                                            <table class="table table-bordered table-hover">
-                                                                                <thead>
-                                                                                    <tr>
-                                                                                        <th>Nom du fichier</th>
-                                                                                        <th>Date d'upload</th>
-                                                                                        <th>Actions</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody>
-                                                                                    @foreach($intervenant->files as $file)
-                                                                                        <tr>
-                                                                                            <td>
-                                                                                                <span class="badge badge-info">{{ pathinfo($file->file_path, PATHINFO_EXTENSION) }}</span> {{ $file->file_name ?? $file->file_path }}
-                                                                                            </td>
-                                                                                            <td>{{ $file->created_at->format('d/m/Y H:i') }}</td>
-                                                                                            <td>
-                                                                                               <div class="btn-group btn-group-sm">
-                                                                                <a href="{{url('intervenant/display')}}/{{ $file->id ?? '#' }}" target="_blank" class="btn btn-info" title="Voir">
-                                                                                    <i class="fas fa-eye"></i>
-                                                                                </a>
-                                                                                <a href="{{url('intervenant/download')}}/{{ $file->id ?? '#' }}" download class="btn btn-success" title="Télécharger">
-                                                                                    <i class="fas fa-download"></i>
-                                                                                </a>
-                                                                            </div>
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                    @endforeach
-                                                                                </tbody>
-                                                                            </table>
-                                                                        </div>
-                                                                    @else
-                                                                        <div class="text-center py-4">
-                                                                            <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                                                                            <p class="text-muted">Aucun fichier attaché à cet intervenant</p>
-                                                                        </div>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            
 
                                             <!-- Onglet Intervenants Liés -->
                                             <div class="tab-pane fade" id="intervenants-lies" role="tabpanel" aria-labelledby="intervenants-lies-tab">

@@ -52,11 +52,6 @@
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a class="nav-link" id="fichiers-tab" data-toggle="tab" href="#fichiers" role="tab" aria-controls="fichiers" aria-selected="false">
-                                                    <i class="fas fa-file"></i> Fichiers
-                                                </a>
-                                            </li>
-                                            <li class="nav-item">
                                                 <a class="nav-link" id="intervenants-lies-tab" data-toggle="tab" href="#intervenants-lies" role="tab" aria-controls="intervenants-lies" aria-selected="false">
                                                     <i class="fas fa-users"></i> Intervenants Liés
                                                 </a>
@@ -317,54 +312,6 @@
                                                                        id="fax" name="fax" 
                                                                        value="{{ old('fax') }}" 
                                                                        placeholder="Numéro de fax">
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Onglet Fichiers -->
-                                            <div class="tab-pane fade" id="fichiers" role="tabpanel" aria-labelledby="fichiers-tab">
-                                                <div class="p-3">
-                                                    <h5 class="text-primary mb-3"><i class="fas fa-file-upload"></i> Gestion des fichiers</h5>
-                                                    
-                                                    <!-- Upload de fichiers multiples -->
-                                                    <div class="row">
-                                                        <div class="col-md-12">
-                                                            <div class="form-group">
-                                                                <label for="piece_jointe">Pièces jointes</label>
-                                                                <div class="custom-file">
-                                                                    <input type="file" class="custom-file-input" 
-                                                                           id="piece_jointe" name="piece_jointe[]" 
-                                                                           multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
-                                                                    <label class="custom-file-label" for="piece_jointe" id="piece_jointe_label">
-                                                                        Choisir des fichiers (PDF, images, Word, Excel) - Max 10MB par fichier
-                                                                    </label>
-                                                                </div>
-                                                                <small class="form-text text-muted">
-                                                                    Formats acceptés: PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX, TXT, ZIP, RAR - Taille max: 10MB par fichier
-                                                                </small>
-                                                                
-                                                                <!-- Aperçu des fichiers -->
-                                                                <div id="files_preview" class="mt-3" style="display: none;">
-                                                                    <h6 class="text-info">Fichiers sélectionnés :</h6>
-                                                                    <div id="files_list" class="list-group"></div>
-                                                                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="clearFileInput()">
-                                                                        <i class="fas fa-times"></i> Effacer tous les fichiers
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="row">
-                                                        <div class="col-md-12">
-                                                            <div class="alert alert-info">
-                                                                <h6><i class="icon fas fa-info"></i> Information</h6>
-                                                                <p class="mb-0">
-                                                                    Vous pouvez sélectionner plusieurs fichiers en maintenant la touche Ctrl (ou Cmd sur Mac) enfoncée.
-                                                                    Vous pourrez ajouter d'autres fichiers après la création de l'intervenant.
-                                                                </p>
                                                             </div>
                                                         </div>
                                                     </div>

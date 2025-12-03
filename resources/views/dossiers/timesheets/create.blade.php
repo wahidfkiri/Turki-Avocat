@@ -34,7 +34,7 @@
                     <div class="card-body" style="padding: 0;">
                         <div class="row">
                             <!-- Date -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="date_timesheet">Date *</label>
                                     <input type="date" class="form-control @error('date_timesheet') is-invalid @enderror" 
@@ -47,38 +47,8 @@
                                     @enderror
                                 </div>
                             </div>
-
-                            <!-- Utilisateur -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="utilisateur_id">Utilisateur *</label>
-                                    <select class="form-control @error('utilisateur_id') is-invalid @enderror" 
-                                            id="utilisateur_id" name="utilisateur_id" required>
-                                        <option value="">Sélectionnez un utilisateur</option>
-                                        @if(auth()->user()->hasRole('admin'))
-                                        @foreach(\App\Models\User::all() as $user)
-                                            <option value="{{ $user->id }}" {{ old('utilisateur_id') == $user->id ? 'selected' : '' }}>
-                                                {{ $user->name }} ({{ $user->fonction }})
-                                            </option>
-                                        @endforeach
-                                        @else 
-                                            <option value="{{ auth()->user()->id }}" selected>
-                                                {{ auth()->user()->name }} ({{ auth()->user()->fonction }})
-                                            </option>
-                                        @endif
-                                    </select>
-                                    @error('utilisateur_id')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
                             <!-- Dossier -->
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <div class="form-group">
                                     <label for="dossier_id">Dossier</label>
                                     <select class="form-control @error('dossier_id') is-invalid @enderror" 
@@ -96,8 +66,38 @@
                                 </div>
                             </div>
 
+                        </div>
+
+                        <div class="row">
+                            <!-- Utilisateur -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="utilisateur_id">Utilisateur *</label>
+                                    <select class="form-control @error('utilisateur_id') is-invalid @enderror" 
+                                            id="utilisateur_id" name="utilisateur_id" required>
+                                        <option value="">Sélectionnez un utilisateur</option>
+                                        @if(auth()->user()->hasRole('admin'))
+                                        @foreach(\App\Models\User::all() as $user)
+                                            <option value="{{ $user->id }}" {{ auth()->user()->id == $user->id ? 'selected' : '' }}>
+                                                {{ $user->name }} ({{ $user->fonction }})
+                                            </option>
+                                        @endforeach
+                                        @else 
+                                            <option value="{{ auth()->user()->id }}" selected>
+                                                {{ auth()->user()->name }} ({{ auth()->user()->fonction }})
+                                            </option>
+                                        @endif
+                                    </select>
+                                    @error('utilisateur_id')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+
                             <!-- Catégorie -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="categorie">Catégorie</label>
                                     <select class="form-control @error('categorie') is-invalid @enderror" 
@@ -111,11 +111,8 @@
                                     @enderror
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row">
                             <!-- Type -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="type">Type</label>
                                     <select class="form-control @error('type') is-invalid @enderror" 
@@ -129,9 +126,12 @@
                                     @enderror
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="row">
 
                             <!-- Quantité -->
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="quantite">Quantité *</label>
                                     <input type="number" class="form-control @error('quantite') is-invalid @enderror" 
@@ -146,7 +146,7 @@
                             </div>
 
                             <!-- Prix -->
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="prix">Prix (DT) *</label>
                                     <input type="number" class="form-control @error('prix') is-invalid @enderror" 
@@ -159,11 +159,7 @@
                                     @enderror
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Total (calculé automatiquement) -->
-                        <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="total_calcule">Total calculé</label>
                                     <input type="text" name="total" class="form-control" id="total_calcule" 

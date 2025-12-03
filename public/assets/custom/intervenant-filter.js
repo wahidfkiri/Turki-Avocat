@@ -34,9 +34,9 @@ $(document).ready(function() {
     $('#categorieFilter').on('change', function() {
         var categorie = this.value;
         if (categorie) {
-            table.column(4).search(categorie, true, false).draw();
+            table.column(2).search(categorie, true, false).draw();
         } else {
-            table.column(4).search('').draw();
+            table.column(2).search('').draw();
         }
     });
 
@@ -53,19 +53,19 @@ $(document).ready(function() {
     // Ajouter des classes CSS pour les badges après le chargement
     table.on('draw', function() {
         // Badges pour la colonne Type (index 3)
-        table.cells(null, 2).every(function() {
-            var cell = this;
-            var type = cell.data();
-            $(cell.node()).html('<span class="badge badge-info">' + type + '</span>');
-        });
+        // table.cells(null, 2).every(function() {
+        //     var cell = this;
+        //     var type = cell.data();
+        //     $(cell.node()).html('<span class="badge badge-info">' + type + '</span>');
+        // });
 
         // Badges pour la colonne Catégorie (index 4)
-        table.cells(null, 2).every(function() {
-            var cell = this;
-            var categorie = cell.data();
-            var badgeClass = getBadgeClass(categorie);
-            $(cell.node()).html('<span class="badge ' + badgeClass + '">' + categorie + '</span>');
-        });
+        // table.cells(null, 2).every(function() {
+        //     var cell = this;
+        //     var categorie = cell.data();
+        //     var badgeClass = getBadgeClass(categorie);
+        //     $(cell.node()).html('<span class="badge ' + badgeClass + '">' + categorie + '</span>');
+        // });
 
         // Badges pour la colonne Archivé (index 8)
         table.cells(null, 8).every(function() {
@@ -86,9 +86,10 @@ $(document).ready(function() {
             'notaire': 'badge-warning',
             'huissier': 'badge-dark',
             'juridiction': 'badge-info',
-            'administrateur_judiciaire': 'badge-light',
+            'Administrateur Judiciaire': 'badge-light',
             'mandataire_judiciaire': 'badge-light',
-            'expert_judiciaire': 'badge-info'
+            'expert_judiciaire': 'badge-info',
+            'traducteur': 'badge-primary'
         };
         return badgeClasses[categorie] || 'badge-secondary';
     }

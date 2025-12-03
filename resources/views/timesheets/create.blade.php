@@ -76,10 +76,16 @@
                         <!-- Catégorie -->
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="categorie">Catégorie</label>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label for="categorie">Catégorie</label>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddCategorie">
+                                        <i class="fas fa-plus"></i> Ajouter
+                                    </button>
+                                </div>
                                 <select class="form-control @error('categorie') is-invalid @enderror" 
                                         id="categorie" name="categorie">
-                                    <option value="">Chargement des catégories...</option>
+                                    <option value="">Sélectionnez une catégorie</option>
+                                    <!-- Les catégories seront chargées via AJAX -->
                                 </select>
                                 @error('categorie')
                                     <span class="invalid-feedback" role="alert">
@@ -94,7 +100,12 @@
                         <!-- Type -->
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="type">Type</label>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label for="type">Type</label>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddType" disabled>
+                                        <i class="fas fa-plus"></i> Ajouter
+                                    </button>
+                                </div>
                                 <select class="form-control @error('type') is-invalid @enderror" 
                                         id="type" name="type" disabled>
                                     <option value="">Sélectionnez d'abord une catégorie</option>
@@ -206,6 +217,63 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter une catégorie -->
+<div class="modal fade" id="addCategorieModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title">Nouvelle Catégorie</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addCategorieForm">
+                    @csrf
+                    <div class="form-group">
+                        <label for="new_categorie_nom">Nom de la catégorie *</label>
+                        <input type="text" class="form-control" id="new_categorie_nom" name="nom" required>
+                        <small class="form-text text-muted">Ex: Développement, Conseil, Formation, etc.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="btnSaveCategorie">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour ajouter un type -->
+<div class="modal fade" id="addTypeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title">Nouveau Type</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addTypeForm">
+                    @csrf
+                    <input type="hidden" id="selected_categorie_id" name="categorie_id">
+                    <div class="form-group">
+                        <label for="new_type_nom">Nom du type *</label>
+                        <input type="text" class="form-control" id="new_type_nom" name="nom" required>
+                        <small class="form-text text-muted">Ex: Frontend, Backend, Audit, etc.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="btnSaveType">Enregistrer</button>
+            </div>
         </div>
     </div>
 </div>
@@ -541,7 +609,265 @@ $(document).ready(function() {
     });
 });
 </script>
+<script>
+$(document).ready(function() {
+    // Variables globales
+    let currentCategorieId = null;
 
+    // Charger les catégories au démarrage
+    loadCategories();
+
+    // Fonction pour charger les catégories
+    function loadCategories() {
+        $.ajax({
+            url: '{{ route("categories.ajax") }}',
+            type: 'GET',
+            success: function(response) {
+                const categorieSelect = $('#categorie');
+                categorieSelect.empty().append('<option value="">Sélectionnez une catégorie</option>');
+                
+                response.forEach(function(categorie) {
+                    categorieSelect.append(
+                        `<option value="${categorie.id}">${categorie.nom}</option>`
+                    );
+                });
+            },
+            error: function() {
+                showAlert('danger', 'Erreur lors du chargement des catégories');
+            }
+        });
+    }
+
+    // Fonction pour charger les types d'une catégorie
+    function loadTypes(categorieId) {
+        if (!categorieId) return;
+        
+        $.ajax({
+            url: `{{ url("categories") }}/${categorieId}/types`,
+            type: 'GET',
+            success: function(response) {
+                const typeSelect = $('#type');
+                typeSelect.empty().append('<option value="">Sélectionnez un type</option>');
+                
+                if (response.length > 0) {
+                    response.forEach(function(type) {
+                        typeSelect.append(
+                            `<option value="${type.id}">${type.nom}</option>`
+                        );
+                    });
+                    typeSelect.prop('disabled', false);
+                } else {
+                    typeSelect.append('<option value="">Aucun type disponible</option>');
+                    typeSelect.prop('disabled', false);
+                }
+                
+                // Activer le bouton d'ajout de type
+                $('#btnAddType').prop('disabled', false);
+            },
+            error: function() {
+                showAlert('danger', 'Erreur lors du chargement des types');
+            }
+        });
+    }
+
+    // Gestion du changement de catégorie
+    $('#categorie').change(function() {
+        const categorieId = $(this).val();
+        currentCategorieId = categorieId;
+        
+        if (categorieId) {
+            loadTypes(categorieId);
+        } else {
+            $('#type').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>')
+                     .prop('disabled', true);
+            $('#btnAddType').prop('disabled', true);
+        }
+    });
+
+    // Bouton pour ajouter une catégorie
+    $('#btnAddCategorie').click(function() {
+        $('#new_categorie_nom').val('');
+        $('#addCategorieModal').modal('show');
+    });
+
+    // Sauvegarder une nouvelle catégorie
+    $('#btnSaveCategorie').click(function() {
+        const nom = $('#new_categorie_nom').val().trim();
+        
+        if (!nom) {
+            showAlert('warning', 'Veuillez saisir un nom de catégorie');
+            return;
+        }
+
+        $.ajax({
+            url: '{{ route("categories.store") }}',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                nom: nom
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Ajouter la nouvelle catégorie au select
+                    const categorieSelect = $('#categorie');
+                    categorieSelect.append(
+                        `<option value="${response.categorie.id}" selected>${response.categorie.nom}</option>`
+                    );
+                    
+                    // Fermer le modal
+                    $('#addCategorieModal').modal('hide');
+                    
+                    // Charger les types de cette catégorie
+                    loadTypes(response.categorie.id);
+                    currentCategorieId = response.categorie.id;
+                    
+                    showAlert('success', response.message);
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Erreur lors de la création';
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    errorMessage = xhr.responseJSON.errors.nom ? xhr.responseJSON.errors.nom[0] : errorMessage;
+                }
+                showAlert('danger', errorMessage);
+            }
+        });
+    });
+
+    // Bouton pour ajouter un type
+    $('#btnAddType').click(function() {
+        if (!currentCategorieId) {
+            showAlert('warning', 'Veuillez d\'abord sélectionner une catégorie');
+            return;
+        }
+        
+        $('#new_type_nom').val('');
+        $('#selected_categorie_id').val(currentCategorieId);
+        $('#addTypeModal').modal('show');
+    });
+
+    // Sauvegarder un nouveau type
+    $('#btnSaveType').click(function() {
+        const nom = $('#new_type_nom').val().trim();
+        const categorieId = $('#selected_categorie_id').val();
+        
+        if (!nom) {
+            showAlert('warning', 'Veuillez saisir un nom de type');
+            return;
+        }
+
+        if (!categorieId) {
+            showAlert('warning', 'Catégorie non sélectionnée');
+            return;
+        }
+
+        $.ajax({
+            url: '{{ route("types.store") }}',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                nom: nom,
+                categorie_id: categorieId
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Ajouter le nouveau type au select
+                    const typeSelect = $('#type');
+                    typeSelect.empty().append('<option value="">Sélectionnez un type</option>');
+                    
+                    if (response.types && response.types.length > 0) {
+                        response.types.forEach(function(type) {
+                            const selected = type.id === response.type.id ? 'selected' : '';
+                            typeSelect.append(
+                                `<option value="${type.id}" ${selected}>${type.nom}</option>`
+                            );
+                        });
+                    }
+                    
+                    // Fermer le modal
+                    $('#addTypeModal').modal('hide');
+                    
+                    showAlert('success', response.message);
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Erreur lors de la création';
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    if (xhr.responseJSON.errors.nom) {
+                        errorMessage = xhr.responseJSON.errors.nom[0];
+                    } else if (xhr.responseJSON.errors.categorie_id) {
+                        errorMessage = xhr.responseJSON.errors.categorie_id[0];
+                    }
+                }
+                showAlert('danger', errorMessage);
+            }
+        });
+    });
+
+    // Calcul automatique du total
+    $('#quantite, #prix').on('input', function() {
+        calculateTotal();
+    });
+
+    function calculateTotal() {
+        const quantite = parseFloat($('#quantite').val()) || 0;
+        const prix = parseFloat($('#prix').val()) || 0;
+        const total = quantite * prix;
+        $('#total_calcule').val(total.toFixed(2) + ' DT');
+    }
+
+    // Gestion de l'affichage du nom du fichier
+    $('#piece_jointe').change(function() {
+        const fileName = $(this).val().split('\\').pop();
+        if (fileName) {
+            $('#piece_jointe_label').text(fileName);
+            $('#file_name').text(fileName);
+            $('#file_preview').show();
+        }
+    });
+
+    // Fonction pour afficher les alertes
+    function showAlert(type, message) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        `;
+        
+        $('.content-wrapper').prepend(alertHtml);
+        
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 3000);
+    }
+
+    // Réinitialiser le formulaire quand le modal est fermé
+    $('#createTimesheetModal').on('hidden.bs.modal', function() {
+        $('#timesheetForm')[0].reset();
+        $('#type').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>')
+                 .prop('disabled', true);
+        $('#btnAddType').prop('disabled', true);
+        $('#total_calcule').val('0.00 DT');
+        $('#piece_jointe_label').text('Choisir un fichier (PDF, Word, images) - Max 2MB');
+        $('#file_preview').hide();
+        currentCategorieId = null;
+        loadCategories(); // Recharger les catégories au cas où
+    });
+
+    // Initialiser le calcul du total
+    calculateTotal();
+});
+
+// Fonction pour effacer le fichier sélectionné
+function clearFileInput() {
+    $('#piece_jointe').val('');
+    $('#piece_jointe_label').text('Choisir un fichier (PDF, Word, images) - Max 2MB');
+    $('#file_preview').hide();
+}
+</script>
 <style>
 .select2-container .select2-selection--single {
     height: 38px;

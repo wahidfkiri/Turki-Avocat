@@ -889,6 +889,7 @@ public function createFile(Request $request)
 
     $intervenant = Intervenant::findOrFail($validated['intervenant_id']);
     $fileName = $validated['file_name'];
+    
 
     // Chemin complet dans storage
     $basePath = "intervenants/{$intervenant->id}";
@@ -941,9 +942,9 @@ public function createFileBackend(Request $request)
     $intervenant = Intervenant::findOrFail($validated['intervenant_id']);
     $fileName = $validated['file_name'];
     $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
+    $path = $request->input('path', ''); // Récupère le chemin depuis la requête, par défaut vide
     $basePath = "intervenants/{$intervenant->id}";
-    $fullPath = $basePath . '/' . $fileName;
+    $fullPath = $basePath . '/' . ($path ? $path . '/' : '') . $fileName;
 
     // Make directory if it doesn't exist
     if (!Storage::disk('public')->exists($basePath)) {

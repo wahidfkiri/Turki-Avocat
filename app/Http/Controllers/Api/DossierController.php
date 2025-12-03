@@ -28,6 +28,7 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Notifications\TaskAssignedNotification;
 
 
 
@@ -928,7 +929,23 @@ public function getDossiersData(Request $request)
         $validated['file_name'] = $file->getClientOriginalName();
     }
 
-        \App\Models\Task::create($validated);
+        $task = \App\Models\Task::create($validated);
+
+         // Create notification for this task
+    if($task->utilisateur_id){
+        \App\Models\Notification::create([
+            'task_id' => $task->id,
+            'user_id' => $task->utilisateur_id,
+            'title' => 'Nouvelle Tache',
+            'message' => 'Nouvelle tache a été crée',
+            'is_read' => 0
+        ]);
+    }
+
+    if(auth()->user()->hasRole('admin')){
+       $user = User::find($task->utilisateur_id);
+       $user->notify(new TaskAssignedNotification($task));
+    }
 
         return redirect()->back()->with('success', 'Tâche créée avec succès.');
     }
@@ -1434,9 +1451,10 @@ public function createFileBackend(Request $request)
     $dossier = Dossier::findOrFail($validated['dossier_id']);
     $fileName = $validated['file_name'];
     $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+     $path = $request->input('path', ''); // Chemin optionnel
 
     $basePath = "dossiers/{$dossier->numero_dossier}-{$dossier->id}";
-    $fullPath = $basePath . '/' . $fileName;
+    $fullPath = $basePath . '/' . ($path ? $path . '/' : '') . $fileName;
 
     // Make directory if it doesn't exist
     if (!Storage::disk('public')->exists($basePath)) {

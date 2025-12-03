@@ -148,42 +148,53 @@
                                                     </div>
 
                                                     <!-- Domaines -->
-                                                    <h5 class="text-primary mb-3 mt-4"><i class="fas fa-tags"></i> Classification</h5>
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <div class="form-group">
-                                                                <label for="domaine_id">Domaine</label>
-                                                                <select class="form-control @error('domaine_id') is-invalid @enderror" 
-                                                                        id="domaine_id" name="domaine_id">
-                                                                    <option value="">Sélectionnez un domaine</option>
-                                                                    @foreach($domaines as $domaine)
-                                                                        <option value="{{ $domaine->id }}" {{ old('domaine_id') == $domaine->id ? 'selected' : '' }}>
-                                                                            {{ $domaine->nom }}
-                                                                        </option>
-                                                                    @endforeach
-                                                                </select>
-                                                                @error('domaine_id')
-                                                                    <span class="invalid-feedback" role="alert">
-                                                                        <strong>{{ $message }}</strong>
-                                                                    </span>
-                                                                @enderror
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <div class="form-group">
-                                                                <label for="sous_domaine_id">Sous-domaine</label>
-                                                                <select class="form-control @error('sous_domaine_id') is-invalid @enderror" 
-                                                                        id="sous_domaine_id" name="sous_domaine_id">
-                                                                    <option value="">Sélectionnez d'abord un domaine</option>
-                                                                </select>
-                                                                @error('sous_domaine_id')
-                                                                    <span class="invalid-feedback" role="alert">
-                                                                        <strong>{{ $message }}</strong>
-                                                                    </span>
-                                                                @enderror
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                   <!-- Domaines -->
+<h5 class="text-primary mb-3 mt-4"><i class="fas fa-tags"></i> Classification</h5>
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <label for="domaine_id">Domaine</label>
+                <a href="#" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#addDomaineModal">
+                    <i class="fas fa-plus"></i> Ajouter
+                </a>
+            </div>
+            <select class="form-control @error('domaine_id') is-invalid @enderror" 
+                    id="domaine_id" name="domaine_id">
+                <option value="">Sélectionnez un domaine</option>
+                @foreach($domaines as $domaine)
+                    <option value="{{ $domaine->id }}" {{ old('domaine_id') == $domaine->id ? 'selected' : '' }}>
+                        {{ $domaine->nom }}
+                    </option>
+                @endforeach
+            </select>
+            @error('domaine_id')
+                <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                </span>
+            @enderror
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <label for="sous_domaine_id">Sous-domaine</label>
+                <a href="#" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#addSousDomaineModal">
+                    <i class="fas fa-plus"></i> Ajouter
+                </a>
+            </div>
+            <select class="form-control @error('sous_domaine_id') is-invalid @enderror" 
+                    id="sous_domaine_id" name="sous_domaine_id">
+                <option value="">Sélectionnez d'abord un domaine</option>
+            </select>
+            @error('sous_domaine_id')
+                <span class="invalid-feedback" role="alert">
+                    <strong>{{ $message }}</strong>
+                </span>
+            @enderror
+        </div>
+    </div>
+</div>
 
                                                     <!-- Type de dossier -->
                                                     <h5 class="text-primary mb-3 mt-4"><i class="fas fa-balance-scale"></i> Type de dossier</h5>
@@ -662,6 +673,70 @@
         </div>
     </div>
 </div>
+<!-- Modal Ajouter Domaine -->
+<div class="modal fade" id="addDomaineModal" tabindex="-1" role="dialog" aria-labelledby="addDomaineModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addDomaineModalLabel">Ajouter un nouveau domaine</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="addDomaineForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="nom_domaine">Nom du domaine</label>
+                        <input type="text" class="form-control" id="nom_domaine" name="nom" required>
+                        <div class="invalid-feedback" id="domaine-error"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajouter Sous-Domaine -->
+<div class="modal fade" id="addSousDomaineModal" tabindex="-1" role="dialog" aria-labelledby="addSousDomaineModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addSousDomaineModalLabel">Ajouter un nouveau sous-domaine</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="addSousDomaineForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="domaine_modal_id">Domaine</label>
+                        <select class="form-control" id="domaine_modal_id" name="domaine_id" required>
+                            <option value="">Sélectionnez un domaine</option>
+                            @foreach($domaines as $domaine)
+                                <option value="{{ $domaine->id }}">{{ $domaine->nom }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="nom_sous_domaine">Nom du sous-domaine</label>
+                        <input type="text" class="form-control" id="nom_sous_domaine" name="nom" required>
+                        <div class="invalid-feedback" id="sous-domaine-error"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
 <script src="{{asset('assets/custom/dossier-form.js')}}"></script>
@@ -839,7 +914,118 @@ $(document).ready(function() {
     });
 });
     </script>
+<script>
+$(document).ready(function() {
+    // Charger les sous-domaines quand un domaine est sélectionné
+    $('#domaine_id').change(function() {
+        var domaineId = $(this).val();
+        if (domaineId) {
+            $.ajax({
+                url: "{{ route('sous-domaines.by-domaine') }}",
+                type: "GET",
+                data: {domaine_id: domaineId},
+                success: function(data) {
+                    $('#sous_domaine_id').empty();
+                    $('#sous_domaine_id').append('<option value="">Sélectionnez un sous-domaine</option>');
+                    $.each(data, function(key, value) {
+                        $('#sous_domaine_id').append('<option value="'+ key +'">'+ value +'</option>');
+                    });
+                }
+            });
+        } else {
+            $('#sous_domaine_id').empty();
+            $('#sous_domaine_id').append('<option value="">Sélectionnez d\'abord un domaine</option>');
+        }
+    });
 
+    // Ajouter un domaine via Ajax
+    $('#addDomaineForm').submit(function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: "{{ route('domaines.store') }}",
+            type: "POST",
+            data: $(this).serialize(),
+            success: function(response) {
+                // Ajouter l'option au select
+                $('#domaine_id').append('<option value="'+ response.id +'">'+ response.nom +'</option>');
+                $('#domaine_modal_id').append('<option value="'+ response.id +'">'+ response.nom +'</option>');
+                
+                // Sélectionner le nouveau domaine
+                $('#domaine_id').val(response.id);
+                
+                // Fermer le modal
+                $('#addDomaineModal').modal('hide');
+                
+                // Réinitialiser le formulaire
+                $('#addDomaineForm')[0].reset();
+                $('#domaine-error').text('');
+                
+                // Trigger le changement pour charger les sous-domaines
+                $('#domaine_id').trigger('change');
+                
+                toastr.success('Domaine ajouté avec succès!');
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    var errors = xhr.responseJSON.errors;
+                    if (errors.nom) {
+                        $('#nom_domaine').addClass('is-invalid');
+                        $('#domaine-error').text(errors.nom[0]);
+                    }
+                }
+            }
+        });
+    });
+
+    // Ajouter un sous-domaine via Ajax
+    $('#addSousDomaineForm').submit(function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: "{{ route('sous-domaines.store') }}",
+            type: "POST",
+            data: $(this).serialize(),
+            success: function(response) {
+                // Si le domaine sélectionné correspond, ajouter l'option
+                if ($('#domaine_id').val() == response.domaine_id) {
+                    $('#sous_domaine_id').append('<option value="'+ response.id +'">'+ response.nom +'</option>');
+                    $('#sous_domaine_id').val(response.id);
+                }
+                
+                // Fermer le modal
+                $('#addSousDomaineModal').modal('hide');
+                
+                // Réinitialiser le formulaire
+                $('#addSousDomaineForm')[0].reset();
+                $('#sous-domaine-error').text('');
+                
+                toastr.success('Sous-domaine ajouté avec succès!');
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    var errors = xhr.responseJSON.errors;
+                    if (errors.nom) {
+                        $('#nom_sous_domaine').addClass('is-invalid');
+                        $('#sous-domaine-error').text(errors.nom[0]);
+                    }
+                }
+            }
+        });
+    });
+
+    // Réinitialiser les erreurs quand le modal s'ouvre
+    $('#addDomaineModal').on('show.bs.modal', function() {
+        $('#nom_domaine').removeClass('is-invalid');
+        $('#domaine-error').text('');
+    });
+
+    $('#addSousDomaineModal').on('show.bs.modal', function() {
+        $('#nom_sous_domaine').removeClass('is-invalid');
+        $('#sous-domaine-error').text('');
+    });
+});
+</script>
 @endsection
 
 
