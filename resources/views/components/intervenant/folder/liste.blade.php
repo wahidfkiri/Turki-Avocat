@@ -1672,11 +1672,11 @@ function renderGridView(files) {
             }
             
             const iconMap = {
-                'pdf': 'fa-file-pdf',
-                'doc': 'fa-file-word',
-                'docx': 'fa-file-word',
-                'xls': 'fa-file-excel',
-                'xlsx': 'fa-file-excel',
+                'pdf': 'fa-file-pdf text-danger',
+                'doc': 'fa-file-word text-primary',
+                'docx': 'fa-file-word text-primary',
+                'xls': 'fa-file-excel text-success',
+                'xlsx': 'fa-file-excel text-success',
                 'jpg': 'fa-file-image',
                 'jpeg': 'fa-file-image',
                 'png': 'fa-file-image',
@@ -1686,7 +1686,7 @@ function renderGridView(files) {
                 'txt': 'fa-file-alt',
                 'mp4': 'fa-file-video',
                 'mp3': 'fa-file-audio',
-                'pptx': 'fa-file-powerpoint'
+                'pptx': 'fa-file-powerpoint text-warning'
             };
             
             const iconClass = iconMap[extension] || 'fa-file';
