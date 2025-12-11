@@ -1,8 +1,6 @@
-
-
 <!-- Modal -->
 <div class="modal fade" id="timesheetModal" tabindex="-1" role="dialog" aria-labelledby="timesheetModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="timesheetModalLabel">Nouvelle Feuille de Temps</h5>
@@ -11,25 +9,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Les messages d'alerte -->
-                @if(session('success'))
-                <div class="alert alert-success alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                    <h5><i class="icon fas fa-check"></i> Succès!</h5>
-                    {{ session('success') }}
-                </div>
-                @endif
-
-                @if(session('error'))
-                <div class="alert alert-danger alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                    <h5><i class="icon fas fa-ban"></i> Erreur!</h5>
-                    {{ session('error') }}
-                </div>
-                @endif
+                <!-- Container pour les messages d'alerte AJAX -->
+                <div id="ajaxAlertContainer"></div>
 
                 <!-- Le formulaire -->
-                <form action="{{ route('dossiers.timesheets.store', ['dossier' => $dossier->id]) }}" method="POST" id="timesheetForm">
+                <form id="timesheetForm" method="POST">
                     @csrf
                     <div class="card-body" style="padding: 0;">
                         <div class="row">
@@ -37,35 +21,25 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="date_timesheet">Date *</label>
-                                    <input type="date" class="form-control @error('date_timesheet') is-invalid @enderror" 
+                                    <input type="date" class="form-control" 
                                            id="date_timesheet" name="date_timesheet" 
-                                           value="{{ old('date_timesheet', date('Y-m-d')) }}" required>
-                                    @error('date_timesheet')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                           value="{{ date('Y-m-d') }}" required>
+                                    <div class="invalid-feedback" id="date_timesheet_error"></div>
                                 </div>
                             </div>
                             <!-- Dossier -->
                             <div class="col-md-8">
                                 <div class="form-group">
                                     <label for="dossier_id">Dossier</label>
-                                    <select class="form-control @error('dossier_id') is-invalid @enderror" 
+                                    <select class="form-control" 
                                             id="dossier_id" name="dossier_id">
-                                        <option value="">Sélectionnez un dossier</option>
-                                            <option value="{{ $dossier->id }}" selected>
-                                                {{ $dossier->numero_dossier }} - {{ $dossier->nom_dossier ?? 'N/A' }}
-                                            </option>
+                                        <option value="{{ $dossier->id }}" selected>
+                                            {{ $dossier->numero_dossier }} - {{ $dossier->nom_dossier ?? 'N/A' }}
+                                        </option>
                                     </select>
-                                    @error('dossier_id')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                    <div class="invalid-feedback" id="dossier_id_error"></div>
                                 </div>
                             </div>
-
                         </div>
 
                         <div class="row">
@@ -73,7 +47,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="utilisateur_id">Utilisateur *</label>
-                                    <select class="form-control @error('utilisateur_id') is-invalid @enderror" 
+                                    <select class="form-control" 
                                             id="utilisateur_id" name="utilisateur_id" required>
                                         <option value="">Sélectionnez un utilisateur</option>
                                         @if(auth()->user()->hasRole('admin'))
@@ -88,60 +62,43 @@
                                             </option>
                                         @endif
                                     </select>
-                                    @error('utilisateur_id')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                    <div class="invalid-feedback" id="utilisateur_id_error"></div>
                                 </div>
                             </div>
 
                             <!-- Catégorie -->
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="categorie">Catégorie</label>
-                                    <select class="form-control @error('categorie') is-invalid @enderror" 
-                                            id="categorieList" name="categorie">
+                                    <label for="categorie">Catégorie *</label>
+                                    <select class="form-control" 
+                                            id="categorieList" name="categorie" required>
                                         <option value="">Chargement des catégories...</option>
                                     </select>
-                                    @error('categorie')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                    <div class="invalid-feedback" id="categorie_error"></div>
                                 </div>
                             </div>
                             <!-- Type -->
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="type">Type</label>
-                                    <select class="form-control @error('type') is-invalid @enderror" 
-                                            id="type" name="type" disabled>
+                                    <select class="form-control" 
+                                            id="type" name="type">
                                         <option value="">Sélectionnez d'abord une catégorie</option>
                                     </select>
-                                    @error('type')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                    <div class="invalid-feedback" id="type_error"></div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row">
-
                             <!-- Quantité -->
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="quantite">Quantité *</label>
-                                    <input type="number" class="form-control @error('quantite') is-invalid @enderror" 
-                                           id="quantite" name="quantite" value="{{ old('quantite', 1) }}" 
+                                    <input type="number" class="form-control" 
+                                           id="quantite" name="quantite" value="1" 
                                            min="0" step="0.01" placeholder="0.00" required>
-                                    @error('quantite')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                    <div class="invalid-feedback" id="quantite_error"></div>
                                 </div>
                             </div>
 
@@ -149,20 +106,16 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="prix">Prix (DT) *</label>
-                                    <input type="number" class="form-control @error('prix') is-invalid @enderror" 
-                                           id="prix" name="prix" value="{{ old('prix', 0) }}" 
+                                    <input type="number" class="form-control" 
+                                           id="prix" name="prix" value="0" 
                                            min="0" step="0.01" placeholder="0.00" required>
-                                    @error('prix')
-                                        <span class="invalid-feedback" role="alert">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
+                                    <div class="invalid-feedback" id="prix_error"></div>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="total_calcule">Total calculé</label>
-                                    <input type="text" name="total" class="form-control" id="total_calcule" 
+                                    <input type="text" class="form-control" id="total_calcule" 
                                            value="0.00 DT" readonly style="background-color: #f8f9fa; font-weight: bold;">
                                     <small class="form-text text-muted">
                                         Calcul automatique : Quantité × Prix
@@ -174,14 +127,10 @@
                         <!-- Description -->
                         <div class="form-group">
                             <label for="description">Description *</label>
-                            <textarea class="form-control @error('description') is-invalid @enderror" 
+                            <textarea class="form-control" 
                                       id="description" name="description" rows="3" 
-                                      placeholder="Décrivez l'activité réalisée..." required>{{ old('description') }}</textarea>
-                            @error('description')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
+                                      placeholder="Décrivez l'activité réalisée..." required></textarea>
+                            <div class="invalid-feedback" id="description_error"></div>
                         </div>
                     </div>
 
@@ -189,7 +138,7 @@
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">
                             <i class="fas fa-times"></i> Annuler
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
                             <i class="fas fa-save"></i> Créer la feuille de temps
                         </button>
                     </div>
@@ -200,128 +149,235 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-        // Auto-sélection de l'utilisateur connecté si c'est un avocat/secrétaire
-        @if(auth()->user()->fonction === 'avocat' || auth()->user()->fonction === 'secrétaire')
-            $('#utilisateur_id').val('{{ auth()->id() }}').trigger('change');
-        @endif
+$(document).ready(function() {
+    // Variables globales
+    let currentCategorieId = null;
+    
+    // Fonction pour afficher les alertes
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        `;
+        
+        $('#ajaxAlertContainer').html(alertHtml);
+        
+        // Supprimer automatiquement après 5 secondes
+        setTimeout(() => {
+            $('#ajaxAlertContainer .alert').alert('close');
+        }, 5000);
+    }
 
-        // Dynamic category-type functionality
-        const categorieSelect = document.getElementById('categorieList');
-        const typeSelect = document.getElementById('type');
+    // Fonction pour effacer les erreurs de validation
+    function clearValidationErrors() {
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+    }
 
-        // Load categories from the server
-        function loadCategories() {
-            fetch('/get/categories')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erreur lors du chargement des catégories');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    categorieSelect.innerHTML = '<option value="">Sélectionnez une catégorie</option>';
-                    data.forEach(categorie => {
-                        const option = document.createElement('option');
-                        option.value = categorie.id;
-                        option.textContent = categorie.nom;
-                        categorieSelect.appendChild(option);
-                    });
-                    
-                    // Set old value if exists
-                    @if(old('categorie'))
-                        categorieSelect.value = '{{ old('categorie') }}';
-                        if (categorieSelect.value) {
-                            loadTypes(categorieSelect.value);
-                        }
-                    @endif
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    categorieSelect.innerHTML = '<option value="">Erreur de chargement</option>';
-                });
-        }
-
-        // Load types based on selected category
-        function loadTypes(categorieId) {
-            if (!categorieId) {
-                typeSelect.innerHTML = '<option value="">Sélectionnez d\'abord une catégorie</option>';
-                typeSelect.disabled = true;
-                return;
-            }
-
-            typeSelect.disabled = true;
-            typeSelect.innerHTML = '<option value="">Chargement des types...</option>';
-
-            fetch(`/get/types?categorie_id=${categorieId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erreur lors du chargement des types');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    typeSelect.innerHTML = '<option value="">Sélectionnez un type</option>';
-                    data.forEach(type => {
-                        const option = document.createElement('option');
-                        option.value = type.id;
-                        option.textContent = type.nom;
-                        typeSelect.appendChild(option);
-                    });
-                    typeSelect.disabled = false;
-                    
-                    // Set old value if exists
-                    @if(old('type'))
-                        typeSelect.value = '{{ old('type') }}';
-                    @endif
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    typeSelect.innerHTML = '<option value="">Erreur de chargement</option>';
-                    typeSelect.disabled = false;
-                });
-        }
-
-        // Event listener for category change
-        categorieSelect.addEventListener('change', function() {
-            loadTypes(this.value);
-        });
-
-        // Initialize by loading categories
-        loadCategories();
-
-        // Auto-calculate total
-        function calculateTotal() {
-            var quantite = parseFloat($('#quantite').val()) || 0;
-            var prix = parseFloat($('#prix').val()) || 0;
-            var total = quantite * prix;
+    // Fonction pour afficher les erreurs de validation
+    function showValidationErrors(errors) {
+        clearValidationErrors();
+        
+        $.each(errors, function(field, messages) {
+            const input = $(`[name="${field}"]`);
+            const errorDiv = $(`#${field}_error`);
             
-            $('#total_calcule').val(total.toFixed(2) + ' DT');
+            if (input.length) {
+                input.addClass('is-invalid');
+                if (errorDiv.length) {
+                    errorDiv.text(messages[0]);
+                }
+            }
+        });
+    }
+
+    // Fonction pour charger les catégories
+    function loadCategories() {
+        $.ajax({
+            url: '{{ route("categories.ajax") }}',
+            type: 'GET',
+            success: function(response) {
+                const categorieSelect = $('#categorieList');
+                categorieSelect.empty().append('<option value="">Sélectionnez une catégorie</option>');
+                
+                response.forEach(function(categorie) {
+                    categorieSelect.append(
+                        `<option value="${categorie.id}">${categorie.nom}</option>`
+                    );
+                });
+                
+                // Si une catégorie était sélectionnée avant le rechargement, la reselectionner
+                if (currentCategorieId) {
+                    categorieSelect.val(currentCategorieId).trigger('change');
+                }
+            },
+            error: function() {
+                showAlert('danger', 'Erreur lors du chargement des catégories');
+            }
+        });
+    }
+
+    // Fonction pour charger les types d'une catégorie
+    function loadTypes(categorieId) {
+        if (!categorieId) {
+            $('#type').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>');
+            return;
         }
-
-        // Listen for changes on quantity and price
-        $('#quantite, #prix').on('input', function() {
-            calculateTotal();
+        
+        currentCategorieId = categorieId;
+        
+        $.ajax({
+            url: `{{ url("categories") }}/${categorieId}/types`,
+            type: 'GET',
+            success: function(response) {
+                const typeSelect = $('#type');
+                typeSelect.empty().append('<option value="">Sélectionnez un type (optionnel)</option>');
+                
+                if (response.length > 0) {
+                    response.forEach(function(type) {
+                        typeSelect.append(
+                            `<option value="${type.id}">${type.nom}</option>`
+                        );
+                    });
+                }
+            },
+            error: function() {
+                showAlert('danger', 'Erreur lors du chargement des types');
+            }
         });
+    }
 
-        // Initial calculation
+    // Gestion du changement de catégorie
+    $('#categorieList').change(function() {
+        const categorieId = $(this).val();
+        loadTypes(categorieId);
+    });
+
+    // Calcul automatique du total
+    function calculateTotal() {
+        const quantite = parseFloat($('#quantite').val()) || 0;
+        const prix = parseFloat($('#prix').val()) || 0;
+        const total = quantite * prix;
+        
+        $('#total_calcule').val(total.toFixed(2) + ' DT');
+    }
+
+    // Écouter les changements sur quantité et prix
+    $('#quantite, #prix').on('input', function() {
         calculateTotal();
+    });
 
-        // Reset form when modal is closed
-        $('#timesheetModal').on('hidden.bs.modal', function () {
-            $('#timesheetForm')[0].reset();
-            $('#total_calcule').val('0.00 DT');
-            typeSelect.innerHTML = '<option value="">Sélectionnez d\'abord une catégorie</option>';
-            typeSelect.disabled = true;
-            loadCategories(); // Recharger les catégories
-        });
-
-        // Gérer la soumission du formulaire via AJAX (optionnel)
-        $('#timesheetForm').on('submit', function(e) {
-            // Vous pouvez ajouter une soumission AJAX ici si nécessaire
-            // Sinon, le formulaire se soumet normalement
+    // Gérer la soumission du formulaire via AJAX
+    $('#timesheetForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Désactiver le bouton de soumission
+        const submitBtn = $('#submitBtn');
+        const originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Création en cours...');
+        
+        // Récupérer les données du formulaire
+        const formData = new FormData(this);
+        
+        // Récupérer l'URL depuis l'attribut action du formulaire original
+        const url = '{{ route("dossiers.timesheets.store", ["dossier" => $dossier->id]) }}';
+        
+        // Envoyer la requête AJAX
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                // Réactiver le bouton
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                if (response.success) {
+                    // Afficher le message de succès
+                    showAlert('success', response.message);
+                    
+                    // Réinitialiser le formulaire
+                    $('#timesheetForm')[0].reset();
+                    $('#total_calcule').val('0.00 DT');
+                    loadTypes('');
+                    
+                    // Rafraîchir le tableau des feuilles de temps si il existe
+                    // if (typeof window.refreshTimesheetsTable === 'function') {
+                    //     window.refreshTimesheetsTable();
+                    // }
+                    
+                    // Rafraîchir les totaux si la fonction existe
+                    // if (typeof window.refreshTotals === 'function') {
+                    //     window.refreshTotals();
+                    // }
+                    
+                    // Fermer le modal après 2 secondes
+                    setTimeout(function() {
+                        $('#timesheetModal').modal('hide');
+                    }, 2000);
+                }
+            },
+            error: function(xhr) {
+                // Réactiver le bouton
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                if (xhr.status === 422) {
+                    // Erreurs de validation
+                    const errors = xhr.responseJSON.errors;
+                    showValidationErrors(errors);
+                    showAlert('danger', 'Veuillez corriger les erreurs dans le formulaire');
+                } else {
+                    // Autres erreurs
+                    const message = xhr.responseJSON?.message || 'Une erreur est survenue lors de la création';
+                    showAlert('danger', message);
+                }
+            }
         });
     });
+
+    // Reset form when modal is closed
+    $('#timesheetModal').on('hidden.bs.modal', function () {
+        clearValidationErrors();
+        $('#ajaxAlertContainer').empty();
+        $('#timesheetForm')[0].reset();
+        $('#total_calcule').val('0.00 DT');
+        $('#type').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>');
+        currentCategorieId = null;
+        
+        // Réinitialiser le bouton
+        $('#submitBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Créer la feuille de temps');
+    });
+
+    // Auto-sélection de l'utilisateur connecté si c'est un avocat/secrétaire
+    @if(auth()->user()->fonction === 'avocat' || auth()->user()->fonction === 'secrétaire')
+        $('#utilisateur_id').val('{{ auth()->id() }}').trigger('change');
+    @endif
+
+    // Initialisation
+    loadCategories();
+    calculateTotal();
+});
+
+// Fonctions globales pour rafraîchir les données (à définir dans votre page principale)
+window.refreshTimesheetsTable = function() {
+    // Cette fonction doit être définie dans votre page principale
+    // pour rafraîchir le tableau des feuilles de temps
+    console.log('Rafraîchissement du tableau des feuilles de temps');
+    // Exemple: $('#timesheets-table').DataTable().ajax.reload();
+};
+
+window.refreshTotals = function() {
+    // Cette fonction doit être définie dans votre page principale
+    // pour rafraîchir les totaux affichés
+    console.log('Rafraîchissement des totaux');
+    // Exemple: $.get('/dossiers/{{ $dossier->id }}/timesheets/totals', function(data) { ... });
+};
 </script>
 
 <style>
@@ -340,5 +396,13 @@
     #total_calcule {
         color: #28a745;
         font-size: 1.1em;
+    }
+    #ajaxAlertContainer {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 400px;
     }
 </style>

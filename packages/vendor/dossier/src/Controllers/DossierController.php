@@ -1035,6 +1035,15 @@ public function getDossiersData(Request $request)
        $user->notify(new TaskAssignedNotification($task));
     }
 
+
+    if($request->ajax()){
+         return response()->json([
+        'success' => true,
+        'message' => 'Tâche créée avec succès !',
+        'task' => $task
+    ]);
+    }
+
         return redirect()->back()->with('success', 'Tâche créée avec succès.');
     }
 
@@ -1144,7 +1153,15 @@ public function getDossiersData(Request $request)
     $validated['total'] = $validated['quantite'] * $validated['prix'];
 
     \App\Models\TimeSheet::create($validated);
+ 
 
+    if($request->ajax()){
+         return response()->json([
+        'success' => true,
+        'message' => 'Feuille de temps créée avec succès !',
+        'timesheet' => $validated
+    ]);
+    }
         return redirect()->back()->with('success', 'Feuille de temps créée avec succès.');
     }
 

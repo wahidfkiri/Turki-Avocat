@@ -94,7 +94,7 @@
                                             <option value="{{ $dossier->id }}" 
                                                 selected
                                                 data-client-id="{{ $dossier->intervenants->first()->id ?? '' }}">
-                                                {{ $dossier->numero_dossier }}
+                                                {{ $dossier->numero_dossier }} {{ $dossier->nom_dossier }}
                                             </option>
                                     </select>
                                     @error('dossier_id')
@@ -188,7 +188,7 @@
 
                         <!-- Statut -->
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="form-group">
                                     <label for="statut">Statut *</label>
                                     <select class="form-control @error('statut') is-invalid @enderror" 
@@ -210,7 +210,7 @@
                         <div class="form-group">
                             <label for="commentaires">Commentaires</label>
                             <textarea class="form-control @error('commentaires') is-invalid @enderror" 
-                                      id="commentaires" name="commentaires" rows="3" 
+                                      id="commentaires" name="commentaires" rows="2" 
                                       placeholder="Ajoutez des commentaires ou notes...">{{ old('commentaires') }}</textarea>
                             @error('commentaires')
                                 <span class="invalid-feedback" role="alert">
@@ -255,7 +255,7 @@
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">
                             <i class="fas fa-times"></i> Annuler
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="submitBtnSave" class="btn btn-primary">
                             <i class="fas fa-save"></i> Créer la facture
                         </button>
                     </div>
@@ -264,204 +264,7 @@
         </div>
     </div>
 </div>
-<script>
-    // Fonction pour effacer l'input file
-    function clearFileInput() {
-        $('#piece_jointe').val('');
-        $('#piece_jointe_label').text('Choisir un fichier (PDF, images, Word, Excel) - Max 10MB');
-        $('#file_preview').hide();
-    }
 
-    $(document).ready(function() {
-        // Initialize Select2
-        $('.select2').select2({
-            theme: 'bootstrap4'
-        });
-
-        // Auto-sélection du client basé sur le dossier
-        $('#dossier_id').change(function() {
-            var selectedOption = $(this).find('option:selected');
-            var clientId = selectedOption.data('client-id');
-            
-            if (clientId) {
-                $('#client_id').val(clientId).trigger('change');
-            }
-        });
-
-        // Gestion de l'input file
-        $('#piece_jointe').on('change', function(e) {
-            var file = e.target.files[0];
-            if (file) {
-                var fileName = file.name;
-                var fileSize = (file.size / 1024 / 1024).toFixed(2); // Taille en MB
-                
-                // Mettre à jour le label
-                $('#piece_jointe_label').text(fileName);
-                
-                // Afficher l'aperçu
-                $('#file_name').text(fileName + ' (' + fileSize + ' MB)');
-                $('#file_preview').show();
-                
-                // Vérifier la taille du fichier
-                if (file.size > 10 * 1024 * 1024) { // 10MB en bytes
-                    alert('Le fichier est trop volumineux. Taille maximum: 10MB');
-                    clearFileInput();
-                }
-            }
-        });
-
-        // Validation pour le fichier
-        $.validator.addMethod('fileSize', function(value, element, param) {
-            return this.optional(element) || (element.files[0].size <= param);
-        }, 'La taille du fichier doit être inférieure à {0}');
-
-        $.validator.addMethod('fileType', function(value, element, param) {
-            return this.optional(element) || (element.files[0].type.match(param) || element.files[0].name.match(param));
-        }, 'Type de fichier non supporté');
-
-        // Calcul automatique du montant TTC
-        function calculateMontantTTC() {
-            var montantHT = parseFloat($('#montant_ht').val()) || 0;
-            var montantTVA = parseFloat($('#montant_tva').val()) || 0;
-            var montantTTC = montantHT + montantTVA;
-            
-            $('#montant').val(montantTTC.toFixed(2));
-            
-            // Vérifier la cohérence
-            var tolerance = 0.01; // Tolérance de 0.01 DT
-            var difference = Math.abs(montantTTC - parseFloat($('#montant').val()));
-            
-            if (difference > tolerance) {
-                $('#montantAlert').show();
-                $('#montantAlertText').text('Attention : Le montant TTC calculé (' + montantTTC.toFixed(2) + ' DT) est différent du montant saisi. Vérifiez les montants HT et TVA.');
-            } else {
-                $('#montantAlert').hide();
-            }
-        }
-
-        // Écouter les changements sur HT et TVA
-        $('#montant_ht, #montant_tva').on('input', function() {
-            calculateMontantTTC();
-        });
-
-        // Calcul initial
-        calculateMontantTTC();
-
-        // Validation côté client
-        $('#factureForm').validate({
-            rules: {
-                type_piece: {
-                    required: true
-                },
-                numero: {
-                    required: true,
-                    minlength: 3
-                },
-                date_emission: {
-                    required: true
-                },
-                montant_ht: {
-                    required: true,
-                    min: 0
-                },
-                montant_tva: {
-                    required: true,
-                    min: 0
-                },
-                montant: {
-                    required: true,
-                    min: 0
-                },
-                statut: {
-                    required: true
-                },
-                piece_jointe: {
-                    fileSize: 10 * 1024 * 1024, // 10MB
-                    fileType: /\.(pdf|jpg|jpeg|png|doc|docx|xls|xlsx)$/i
-                }
-            },
-            messages: {
-                type_piece: {
-                    required: "Le type de pièce est obligatoire"
-                },
-                numero: {
-                    required: "Le numéro est obligatoire",
-                    minlength: "Le numéro doit contenir au moins 3 caractères"
-                },
-                date_emission: {
-                    required: "La date d'émission est obligatoire"
-                },
-                montant_ht: {
-                    required: "Le montant HT est obligatoire",
-                    min: "Le montant HT doit être positif"
-                },
-                montant_tva: {
-                    required: "Le montant TVA est obligatoire",
-                    min: "Le montant TVA doit être positif"
-                },
-                montant: {
-                    required: "Le montant TTC est obligatoire",
-                    min: "Le montant TTC doit être positif"
-                },
-                statut: {
-                    required: "Le statut est obligatoire"
-                },
-                piece_jointe: {
-                    fileSize: "Le fichier ne doit pas dépasser 10MB",
-                    fileType: "Formats acceptés: PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX"
-                }
-            },
-            errorElement: 'span',
-            errorPlacement: function (error, element) {
-                error.addClass('invalid-feedback');
-                element.closest('.form-group').append(error);
-            },
-            highlight: function (element, errorClass, validClass) {
-                $(element).addClass('is-invalid');
-            },
-            unhighlight: function (element, errorClass, validClass) {
-                $(element).removeClass('is-invalid');
-            },
-            submitHandler: function(form) {
-                // Vérification finale de la cohérence des montants
-                var montantHT = parseFloat($('#montant_ht').val()) || 0;
-                var montantTVA = parseFloat($('#montant_tva').val()) || 0;
-                var montantTTC = parseFloat($('#montant').val()) || 0;
-                var calculatedTTC = montantHT + montantTVA;
-                
-                if (Math.abs(calculatedTTC - montantTTC) > 0.01) {
-                    alert('Erreur : Le montant TTC doit être égal à HT + TVA.\nHT: ' + montantHT.toFixed(2) + ' DT\nTVA: ' + montantTVA.toFixed(2) + ' DT\nTTC calculé: ' + calculatedTTC.toFixed(2) + ' DT\nTTC saisi: ' + montantTTC.toFixed(2) + ' DT');
-                    return false;
-                }
-                
-                // Afficher un loader pendant la soumission
-                $('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Création en cours...');
-                form.submit();
-            }
-        });
-
-        // Formater les montants à la sortie des champs
-        $('#montant_ht, #montant_tva').on('blur', function() {
-            var value = parseFloat($(this).val()) || 0;
-            $(this).val(value.toFixed(2));
-        });
-
-        // Reset form when modal is closed
-        $('#factureModal').on('hidden.bs.modal', function () {
-            $('#factureForm')[0].reset();
-            $('#montant').val('0.00');
-            $('#montantAlert').hide();
-            clearFileInput();
-            $('button[type="submit"]').prop('disabled', false).html('<i class="fas fa-save"></i> Créer la facture');
-            
-            // Réinitialiser le numéro avec la valeur par défaut
-            $('#numero').val('{{ $nextNumber }}');
-            
-            // Réinitialiser Select2
-            $('.select2').val(null).trigger('change');
-        });
-    });
-</script>
 
 <style>
     .modal-xl {

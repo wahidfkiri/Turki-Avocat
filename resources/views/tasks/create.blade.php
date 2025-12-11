@@ -62,7 +62,7 @@
                                 <select class="form-control" id="utilisateur_id" name="utilisateur_id" required>
                                     <option value="">Sélectionnez un utilisateur</option>
                                     @foreach($users as $user)
-                                        <option value="{{ $user->id }}">
+                                        <option value="{{ $user->id }}" @if(auth()->user()->id == $user->id) selected @endif>
                                             {{ $user->name }} ({{ $user->fonction }})
                                         </option>
                                     @endforeach

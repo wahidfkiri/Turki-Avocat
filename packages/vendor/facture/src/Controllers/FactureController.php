@@ -14,6 +14,111 @@ use Illuminate\Support\Str;
 
 class FactureController extends Controller
 {
+
+     /**
+     * Récupérer les données pour DataTable
+     */
+    public function getDataTable(Request $request, $dossierId)
+    {
+        $dossier = Dossier::findOrFail($dossierId);
+        
+        // Vérifier les permissions
+        if(!auth()->user()->hasPermission('view_factures')){
+            return response()->json(['error' => 'Unauthorized action.'], 403);
+        }
+
+        $factures = Facture::where('dossier_id', $dossierId)
+            ->with(['dossier'])
+            ->select('factures.*');
+
+        return DataTables::of($factures)
+            ->addColumn('actions', function($facture) {
+                $actions = '';
+                
+                // Bouton Voir
+                $actions .= '<button type="button" class="btn btn-sm btn-info view-facture-btn mr-1" 
+                             data-facture-id="' . $facture->id . '" title="Voir">
+                             <i class="fas fa-eye"></i></button>';
+                
+                // Bouton Modifier
+                $actions .= '<button type="button" class="btn btn-sm btn-warning edit-facture-btn mr-1" 
+                             data-facture-id="' . $facture->id . '" title="Modifier">
+                             <i class="fas fa-edit"></i></button>';
+                
+                // Bouton Supprimer
+                $actions .= '<button type="button" class="btn btn-sm btn-danger delete-facture-btn mr-1" 
+                             data-facture-id="' . $facture->id . '" 
+                             data-facture-numero="' . e($facture->numero) . '" title="Supprimer">
+                             <i class="fas fa-trash"></i></button>';
+                
+                // Bouton Télécharger
+                if ($facture->piece_jointe) {
+                    $actions .= '<a href="' . route('factures.display', $facture->id) . '" 
+                                 class="btn btn-sm btn-success" title="Télécharger" target="_blank">
+                                 <i class="fas fa-download"></i></a>';
+                }
+                
+                return '<div class="btn-group btn-group-sm">' . $actions . '</div>';
+            })
+            ->editColumn('date_emission', function($facture) {
+                return $facture->date_emission->format('d/m/Y');
+            })
+            ->editColumn('montant_ht', function($facture) {
+                return '<span data-value="' . $facture->montant_ht . '">' . 
+                       number_format($facture->montant_ht, 2) . ' DT</span>';
+            })
+            ->editColumn('montant_tva', function($facture) {
+                return '<span data-value="' . $facture->montant_tva . '">' . 
+                       number_format($facture->montant_tva, 2) . ' DT</span>';
+            })
+            ->editColumn('montant', function($facture) {
+                return '<span data-value="' . $facture->montant . '">' . 
+                       number_format($facture->montant, 2) . ' DT</span>';
+            })
+            ->editColumn('statut', function($facture) {
+                $badgeClass = $facture->statut == 'payé' ? 'badge-success' : 'badge-warning';
+                $statutText = $facture->statut == 'payé' ? 'Payée' : 'Non Payée';
+                
+                return '<span class="badge ' . $badgeClass . '">' . $statutText . '</span>';
+            })
+            ->rawColumns(['actions', 'montant_ht', 'montant_tva', 'montant', 'statut'])
+            ->make(true);
+    }
+
+    /**
+     * Récupérer les données d'une facture pour visualisation
+     */
+    public function getData(Facture $facture)
+    {
+        if(!auth()->user()->hasPermission('view_factures')){
+            return response()->json(['error' => 'Unauthorized action.'], 403);
+        }
+        
+        $facture->load(['dossier']);
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $facture->id,
+                'numero' => $facture->numero,
+                'date_emission' => $facture->date_emission,
+                'montant_ht' => $facture->montant_ht,
+                'montant_tva' => $facture->montant_tva,
+                'montant' => $facture->montant,
+                'type_piece' => $facture->type_piece,
+                'statut' => $facture->statut,
+                'piece_jointe' => $facture->piece_jointe,
+                'dossier_id' => $facture->dossier_id,
+                'created_at' => $facture->created_at,
+                'updated_at' => $facture->updated_at,
+                'dossier' => $facture->dossier ? [
+                    'id' => $facture->dossier->id,
+                    'numero_dossier' => $facture->dossier->numero_dossier,
+                    'nom_dossier' => $facture->dossier->nom_dossier,
+                ] : null,
+            ]
+        ]);
+    }
     /**
      * Get factures data for DataTable
      */
@@ -588,14 +693,25 @@ class FactureController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Facture $facture)
+    public function edit(Facture $facture, Request $request)
     {
        if(!auth()->user()->hasPermission('edit_factures')){
          abort(403, 'Unauthorized action.');
        }
         
-        $dossiers = Dossier::with('intervenants')->get();
+        $dossiers = Dossier::all();
         $clients = Intervenant::where('categorie', 'client')->get();
+
+        if(request()->ajax()) {
+        $facture->load(['dossier']);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $facture,
+            'dossiers' => $dossiers,
+            'clients' => $clients
+        ]);
+    }
         
         return view('factures.edit', compact('facture', 'dossiers', 'clients'));
     }

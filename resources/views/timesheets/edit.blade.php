@@ -19,7 +19,7 @@
                     <div class="container-fluid">
                         <div class="row">
                             <!-- Date -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit_date_timesheet">Date *</label>
                                     <input type="date" class="form-control" 
@@ -29,7 +29,7 @@
                             </div>
 
                             <!-- Utilisateur -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit_utilisateur_id">Utilisateur *</label>
                                     <select class="form-control " 
@@ -42,11 +42,8 @@
                                     <div class="invalid-feedback" id="edit_utilisateur_id_error"></div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row">
                             <!-- Dossier -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit_dossier_id">Dossier</label>
                                     <select class="form-control " 
@@ -59,7 +56,9 @@
                                     <div class="invalid-feedback" id="edit_dossier_id_error"></div>
                                 </div>
                             </div>
+                        </div>
 
+                        <div class="row">
                             <!-- Catégorie -->
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -74,9 +73,6 @@
                                     <div class="invalid-feedback" id="edit_categorie_error"></div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row">
                             <!-- Type -->
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -92,8 +88,12 @@
                                 </div>
                             </div>
 
+                        </div>
+
+                        <!-- Total calculé -->
+                        <div class="row">
                             <!-- Quantité -->
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit_quantite">Quantité *</label>
                                     <input type="number" class="form-control" 
@@ -104,7 +104,7 @@
                             </div>
 
                             <!-- Prix -->
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit_prix">Prix (DT) *</label>
                                     <input type="number" class="form-control" 
@@ -113,11 +113,7 @@
                                     <div class="invalid-feedback" id="edit_prix_error"></div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Total calculé -->
-                        <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="edit_total_calcule">Total calculé</label>
                                     <input type="text" class="form-control" id="edit_total_calcule" 
@@ -134,7 +130,7 @@
                         <div class="form-group">
                             <label for="edit_description">Description *</label>
                             <textarea class="form-control" 
-                                      id="edit_description" name="description" rows="4" 
+                                      id="edit_description" name="description" rows="3" 
                                       placeholder="Décrivez l'activité réalisée..." required></textarea>
                             <div class="invalid-feedback" id="edit_description_error"></div>
                         </div>

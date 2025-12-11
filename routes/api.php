@@ -5,8 +5,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 
 // ONLYOFFICE API Routes - NO AUTHENTICATION
+Route::get('users', function () {
+    return User::all();
+})->name('users.list');
 Route::post('/onlyoffice/callback', function (Request $request) {
     Log::info('=== ONLYOFFICE CALLBACK START ===');
     Log::info('Callback data:', $request->all());

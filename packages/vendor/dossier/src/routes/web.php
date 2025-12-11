@@ -48,4 +48,8 @@ Route::post('/dossiers/{dossier}/file-url', [DossierController::class, 'getFileU
 Route::post('/dossiers/{dossier}/upload-folder', [DossierController::class, 'uploadFolder'])->name('dossiers.upload-folder');
 
 Route::get('/dossier/{dossier}/tasks/data', [DossierController::class, 'getTasksData'])->name('dossier.tasks.data');
+// routes/web.php
+Route::get('/task/edit-form', function() {
+    return view('components.dossier.task.modal-edit');
+})->name('tasks.edit-form');
 });

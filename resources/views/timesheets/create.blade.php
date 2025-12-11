@@ -1,6 +1,6 @@
 <!-- Modal de création -->
 <div class="modal fade" id="createTimesheetModal" tabindex="-1" role="dialog" aria-labelledby="createTimesheetModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-primary">
                 <h5 class="modal-title" id="createTimesheetModalLabel">
@@ -15,7 +15,7 @@
                 <div class="modal-body">
                     <div class="row">
                         <!-- Date -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="date_timesheet">Date *</label>
                                 <input type="date" class="form-control @error('date_timesheet') is-invalid @enderror" 
@@ -30,7 +30,7 @@
                         </div>
 
                         <!-- Utilisateur -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="utilisateur_id">Utilisateur *</label>
                                 <select class="form-control @error('utilisateur_id') is-invalid @enderror" 
@@ -49,11 +49,8 @@
                                 @enderror
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <!-- Dossier -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="dossier_id">Dossier</label>
                                 <select class="form-control @error('dossier_id') is-invalid @enderror" 
@@ -72,15 +69,18 @@
                                 @enderror
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
 
                         <!-- Catégorie -->
                         <div class="col-md-6">
                             <div class="form-group">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <label for="categorie">Catégorie</label>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddCategorie">
+                                    <!-- <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddCategorie">
                                         <i class="fas fa-plus"></i> Ajouter
-                                    </button>
+                                    </button> -->
                                 </div>
                                 <select class="form-control @error('categorie') is-invalid @enderror" 
                                         id="categorie" name="categorie">
@@ -94,9 +94,6 @@
                                 @enderror
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <!-- Type -->
                         <div class="col-md-6">
                             <div class="form-group">
@@ -117,9 +114,12 @@
                                 @enderror
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row">
 
                         <!-- Quantité -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="quantite">Quantité *</label>
                                 <input type="number" class="form-control @error('quantite') is-invalid @enderror" 
@@ -134,7 +134,7 @@
                         </div>
 
                         <!-- Prix -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="prix">Prix (DT) *</label>
                                 <input type="number" class="form-control @error('prix') is-invalid @enderror" 
@@ -147,11 +147,7 @@
                                 @enderror
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Total (calculé automatiquement) -->
-                    <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="total_calcule">Total calculé</label>
                                 <input type="text" class="form-control" id="total_calcule" 
@@ -161,8 +157,12 @@
                                 </small>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Total (calculé automatiquement) -->
+                    <div class="row">
                         
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="form-group">
                                 <label for="piece_jointe">Pièce Jointe</label>
                                 <div class="custom-file">
@@ -199,7 +199,7 @@
                     <div class="form-group">
                         <label for="description">Description *</label>
                         <textarea class="form-control @error('description') is-invalid @enderror" 
-                                  id="description" name="description" rows="4" 
+                                  id="description" name="description" rows="3" 
                                   placeholder="Décrivez l'activité réalisée..." required>{{ old('description') }}</textarea>
                         @error('description')
                             <span class="invalid-feedback" role="alert">

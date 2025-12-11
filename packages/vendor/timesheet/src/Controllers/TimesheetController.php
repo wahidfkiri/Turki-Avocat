@@ -18,6 +18,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
+
 class TimeSheetController extends Controller
 {
     public function index()
@@ -111,14 +112,72 @@ public function create()
     }
 }
 
-    public function show(TimeSheet $time_sheet)
-    {
-        if (!auth()->user()->hasPermission('view_timesheets')) {
-            abort(403, 'Unauthorized action.');
-        }
-        return view('timesheets.show', compact('time_sheet'));
+    public function show(TimeSheet $time_sheet, Request $request)
+{
+    if (!auth()->user()->hasPermission('view_timesheets')) {
+        abort(403, 'Unauthorized action.');
     }
-public function edit(Timesheet $time_sheet)
+    
+    // Load all relationships
+    $time_sheet->load(['user', 'dossier', 'categorieRelation', 'typeRelation']);
+    
+    if($request->ajax()){
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $time_sheet->id,
+                'date_timesheet' => $time_sheet->date_timesheet ? $time_sheet->date_timesheet->format('Y-m-d') : null,
+                'utilisateur_id' => $time_sheet->utilisateur_id,
+                'dossier_id' => $time_sheet->dossier_id,
+                'categorie' => $time_sheet->categorie,
+                'type' => $time_sheet->type,
+                'quantite' => (float) $time_sheet->quantite,
+                'prix' => (float) $time_sheet->prix,
+                'total' => (float) $time_sheet->total,
+                'description' => $time_sheet->description,
+                'file_path' => $time_sheet->file_path,
+                'file_name' => $time_sheet->file_name,
+                'created_at' => $time_sheet->created_at ? $time_sheet->created_at->format('Y-m-d H:i:s') : null,
+                'updated_at' => $time_sheet->updated_at ? $time_sheet->updated_at->format('Y-m-d H:i:s') : null,
+                
+                // User relationship
+                'user' => $time_sheet->user ? [
+                    'id' => $time_sheet->user->id,
+                    'name' => $time_sheet->user->name,
+                    'email' => $time_sheet->user->email
+                ] : null,
+                'user_name' => $time_sheet->user ? $time_sheet->user->name : null,
+                'user_id' => $time_sheet->user ? $time_sheet->user->id : null,
+                
+                // Dossier relationship
+                'dossier' => $time_sheet->dossier ? [
+                    'id' => $time_sheet->dossier->id,
+                    'numero_dossier' => $time_sheet->dossier->numero_dossier,
+                    'nom_dossier' => $time_sheet->dossier->nom_dossier
+                ] : null,
+                'numero_dossier' => $time_sheet->dossier ? $time_sheet->dossier->numero_dossier : null,
+                'nom_dossier' => $time_sheet->dossier ? $time_sheet->dossier->nom_dossier : null,
+                
+                // Categorie relationship
+                'categorieRelation' => $time_sheet->categorieRelation ? [
+                    'id' => $time_sheet->categorieRelation->id,
+                    'nom' => $time_sheet->categorieRelation->nom
+                ] : null,
+                'categorie_nom' => $time_sheet->categorieRelation ? $time_sheet->categorieRelation->nom : null,
+                
+                // Type relationship
+                'typeRelation' => $time_sheet->typeRelation ? [
+                    'id' => $time_sheet->typeRelation->id,
+                    'nom' => $time_sheet->typeRelation->nom
+                ] : null,
+                'type_nom' => $time_sheet->typeRelation ? $time_sheet->typeRelation->nom : null,
+            ]
+        ]);
+    }
+
+    return view('timesheets.show', compact('time_sheet'));
+}
+public function edit(Timesheet $time_sheet, Request $request)
 {
          if (!auth()->user()->hasPermission('edit_timesheets')) {
             abort(403, 'Unauthorized action.');
@@ -129,7 +188,34 @@ public function edit(Timesheet $time_sheet)
     $types = Type::all();
     $timesheet = $time_sheet;
 
-    
+    if($request->ajax()){
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $timesheet->id,
+                'date_timesheet' => $timesheet->date_timesheet ? $timesheet->date_timesheet->format('Y-m-d') : null,
+                'utilisateur_id' => $timesheet->utilisateur_id,
+                'dossier_id' => $timesheet->dossier_id,
+                'categorie' => $timesheet->categorie,
+                'type' => $timesheet->type,
+                'quantite' => (float) $timesheet->quantite,
+                'prix' => (float) $timesheet->prix,
+                'total' => (float) $timesheet->total,
+                'description' => $timesheet->description,
+                'file_path' => $timesheet->file_path,
+                'file_name' => $timesheet->file_name,
+                'user_name' => $timesheet->user ? $timesheet->user->name : null,
+                'user_id' => $timesheet->user ? $timesheet->user->id : null,
+                'numero_dossier' => $timesheet->dossier ? $timesheet->dossier->numero_dossier : null,
+                'nom_dossier' => $timesheet->dossier ? $timesheet->dossier->nom_dossier : null,
+                'dossier_id' => $timesheet->dossier ? $timesheet->dossier->id : null,
+            ],
+            'dossiers' => $dossiers,
+            'categories' => $categories,
+            'types' => $types,
+            'users' => $users
+        ]);
+    }
     return view('timesheets.edit', compact('timesheet', 'users', 'dossiers', 'categories', 'types'));
 }
 
@@ -270,25 +356,126 @@ public function getTimesheetDetailsAjax($id)
         ], 500);
     }
 }
+public function updateForDossier(Request $request, Timesheet $time_sheet)
+{
+    if (!auth()->user()->hasPermission('edit_timesheets')) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    
+    \Log::info('Update request received:', $request->all());
+    
+    // Validate with proper field names - make utilisateur_id required
+    $validated = $request->validate([
+        'date_timesheet' => 'required|date',
+        'utilisateur_id' => 'required|exists:users,id',
+        'dossier_id' => 'nullable|exists:dossiers,id',
+        'description' => 'required|string|max:1000',
+        'categorie_id' => 'required|exists:categories,id',
+        'type_id' => 'required|exists:types,id',
+        'quantite' => 'required|numeric|min:0',
+        'prix' => 'required|numeric|min:0',
+        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:2048',
+    ]);
+
+    try {
+        // Always log what we received
+        \Log::info('Validated data:', $validated);
+        
+        // Map form fields to database columns
+        $updateData = [
+            'date_timesheet' => $validated['date_timesheet'],
+            'utilisateur_id' => $validated['utilisateur_id'],
+            'dossier_id' => $validated['dossier_id'] ?? $time_sheet->dossier_id,
+            'description' => $validated['description'],
+            'categorie' => $validated['categorie_id'],
+            'type' => $validated['type_id'],
+            'quantite' => $validated['quantite'],
+            'prix' => $validated['prix'],
+            'total' => $validated['quantite'] * $validated['prix'],
+        ];
+        
+        // Handle file upload if present
+        if($request->hasFile('file')){
+            // Supprimer l'ancien fichier s'il existe
+            if ($time_sheet->file_path) {
+                Storage::disk('public')->delete($time_sheet->file_path);
+            }
+            
+            $file = $request->file('file');
+            $path = $file->store('timesheet_files', 'public');
+            $updateData['file_path'] = $path;
+            $updateData['file_name'] = $file->getClientOriginalName();
+        }
+
+        // Update the timesheet
+        $time_sheet->update($updateData);
+        
+        // Load relationships for response
+        $time_sheet->load(['user', 'dossier', 'categorieRelation', 'typeRelation']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Feuille de temps mise à jour avec succès.',
+            'data' => $time_sheet
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Timesheet update error: ' . $e->getMessage(), [
+            'exception' => $e,
+            'request_data' => $request->all()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()
+        ], 500);
+    }
+}
   public function update(Request $request, Timesheet $time_sheet)
 {
     if (!auth()->user()->hasPermission('edit_timesheets')) {
         return response()->json(['error' => 'Unauthorized'], 403);
     }
     
+    // FIX: Change validation field names to match your form
     $validated = $request->validate([
         'date_timesheet' => 'required|date',
-        'utilisateur_id' => 'required|exists:users,id',
+        'utilisateur_id' => 'required|exists:users,id', // Changed from nullable to required
         'dossier_id' => 'nullable|exists:dossiers,id',
-        'description' => 'required|string|max:1000',
-        'categorie' => 'nullable|exists:categories,id',
-        'type' => 'nullable|exists:types,id',
+        'description' => 'required|string|max:1000', // Changed from nullable to required
+        'categorie_id' => 'nullable|exists:categories,id', // Changed from 'categorie' to 'categorie_id'
+        'type_id' => 'nullable|exists:types,id', // Changed from 'type' to 'type_id'
         'quantite' => 'required|numeric|min:0',
         'prix' => 'required|numeric|min:0',
-        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:2048', // max 2MB
+        'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:2048',
     ]);
 
     try {
+        // Ensure utilisateur_id is set (if not provided in request)
+        if (!isset($validated['utilisateur_id']) || empty($validated['utilisateur_id'])) {
+            // Option 1: Use current user if not provided
+            $validated['utilisateur_id'] = auth()->id();
+            // Or Option 2: Use existing value
+            // $validated['utilisateur_id'] = $time_sheet->utilisateur_id;
+        }
+        
+        // Ensure description is set
+        if (!isset($validated['description']) || empty($validated['description'])) {
+            $validated['description'] = $time_sheet->description ?? 'N/A';
+        }
+
+        // Map the field names to your database columns if needed
+        // If your database uses 'categorie' instead of 'categorie_id', map it:
+        if (isset($validated['categorie_id'])) {
+            $validated['categorie'] = $validated['categorie_id'];
+            unset($validated['categorie_id']);
+        }
+        
+        if (isset($validated['type_id'])) {
+            $validated['type'] = $validated['type_id'];
+            unset($validated['type_id']);
+        }
+        
         // Calculer le total
         $validated['total'] = $validated['quantite'] * $validated['prix'];
 
@@ -309,7 +496,7 @@ public function getTimesheetDetailsAjax($id)
         return response()->json([
             'success' => true,
             'message' => 'Feuille de temps mise à jour avec succès.',
-            'redirect_url' => route('time-sheets.index')
+            'data' => $time_sheet->fresh() // Return updated data
         ]);
 
     } catch (\Exception $e) {
@@ -344,6 +531,75 @@ public function destroy(Timesheet $time_sheet)
 
     return redirect()->route('time-sheets.index')
         ->with('success', 'Feuille de temps supprimée avec succès.');
+}
+
+public function getDossierTimesheetsData(Request $request, Dossier $dossier)
+{
+    $this->authorize('view_timesheets', Timesheet::class);
+    
+    try {
+        $query = Timesheet::with([
+                'user:id,name',
+                'dossier:id,numero_dossier',
+                'categorieRelation:id,nom',
+                'typeRelation:id,nom'
+            ])
+            ->where('dossier_id', $dossier->id)
+            ->select('time_sheets.*');
+        
+        if(!auth()->user()->hasRole('admin')) {
+            $query->where('utilisateur_id', auth()->id());
+        }
+
+        return DataTables::eloquent($query)
+            ->addColumn('actions', function (Timesheet $timesheet) {
+                // NOTE: On retourne juste un placeholder, le rendu sera fait côté client
+                // avec les permissions réelles de l'utilisateur
+                return '';
+            })
+            ->editColumn('date_timesheet', function (Timesheet $timesheet) {
+                return $timesheet->date_timesheet ? 
+                    \Carbon\Carbon::parse($timesheet->date_timesheet)->format('d/m/Y') : '-';
+            })
+            ->editColumn('description', function (Timesheet $timesheet) {
+                return $timesheet->description ? 
+                    (strlen($timesheet->description) > 50 ? 
+                     substr($timesheet->description, 0, 50) . '...' : 
+                     $timesheet->description) : '-';
+            })
+            ->editColumn('quantite', function (Timesheet $timesheet) {
+                return number_format($timesheet->quantite, 2, ',', ' ');
+            })
+            ->editColumn('prix', function (Timesheet $timesheet) {
+                return number_format($timesheet->prix, 2, ',', ' ') . ' DT';
+            })
+            ->editColumn('total', function (Timesheet $timesheet) {
+                return number_format($timesheet->total, 2, ',', ' ') . ' DT';
+            })
+            ->addColumn('user.name', function (Timesheet $timesheet) {
+                return $timesheet->user ? $timesheet->user->name : '-';
+            })
+            ->addColumn('dossier.numero_dossier', function (Timesheet $timesheet) {
+                return $timesheet->dossier ? $timesheet->dossier->numero_dossier : '-';
+            })
+            ->addColumn('categorieRelation.nom', function (Timesheet $timesheet) {
+                return $timesheet->categorieRelation ? $timesheet->categorieRelation->nom : '-';
+            })
+            ->addColumn('typeRelation.nom', function (Timesheet $timesheet) {
+                return $timesheet->typeRelation ? $timesheet->typeRelation->nom : '-';
+            })
+            ->addColumn('utilisateur_id', function (Timesheet $timesheet) {
+                return $timesheet->utilisateur_id; // Important pour vérifier le propriétaire côté client
+            })
+            ->rawColumns(['actions'])
+            ->make(true);
+            
+    } catch (\Exception $e) {
+        \Log::error('Erreur dans getDossierTimesheetsData: ' . $e->getMessage());
+        return response()->json([
+            'error' => $e->getMessage()
+        ], 500);
+    }
 }
 
     public function byDossier(Request $request, $dossierId): AnonymousResourceCollection

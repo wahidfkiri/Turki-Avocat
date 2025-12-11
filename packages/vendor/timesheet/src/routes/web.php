@@ -10,6 +10,7 @@ Route::middleware(['web','auth','active'])
 
 
 Route::resource('time-sheets', TimeSheetController::class);
+Route::put('dossiers/time-sheets/{timeSheetId}', [TimeSheetController::class, 'updateForDossier'])->name('time-sheets.updateForDossier');
 Route::get('dossiers/{dossierId}/time-sheets', [TimeSheetController::class, 'byDossier']);
 Route::get('users/{userId}/time-sheets', [TimeSheetController::class, 'byUser']);
 Route::get('time-sheets/report', [TimeSheetController::class, 'report']);
@@ -25,6 +26,9 @@ Route::prefix('categories')->group(function () {
     Route::post('/', [TimesheetController::class, 'storeCategorie'])->name('categories.store');
     Route::get('/{categorie}/types', [TimesheetController::class, 'getTypes'])->name('categories.types');
 });
+Route::get('/dossier/{dossier}/timesheets/data', [TimesheetController::class, 'getDossierTimesheetsData'])
+    ->name('dossier.timesheets.data');
+
 
 // Routes pour les types
 Route::post('/types', [TimesheetController::class, 'storeType'])->name('types.store');

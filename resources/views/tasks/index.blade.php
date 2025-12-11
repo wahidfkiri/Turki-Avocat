@@ -87,7 +87,7 @@
                                     <select class="form-control search_utilisateur" id="filter_utilisateur">
                                         <option value="">Tous les utilisateurs</option>
                                         @foreach($users as $user)
-                                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                            <option value="{{ $user->id }}"  @if(auth()->user()->id == $user->id) selected @endif>{{ $user->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -929,14 +929,14 @@ $(document).ready(function() {
                     }
                     else if (sectionHTML.includes('Description')) {
                         modalContent += `
-                            <div class="row mt-4">
+                            <div class="row mt-4 d-block">
                                 ${sectionHTML}
                             </div>
                         `;
                     }
                     else if (sectionHTML.includes('Notes supplémentaires')) {
                         modalContent += `
-                            <div class="row mt-4">
+                            <div class="row mt-4 d-block">
                                 ${sectionHTML}
                             </div>
                         `;

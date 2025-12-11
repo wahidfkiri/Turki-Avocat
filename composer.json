@@ -40,7 +40,8 @@
             "Vendor\\Facture\\": "packages/vendor/facture/src",
             "Vendor\\Task\\": "packages/vendor/task/src",
             "Vendor\\Dossier\\": "packages/vendor/dossier/src",
-            "Vendor\\Agenda\\": "packages/vendor/agenda/src"
+            "Vendor\\Agenda\\": "packages/vendor/agenda/src",
+            "Vendor\\Webmail\\": "packages/vendor/webmail/src"
         }
     },
     "autoload-dev": {

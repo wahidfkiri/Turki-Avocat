@@ -195,6 +195,7 @@ return [
          Vendor\Task\TaskServiceProvider::class,
          Vendor\Dossier\DossierServiceProvider::class,
          Vendor\Agenda\AgendaServiceProvider::class,
+         Vendor\Webmail\WebmailServiceProvider::class,
 
         /*
          * Application Service Providers...

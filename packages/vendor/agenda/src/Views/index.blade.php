@@ -586,13 +586,13 @@
     vertical-align: middle;
 }
 </style>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     var currentEventId = null;
     var currentEventTitle = null;
     var calendar;
+    var isUserNavigating = false; // Flag pour savoir si l'utilisateur navigue
 
     // Set today's date as default for new events
     $('#date_debut').val(new Date().toISOString().split('T')[0]);
@@ -602,34 +602,40 @@
         const yearSelect = $('#filter_year');
         const currentYear = new Date().getFullYear();
         
-        // Ajouter les 5 années précédentes et les 5 années suivantes
+        // Clear existing options except the first one
+        yearSelect.find('option:not(:first)').remove();
+        
+        // Ajouter les années
         for (let year = currentYear - 5; year <= currentYear + 5; year++) {
             yearSelect.append(`<option value="${year}">${year}</option>`);
         }
         
-        // Définir l'année courante par défaut
-        yearSelect.val(currentYear);
+        // Définir l'option vide par défaut
+        yearSelect.val('');
     }
 
     // Fonction pour obtenir tous les filtres
     function getCalendarFilters() {
-        return {
+        const filters = {
             categories: getSelectedCategories(),
             utilisateur_id: $('#filter_utilisateur').val(),
             dossier_id: $('#filter_dossier').val(),
             year: $('#filter_year').val(),
             month: $('#filter_month').val()
         };
+        
+        console.log('Filters envoyés au serveur:', filters);
+        
+        return filters;
     }
 
     // Initialize Calendar
     function initializeCalendar() {
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridDay',
-            scrollTime: '08:00:00', // scrolls to 8 AM by default
-            slotMinTime: '06:00:00', // earliest time visible
-            defaultTimedEventDuration: '01:00:00', // default event length (optional)
-
+            scrollTime: '08:00:00',
+            slotMinTime: '06:00:00',
+            defaultTimedEventDuration: '01:00:00',
             locale: 'fr',
             timeZone: 'local',
             initialView: 'dayGridMonth',
@@ -676,7 +682,8 @@
                 extraParams: function() {
                     return getCalendarFilters();
                 },
-                failure: function() {
+                failure: function(error) {
+                    console.error('Erreur FullCalendar:', error);
                     showAlert('Erreur', 'Erreur lors du chargement des événements', 'error');
                 }
             },
@@ -690,6 +697,20 @@
                     $('#date_debut').val(info.dateStr);
                     $('#createEventModal').modal('show');
                 @endif
+            },
+            datesSet: function(info) {
+                // Quand l'utilisateur navigue avec "<" ou ">", réinitialiser les filtres année/mois
+                if (isUserNavigating) {
+                    console.log('Navigation détectée - réinitialisation des filtres année/mois');
+                    $('#filter_year').val('');
+                    $('#filter_month').val('');
+                    isUserNavigating = false;
+                    
+                    // Recharger les événements sans filtres
+                    setTimeout(function() {
+                        calendar.refetchEvents();
+                    }, 100);
+                }
             },
             eventDidMount: function(info) {
                 // Apply custom colors and tooltips
@@ -742,20 +763,18 @@
                              <div class="fc-event-title">${title}</div>
                            </div>`
                 };
-            },
-            datesSet: function(info) {
-                // Synchroniser les filtres avec la vue actuelle du calendrier
-                const currentDate = info.view.currentStart;
-                const currentYear = currentDate.getFullYear();
-                const currentMonth = currentDate.getMonth() + 1; // Les mois sont 0-indexés
-                
-                // Mettre à jour les sélecteurs sans déclencher le rechargement
-                $('#filter_year').val(currentYear);
-                $('#filter_month').val(currentMonth);
             }
         });
 
         calendar.render();
+        
+        // Détecter quand l'utilisateur clique sur prev/next
+        setTimeout(function() {
+            $('.fc-prev-button, .fc-next-button').on('click', function() {
+                isUserNavigating = true;
+                console.log('Bouton de navigation cliqué');
+            });
+        }, 1000);
     }
 
     // Initialiser le calendrier
@@ -763,6 +782,9 @@
     
     // Peupler le filtre d'années
     populateYearFilter();
+    
+    // Charger les événements initialement
+    calendar.refetchEvents();
 
     // Fonction pour afficher les alertes
     function showAlert(title, message, type = 'info') {
@@ -996,17 +1018,14 @@
         calendar.refetchEvents();
     });
 
-    // Bouton aujourd'hui
+    // Bouton aujourd'hui - réinitialiser aussi les filtres
     $('#btn_today').click(function() {
+        // Réinitialiser les filtres année/mois
+        $('#filter_year').val('');
+        $('#filter_month').val('');
+        
         calendar.today();
-        
-        // Mettre à jour les filtres avec la date d'aujourd'hui
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth() + 1;
-        
-        $('#filter_year').val(currentYear);
-        $('#filter_month').val(currentMonth);
+        calendar.refetchEvents();
     });
 
     // Bouton réinitialiser
@@ -1016,13 +1035,10 @@
         $('#filter_utilisateur').val('').trigger('change');
         $('#filter_dossier').val('').trigger('change');
         $('#filter_month').val('').trigger('change');
-        
-        // Réinitialiser l'année à l'année courante
-        const currentYear = new Date().getFullYear();
-        $('#filter_year').val(currentYear).trigger('change');
+        $('#filter_year').val('').trigger('change');
         
         calendar.today(); // Revenir à la date d'aujourd'hui
-        calendar.refetchEvents();
+        calendar.refetchEvents(); // Recharger tous les événements
     });
 
     // Redimensionner le calendrier quand la fenêtre change
@@ -1103,31 +1119,6 @@
         
         // Add to edit event form
         $('#edit_categorie').append(optionHtml);
-    }
-
-    // Function to load categories dynamically (optional - if you want to refresh categories)
-    function loadCategories() {
-        $.ajax({
-            url: '{{ route("agenda-categories.api") }}',
-            type: 'GET',
-            success: function(response) {
-                // Clear existing categories from forms
-                $('#categorie').find('option:not(:first)').remove();
-                $('#edit_categorie').find('option:not(:first)').remove();
-                
-                // Clear filter categories (keep the "Ajouter" link)
-                $('.form-group:has(label:contains("Catégories")) .custom-control.custom-checkbox').remove();
-                
-                // Add all categories
-                response.forEach(function(category) {
-                    addCategoryToFilter(category);
-                    addCategoryToEventForm(category);
-                });
-            },
-            error: function() {
-                showAlert('Erreur', 'Erreur lors du chargement des catégories', 'error');
-            }
-        });
     }
 
 });

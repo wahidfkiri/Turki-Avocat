@@ -199,8 +199,8 @@
                             </div>
 
                             <!-- Notes supplémentaires -->
-                            <div class="row mt-4">
-                                <div class="col-12">
+                            <div class="row mt-4 d-block">
+                                <div class="col-12 d-block">
                                     <h5 class="section-title">Notes supplémentaires</h5>
                                     <div class="card">
                                         <div class="card-body bg-light">

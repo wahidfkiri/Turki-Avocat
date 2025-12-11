@@ -44,6 +44,14 @@
                         <div class="card-header">
                             <h3 class="card-title">Liste des feuilles de temps</h3>
                             <div class="card-tools">
+                                @if(auth()->user()->hasRole('admin'))
+                                <button 
+        onclick="openModal()" 
+        class="btn btn-secondary"
+    >
+        <i class="fas fa-plus"></i> Créer un Type
+    </button>
+    @endif
                                 @if(auth()->user()->hasPermission('create_timesheets'))
                                      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createTimesheetModal">
                                     <i class="fas fa-plus"></i> Nouvelle Feuille de Temps
@@ -1194,7 +1202,221 @@ function submitEditForm() {
         display: block;
     }
 </style>
+
+   
 @include('timesheets.create')
 @include('timesheets.edit')
 @include('timesheets.show')
+
+<!-- Type Creation Modal -->
+<div id="typeModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Créer un type</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="createTypeForm">
+                @csrf
+                <div class="modal-body">
+                    <!-- Category Select -->
+                    <div class="form-group">
+                        <label for="categorie_id" class="form-label">Catégorie</label>
+                        <select 
+                            id="categorie_id" 
+                            name="categorie_id" 
+                            required
+                            class="form-control select2"
+                        >
+                            <option value="">Sélectionner une catégorie</option>
+                            @foreach($categories as $categorie)
+                                <option value="{{ $categorie->id }}">{{ $categorie->nom }}</option>
+                            @endforeach
+                        </select>
+                        <div id="categorie_error" class="invalid-feedback"></div>
+                    </div>
+
+                    <!-- Type Name Input -->
+                    <div class="form-group">
+                        <label for="type_name" class="form-label">Nom du type</label>
+                        <input 
+                            type="text" 
+                            id="type_name" 
+                            name="nom" 
+                            required
+                            placeholder="Entrez le nom du type"
+                            class="form-control"
+                        />
+                        <div id="type_error" class="invalid-feedback"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Open modal function
+    function openTypeModal() {
+        // Reset form
+        $('#createTypeForm')[0].reset();
+        $('.invalid-feedback').text('');
+        $('.form-control').removeClass('is-invalid');
+        
+        // Show modal using Bootstrap method
+        $('#typeModal').modal('show');
+    }
+
+    // Handle button click to open modal
+    $(document).on('click', '#openTypeModalBtn', function(e) {
+        e.preventDefault();
+        openTypeModal();
+    });
+
+    // Alternative: if you want to use onclick attribute on the button
+    window.openModal = function() {
+        openTypeModal();
+    };
+
+    // Handle form submission
+    $('#createTypeForm').submit(function(e) {
+        e.preventDefault();
+        saveType();
+    });
+
+    // Function to save type
+    function saveType() {
+        const formData = $('#createTypeForm').serialize();
+        const submitBtn = $('#createTypeForm button[type="submit"]');
+        const originalText = submitBtn.html();
+        
+        // Show loading state
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enregistrement...');
+        
+        $.ajax({
+            url: '{{ route("types.store") }}',
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Show success message
+                    showAlert('success', response.message || 'Type créé avec succès!');
+                    
+                    // Close modal
+                    $('#typeModal').modal('hide');
+                    
+                    // If you need to update the type dropdown in other forms, do it here
+                    updateTypeDropdown(response.type);
+                    
+                    // Reload page or update table if needed
+                    // location.reload(); // or table.ajax.reload();
+                } else {
+                    showAlert('danger', response.message || 'Erreur lors de la création');
+                }
+                submitBtn.prop('disabled', false).html(originalText);
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    // Validation errors
+                    const errors = xhr.responseJSON.errors;
+                    clearErrors();
+                    
+                    if (errors.categorie_id) {
+                        $('#categorie_id').addClass('is-invalid');
+                        $('#categorie_error').text(errors.categorie_id[0]);
+                    }
+                    if (errors.nom) {
+                        $('#type_name').addClass('is-invalid');
+                        $('#type_error').text(errors.nom[0]);
+                    }
+                } else {
+                    showAlert('danger', 'Une erreur est survenue lors de la création du type');
+                }
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    }
+
+    // Function to clear error messages
+    function clearErrors() {
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+    }
+
+    // Function to update type dropdown in other forms
+    function updateTypeDropdown(newType) {
+        // Update the filter dropdown
+        $('#filter_type').append(new Option(newType.nom, newType.id));
+        
+        // Update the edit form dropdown if it exists
+        if ($('#edit_type').length) {
+            $('#edit_type').append(new Option(newType.nom, newType.id));
+        }
+        
+        // Update the create form dropdown if it exists
+        if ($('#type').length) {
+            $('#type').append(new Option(newType.nom, newType.id));
+        }
+    }
+
+    // Function to show alert messages (reuse your existing function)
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const iconClass = type === 'success' ? 'fa-check' : 'fa-ban';
+        const title = type === 'success' ? 'Succès!' : 'Erreur!';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                <h5><i class="icon fas ${iconClass}"></i> ${title}</h5>
+                ${message}
+            </div>
+        `;
+        
+        // Remove any existing alerts
+        $('.alert-dismissible').remove();
+        
+        // Prepend the new alert
+        $('.card').before(alertHtml);
+        
+        // Auto-remove alert after 5 seconds
+        setTimeout(function() {
+            $('.alert-dismissible').fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+
+    // Initialize Select2 for the modal
+    $('#typeModal').on('shown.bs.modal', function () {
+        $('#categorie_id').select2({
+            theme: 'bootstrap4',
+            dropdownParent: $('#typeModal')
+        });
+    });
+
+    // Clean up when modal closes
+    $('#typeModal').on('hidden.bs.modal', function () {
+        $('#createTypeForm')[0].reset();
+        clearErrors();
+        // Destroy Select2 to avoid duplicates
+        if ($('#categorie_id').hasClass('select2-hidden-accessible')) {
+            $('#categorie_id').select2('destroy');
+        }
+    });
+});
+</script>
 @endsection

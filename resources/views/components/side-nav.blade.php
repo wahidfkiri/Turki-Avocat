@@ -86,7 +86,7 @@
                     </a>
                 </li>
                 <li class="nav-item d-none">
-                    <a href="{{ route('email.index') }}" class="nav-link {{ request()->routeIs('email.*') ? 'active' : '' }}">
+                    <a href="{{ route('webmail.index') }}" target="_blank" class="nav-link {{ request()->routeIs('webmail.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-envelope"></i>
                         <p>Emails</p>
                     </a>
