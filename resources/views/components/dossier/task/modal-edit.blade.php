@@ -412,31 +412,6 @@ $(document).ready(function() {
                         <div class="invalid-feedback"></div>
                     </div>
                 </div>
-                
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="edit_description">Description</label>
-                        <textarea class="form-control" 
-                                  id="edit_description" 
-                                  name="description" 
-                                  rows="4"
-                                  placeholder="Ajouter une description détaillée...">${escapeHtml(taskData.description || '')}</textarea>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                </div>
-                
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="edit_note">Notes internes</label>
-                        <textarea class="form-control" 
-                                  id="edit_note" 
-                                  name="note" 
-                                  rows="3"
-                                  placeholder="Ajouter des notes internes...">${escapeHtml(taskData.note || '')}</textarea>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                </div>
-                
                 <div class="col-md-12">
                     <div class="form-group">
                         <label for="edit_file">Fichier joint</label>
@@ -470,6 +445,21 @@ $(document).ready(function() {
                         ` : '<div id="edit_current_file" class="mt-2"></div>'}
                     </div>
                 </div>
+                
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="edit_description">Description</label>
+                        <textarea class="form-control" 
+                                  id="edit_description" 
+                                  name="description" 
+                                  rows="4"
+                                  placeholder="Ajouter une description détaillée...">${escapeHtml(taskData.description || '')}</textarea>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </div>
+                
+               
+                
             </div>
             
             <div class="modal-footer">

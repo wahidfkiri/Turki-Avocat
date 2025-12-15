@@ -116,7 +116,7 @@
                 <h5 class="section-title">Informations de base</h5>
                 <table class="table table-bordered">
                     <tr>
-                        <th style="width: 40%;">Numéro du dossier</th>
+                        <th style="width: 29%;">Numéro du dossier</th>
                         <td>{{ $dossier->numero_dossier }}</td>
                     </tr>
                     <tr>
@@ -130,11 +130,11 @@
                 <h5 class="section-title">Nom du dossier</h5>
                 <table class="table table-bordered">
                     <tr>
-                        <th>Nom complet</th>
+                        <th style="width: 29%;">Nom complet</th>
                         <td>{{ $dossier->nom_dossier }}</td>
                     </tr>
                     <tr>
-                        <th>Objet du dossier</th>
+                        <th style="width: 29%;">Objet du dossier</th>
                         <td>{{ $dossier->objet ?? 'Non défini' }}</td>
                     </tr>
                 </table>
@@ -147,11 +147,11 @@
                 <h5 class="section-title">Classification</h5>
                 <table class="table table-bordered">
                     <tr>
-                        <th style="width: 40%;">Domaine</th>
+                        <th style="width: 29%;">Domaine</th>
                         <td>{{ $dossier->domaine->nom ?? 'Non défini' }}</td>
                     </tr>
                     <tr>
-                        <th>Sous-domaine</th>
+                        <th style="width: 29%;">Sous-domaine</th>
                         <td>{{ $dossier->sousDomaine->nom ?? 'Non défini' }}</td>
                     </tr>
                 </table>
@@ -162,7 +162,7 @@
                 <h5 class="section-title">Type de dossier</h5>
                 <table class="table table-bordered">
                     <tr>
-                        <th style="width: 40%;">Dossier de conseil</th>
+                        <th style="width: 29%;">Dossier de conseil</th>
                         <td>
                             @if($dossier->conseil)
                                 <span class="badge badge-success">Oui</span>
@@ -172,7 +172,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <th>Dossier contentieux</th>
+                        <th style="width: 29%;">Dossier contentieux</th>
                         <td>
                             @if($dossier->contentieux)
                                 <span class="badge badge-success">Oui</span>
@@ -191,13 +191,24 @@
                 <h5 class="section-title">Statut</h5>
                 <table class="table table-bordered">
                     <tr>
-                        <th style="width: 40%;">Archivé</th>
+                        <th style="width: 29%;">Archivé</th>
                         <td>
                             @if($dossier->archive)
                                 <span class="badge badge-warning">Archivé</span>
                             @else
                                 <span class="badge badge-info">Actif</span>
                             @endif
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="section-title">ID Dossier</h5>
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width: 29%;">ID </th>
+                        <td>
+                            {{$dossier->id}}
                         </td>
                     </tr>
                 </table>

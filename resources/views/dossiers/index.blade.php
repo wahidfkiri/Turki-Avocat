@@ -76,6 +76,7 @@
                       </div>
                       <div class="col-md-6">
                         <select class="form-control" id="statutFilter">
+                          <option value="in_progress">En cours</option>
                           <option value="all">Tous les statuts</option>
                           <option value="conseil">Conseil</option>
                           <option value="contentieux">Contentieux</option>

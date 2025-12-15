@@ -1,130 +1,89 @@
+{{-- resources/views/webmail/simple.blade.php --}}
 @extends('layouts.app')
 
 @section('content')
-<div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Gestion des emails</h1>
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-envelope me-2"></i>Webmail Access
+                        <small class="opacity-75 ms-2">{{ Auth::user()->email }}</small>
+                    </h4>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('home') }}">Accueil</a></li>
-                        <li class="breadcrumb-item active">Emails</li>
-                    </ol>
-                </div>
-            </div>
-        </div><!-- /.container-fluid -->
-    </section>
-
-    <!-- Main content -->
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    <!-- Iframe for Snappymail -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Webmail Snappymail</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-tool" data-card-widget="maximize">
-                                    <i class="fas fa-expand"></i>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 text-center mb-4">
+                            <div class="p-4 border rounded bg-light">
+                                <i class="fas fa-window-restore fa-4x text-primary mb-3"></i>
+                                <h4>Embedded View</h4>
+                                <p>Try loading Roundcube inside this page</p>
+                                <button onclick="loadEmbedded()" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-play me-2"></i>Load Here
                                 </button>
                             </div>
                         </div>
-                        <div class="card-body" style="padding: 0;">
-                            <!-- Fullscreen iframe -->
-                            <iframe 
-                                src="http://localhost?admin" 
-                                style="width: 100%; height: 700px; border: none;"
-                                id="snappymail-frame"
-                                title="Snappymail Webmail"
-                                allow="fullscreen"
-                            ></iframe>
-                        </div>
-                        <div class="card-footer">
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle"></i> 
-                                Snappymail webmail client. 
-                                <a href="http://localhost/" target="_blank" class="btn btn-xs btn-default float-right">
-                                    <i class="fas fa-external-link-alt"></i> Ouvrir dans un nouvel onglet
+                        <div class="col-md-6 text-center mb-4">
+                            <div class="p-4 border rounded bg-light">
+                                <i class="fas fa-external-link-alt fa-4x text-success mb-3"></i>
+                                <h4>Direct Access</h4>
+                                <p>Open Roundcube in a new tab</p>
+                                <a href="http://localhost:8082" target="_blank" class="btn btn-success btn-lg">
+                                    <i class="fas fa-external-link-alt me-2"></i>Open New Tab
                                 </a>
-                            </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="embeddedContainer" class="mt-4" style="display: none;">
+                        <div class="border rounded overflow-hidden">
+                            <div class="bg-light p-3 border-bottom d-flex justify-content-between">
+                                <span><i class="fas fa-spinner fa-spin me-2"></i>Loading Roundcube...</span>
+                                <button onclick="closeEmbedded()" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div style="height: 600px;">
+                                {{-- Content will be loaded here --}}
+                                <iframe 
+                                    src="http://localhost:8082" 
+                                    style="width: 100%; height: 100%; border: none;"
+                                    id="simpleFrame"
+                                ></iframe>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
-// JavaScript for better iframe handling
-document.addEventListener('DOMContentLoaded', function() {
-    const iframe = document.getElementById('snappymail-frame');
+function loadEmbedded() {
+    document.getElementById('embeddedContainer').style.display = 'block';
+    document.getElementById('simpleFrame').src = 'http://localhost:8082';
     
-    // Adjust iframe height based on window size
-    function adjustIframeHeight() {
-        const windowHeight = window.innerHeight;
-        const headerHeight = document.querySelector('.content-header').offsetHeight;
-        const cardHeaderHeight = iframe.closest('.card').querySelector('.card-header').offsetHeight;
-        const cardFooterHeight = iframe.closest('.card').querySelector('.card-footer').offsetHeight;
-        const padding = 50;
-        
-        const newHeight = windowHeight - headerHeight - cardHeaderHeight - cardFooterHeight - padding;
-        iframe.style.height = Math.max(500, newHeight) + 'px';
-    }
-    
-    // Adjust on load and resize
-    adjustIframeHeight();
-    window.addEventListener('resize', adjustIframeHeight);
-    
-    // Handle iframe messages (if Snappymail supports postMessage)
-    window.addEventListener('message', function(event) {
-        // Handle messages from iframe if needed
-        console.log('Message from iframe:', event.data);
-    });
-    
-    // Refresh iframe button (optional)
-    const refreshBtn = document.createElement('button');
-    refreshBtn.className = 'btn btn-tool';
-    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-    refreshBtn.title = 'Rafraîchir';
-    refreshBtn.addEventListener('click', function() {
-        iframe.src = iframe.src;
-    });
-    
-    // Add refresh button to card tools
-    const cardTools = iframe.closest('.card').querySelector('.card-tools');
-    if (cardTools) {
-        cardTools.appendChild(refreshBtn);
-    }
-});
+    // Try to auto-fill after 3 seconds
+    setTimeout(() => {
+        try {
+            const iframe = document.getElementById('simpleFrame');
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const usernameField = iframeDoc.querySelector('input[name="_user"]');
+            if (usernameField) {
+                usernameField.value = '{{ Auth::user()->email }}';
+                usernameField.focus();
+            }
+        } catch(e) {
+            // Cross-origin error, ignore
+        }
+    }, 3000);
+}
+
+function closeEmbedded() {
+    document.getElementById('embeddedContainer').style.display = 'none';
+    document.getElementById('simpleFrame').src = 'about:blank';
+}
 </script>
-<style>
-/* Custom styles for the iframe */
-#snappymail-frame {
-    min-height: 500px;
-    background: #f8f9fa;
-}
-
-/* Fullscreen mode */
-.fullscreen #snappymail-frame {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    z-index: 1050;
-}
-
-.card.maximized #snappymail-frame {
-    height: calc(100vh - 150px) !important;
-}
-</style>
 @endsection

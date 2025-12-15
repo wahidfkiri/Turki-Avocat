@@ -290,10 +290,12 @@
                                                                 <select class="form-control @error('chambre') is-invalid @enderror" 
                                                                         id="chambre" name="chambre">
                                                                     <option value="">Sélectionnez une chambre</option>
-                                                                    <option value="civil" {{ old('chambre', $dossier->chambre) == 'civil' ? 'selected' : '' }}>Civil</option>
-                                                                    <option value="commercial" {{ old('chambre', $dossier->chambre) == 'commercial' ? 'selected' : '' }}>Commercial</option>
-                                                                    <option value="social" {{ old('chambre', $dossier->chambre) == 'social' ? 'selected' : '' }}>Social</option>
-                                                                    <option value="pénal" {{ old('chambre', $dossier->chambre) == 'pénal' ? 'selected' : '' }}>Pénal</option>
+                                                                    @foreach(\App\Models\Chambre::all() as $chambre)
+                                                                        <option value="{{ $chambre->name }}" @if($chambre->name == $dossier->chambre) selected @endif>
+                                                                            {{ $chambre->name }}
+                                                                        </option>
+                                                                        @endforeach
+                                                                    
                                                                 </select>
                                                                 @error('chambre')
                                                                     <span class="invalid-feedback" role="alert">

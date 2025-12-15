@@ -28,7 +28,7 @@ class UpdateDossierRequest extends FormRequest
             'conseil' => 'sometimes|boolean',
             'contentieux' => 'sometimes|boolean',
             'numero_role' => 'nullable|string|max:50',
-            'chambre' => 'nullable|in:civil,commercial,social,pénal',
+            'chambre' => 'nullable',
             'numero_chambre' => 'nullable|string|max:50',
             'numero_parquet' => 'nullable|string|max:50',
             'numero_instruction' => 'nullable|string|max:50',

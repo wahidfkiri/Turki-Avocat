@@ -165,7 +165,7 @@
                     </div>
 
                     <!-- Note -->
-                    <div class="form-group">
+                    <div class="form-group d-none">
                         <label for="edit_note">Notes supplémentaires</label>
                         <textarea class="form-control" id="edit_note" name="note" rows="2" 
                                   placeholder="Ajoutez des notes ou commentaires..."></textarea>
@@ -176,7 +176,7 @@
                     </div>
 
                     <!-- Informations de suivi -->
-                    <div class="row">
+                    <div class="row d-none">
                         <div class="col-md-12">
                             <div class="form-group">
                                 <label>Informations de suivi</label>

@@ -49,9 +49,9 @@
 
 <!-- Modal pour visualiser une feuille de temps -->
 <div class="modal fade" id="viewTimesheetModal" tabindex="-1" role="dialog" aria-labelledby="viewTimesheetModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-info">
                 <h5 class="modal-title" id="viewTimesheetModalLabel">Détails de la feuille de temps</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -77,9 +77,9 @@
 
 <!-- Modal pour modifier une feuille de temps -->
 <div class="modal fade" id="editTimesheetModal" tabindex="-1" role="dialog" aria-labelledby="editTimesheetModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-warning">
                 <h5 class="modal-title" id="editTimesheetModalLabel">Modifier la feuille de temps</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -109,7 +109,7 @@
 <!-- Modal de confirmation pour la suppression -->
 <div class="modal fade" id="deleteTimesheetModal" tabindex="-1" role="dialog" aria-labelledby="deleteTimesheetModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <div class="modal-content">
+        <div class="modal-content bg-danger">
             <div class="modal-header">
                 <h5 class="modal-title" id="deleteTimesheetModalLabel">Confirmation de suppression</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -769,7 +769,7 @@ $(document).ready(function() {
         const html = `
             <div class="timesheet-details">
                 <div class="row mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <h5 class="border-bottom pb-2 text-primary">
                             <i class="fas fa-info-circle"></i> Informations générales
                         </h5>
@@ -783,7 +783,7 @@ $(document).ready(function() {
                                 <td><span class="badge badge-info">${date}</span></td>
                             </tr>
                             <tr>
-                                <th>Description:</th>
+                                <th width="40%;">Description:</th>
                                 <td>
                                     <div class="bg-light p-2 rounded">
                                         ${description}
@@ -800,7 +800,7 @@ $(document).ready(function() {
                             </tr>
                         </table>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <h5 class="border-bottom pb-2 text-primary">
                             <i class="fas fa-tasks"></i> Détails techniques
                         </h5>

@@ -737,7 +737,7 @@ $(document).ready(function() {
         `);
 
         $.ajax({
-            url: '/factures/' + factureId + '/datas',
+            url: '/dossiers/factures/' + factureId + '/datas',
             type: 'GET',
             success: function(response) {
                 if (response.success && response.data) {
@@ -869,7 +869,7 @@ $(document).ready(function() {
         `);
 
         $.ajax({
-            url: '/factures/' + factureId + '/edit',
+            url: '/dossiers/factures/' + factureId ,
             type: 'GET',
             success: function(response) {
                 if (response.success && response.data) {
@@ -1128,7 +1128,7 @@ $(document).ready(function() {
         const formData = new FormData(form[0]);
         
         $.ajax({
-            url: '/factures/' + factureId,
+            url: '/dossiers/factures/' + factureId,
             type: 'POST',
             data: formData,
             processData: false,

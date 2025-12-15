@@ -1676,7 +1676,6 @@ function renderGridView(files) {
                 'pdf': 'fa-file-pdf text-danger',
                 'doc': 'fa-file-word text-primary',
                 'docx': 'fa-file-word text-primary',
-                'doc': 'fa-file-word text-primary',
                 'xls': 'fa-file-excel text-success',
                 'xlsx': 'fa-file-excel text-success',
                 'jpg': 'fa-file-image',

@@ -28,7 +28,7 @@
                     <div class="card card-primary">
                         <div class="card-header">
                             <h3 class="card-title">Informations de la tâche</h3>
-                            <div class="card-tools">
+                            <div class="card-tools d-none">
                                 @if(auth()->user()->hasPermission('edit_tasks'))
                                     <a href="{{ route('tasks.edit', $task->id ?? '') }}" class="btn btn-warning btn-sm">
                                         <i class="fas fa-edit"></i> Modifier
@@ -199,8 +199,8 @@
                             </div>
 
                             <!-- Notes supplémentaires -->
-                            <div class="row mt-4 d-block">
-                                <div class="col-12 d-block">
+                            <div class="row mt-4 d-none">
+                                <div class="col-12">
                                     <h5 class="section-title">Notes supplémentaires</h5>
                                     <div class="card">
                                         <div class="card-body bg-light">
@@ -222,7 +222,7 @@
                                         <i class="fas fa-arrow-left"></i> Retour à la liste
                                     </a>
                                 </div>
-                                <div class="col-md-6 text-right">
+                                <div class="col-md-6 text-right d-none">
                                     @if(auth()->user()->hasPermission('edit_tasks'))
                                         <a href="{{ route('tasks.edit', $task->id ?? '') }}" class="btn btn-warning">
                                             <i class="fas fa-edit"></i> Modifier

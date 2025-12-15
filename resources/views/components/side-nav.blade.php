@@ -79,7 +79,7 @@
                     </a>
                 </li>
                 @endif
-                <li class="nav-item">
+                <li class="nav-item d-none">
                     <a href="{{ route('apps.index') }}" class="nav-link {{ request()->routeIs('apps.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-th"></i>
                         <p>Apps</p>

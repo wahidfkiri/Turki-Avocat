@@ -219,81 +219,27 @@
 @include('tasks.edit')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.sumoselect/3.0.2/jquery.sumoselect.min.js"></script>
 <script>
-    $('.search_utilisateur').SumoSelect({search: true, searchText: 'Sélectionner un utilisateur...'});
-    $('.search_dossier').SumoSelect({search: true, searchText: 'Sélectionner un dossier...'});
 $(document).ready(function() {
+    // ============================
+    // VARIABLES GLOBALES
+    // ============================
     let taskToDelete = null;
     let taskRowToDelete = null;
+    let table; // Déclaration de la variable DataTable
 
+    // ============================
+    // INITIALISATION GENERALE
+    // ============================
+    
     // Initialize Select2
     $('.select2').select2({
         theme: 'bootstrap4'
     });
 
-    // Définir loadTaskData dans le scope global
-    window.loadTaskData = function(taskId) {
-        $.ajax({
-            url: '/tasks/' + taskId + '/edit',
-            type: 'GET',
-            success: function(response) {
-                // Remplir le formulaire avec les données
-                $('#edit_task_id').val(response.id);
-                $('#edit_titre').val(response.titre);
-                $('#edit_priorite').val(response.priorite).trigger('change');
-                $('#edit_statut').val(response.statut).trigger('change');
-                $('#edit_utilisateur_id').val(response.utilisateur_id).trigger('change');
-                $('#edit_dossier_id').val(response.dossier_id).trigger('change');
-                $('#edit_intervenant_id').val(response.intervenant_id).trigger('change');
-                $('#edit_description').val(response.description);
-                $('#edit_note').val(response.note);
-                
-                // Dates
-                if (response.date_debut) {
-                    $('#edit_date_debut').val(response.date_debut.split('T')[0]);
-                }
-                if (response.date_fin) {
-                    $('#edit_date_fin').val(response.date_fin.split('T')[0]);
-                }
-                
-                // Fichier existant
-                if (response.file_path) {
-                    $('#current-file-name').text(response.file_name);
-                    $('#current-file-info').show();
-                } else {
-                    $('#current-file-info').hide();
-                }
-                
-                // Informations de suivi
-                let infoHtml = `<small>
-                    <strong>Créé le:</strong> ${new Date(response.created_at).toLocaleDateString('fr-FR')}<br>
-                    <strong>Modifié le:</strong> ${new Date(response.updated_at).toLocaleDateString('fr-FR')}`;
-                
-                if (response.dossier) {
-                    infoHtml += `<br><strong>Dossier:</strong> ${response.dossier.numero_dossier}`;
-                }
-                if (response.intervenant) {
-                    infoHtml += `<br><strong>Intervenant:</strong> ${response.intervenant.identite_fr}`;
-                }
-                infoHtml += `</small>`;
-                
-                $('#task-info').html(infoHtml);
-                
-                // Afficher le bouton de suppression si l'utilisateur a la permission
-                @if(auth()->user()->hasPermission('delete_tasks'))
-                    $('#deleteTaskBtn').show();
-                @endif
-                
-                // Ouvrir le modal
-                $('#editTaskModal').modal('show');
-            },
-            error: function(xhr) {
-                showAlert('error', 'Erreur lors du chargement des données de la tâche.');
-            }
-        });
-    };
-
-    // DataTable initialization
-    var table = $('#tasks-table').DataTable({
+    // ============================
+    // DATATABLE INITIALISATION
+    // ============================
+    table = $('#tasks-table').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
@@ -416,17 +362,18 @@ $(document).ready(function() {
                     var actions = '<div class="btn-group">';
                     
                     @if(auth()->user()->hasPermission('view_tasks'))
-    actions += '<button type="button" class="btn btn-info btn-sm view-task-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
-@endif
+                        actions += '<button type="button" class="btn btn-info btn-sm view-task-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
+                    @endif
                     
                     @if(auth()->user()->hasPermission('edit_tasks'))
                         // Bouton pour ouvrir le modal d'édition
-                        actions += '<button type="button" class="btn btn-primary btn-sm edit-task-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
+                        actions += '<button type="button" class="btn btn-warning btn-sm edit-task-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
                     @endif
                     
                     @if(auth()->user()->hasPermission('delete_tasks'))
                         actions += '<button type="button" class="btn btn-danger btn-sm delete-task-btn" data-id="' + row.id + '" data-title="' + (row.titre || '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
                     @endif
+                    
                     @if(auth()->user()->hasPermission('view_tasks'))
                         if (row.file_path != null) {
                             actions += '<a href="/tasks/' + row.id + '/download" class="btn btn-secondary btn-sm" title="Télécharger"><i class="fas fa-download"></i></a>';
@@ -448,10 +395,129 @@ $(document).ready(function() {
         }
     });
 
+    // ============================
+    // FONCTIONS UTILITAIRES
+    // ============================
+    
+    // Fonction pour afficher les alertes
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const iconClass = type === 'success' ? 'fa-check' : 'fa-ban';
+        const title = type === 'success' ? 'Succès!' : 'Erreur!';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                <h5><i class="icon fas ${iconClass}"></i> ${title}</h5>
+                ${message}
+            </div>
+        `;
+        
+        // Remove any existing alerts
+        $('.alert-dismissible').remove();
+        
+        // Prepend the new alert
+        $('.card').before(alertHtml);
+        
+        // Auto-remove alert after 5 seconds
+        setTimeout(function() {
+            $('.alert-dismissible').fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+
+    // Fonction pour afficher les alertes toast
+    function showTaskAlert(type, message) {
+        // Supprimer les alertes existantes
+        $('.alert.task-toast-alert').remove();
+        
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+        const title = type === 'success' ? 'Succès' : 'Erreur';
+        
+        const alertHtml = `
+            <div class="alert alert-${type} task-toast-alert alert-dismissible fade show" role="alert" 
+                 style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;">
+                <div class="d-flex align-items-center">
+                    <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
+                    <div style="flex: 1;">
+                        <strong>${title}</strong>
+                        <div class="small">${message}</div>
+                    </div>
+                    <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter la nouvelle alerte
+        $('body').append(alertHtml);
+        
+        // Supprimer automatiquement après 5 secondes
+        setTimeout(() => {
+            $('.alert.task-toast-alert').alert('close');
+        }, 5000);
+    }
+
+    function showFieldError(field, message) {
+        var input = $('#' + field);
+        var errorDiv = $('#' + field + '-error');
+        
+        input.addClass('is-invalid');
+        errorDiv.text(message);
+    }
+
+    function clearFieldError(field) {
+        var input = $('#' + field);
+        var errorDiv = $('#' + field + '-error');
+        
+        input.removeClass('is-invalid');
+        errorDiv.text('');
+        
+        if (input.hasClass('select2-hidden-accessible')) {
+            input.next('.select2-container').find('.select2-selection')
+                .removeClass('is-invalid');
+        }
+    }
+
+    // ============================
+    // GESTION DES FILTRES
+    // ============================
+
+    // Apply filters
+    $('#btn_apply_filters').click(function() {
+        table.ajax.reload();
+    });
+
+    // Reset filters
+    $('#btn_reset_filters').click(function() {
+        $('#filter_titre').val('');
+        $('#filter_priorite').val('').trigger('change');
+        $('#filter_statut').val('').trigger('change');
+        $('#filter_utilisateur').val('').trigger('change');
+        $('#filter_dossier').val('').trigger('change');
+        $('#filter_intervenant').val('').trigger('change');
+        $('#filter_date_debut').val('');
+        $('#filter_date_fin').val('');
+        table.ajax.reload();
+    });
+
+    // Apply filters on Enter key in text inputs
+    $('#filter_titre').keypress(function(e) {
+        if (e.which == 13) {
+            table.ajax.reload();
+        }
+    });
+
+    // ============================
+    // GESTION DES BOUTONS ACTIONS
+    // ============================
+
     // Gestionnaire pour le bouton d'édition
     $(document).on('click', '.edit-task-btn', function() {
         const taskId = $(this).data('id');
-        loadTaskData(taskId); // Maintenant cette fonction est définie globalement
+        loadTaskData(taskId);
     });
 
     // Delete button click handler
@@ -464,7 +530,7 @@ $(document).ready(function() {
         $('#task-title').text(taskTitle);
         $('#deleteTaskModal').modal('show');
     });
-    
+
     // Confirm delete button handler
     $('#confirm-task-delete').on('click', function() {
         if (!taskToDelete) return;
@@ -520,344 +586,79 @@ $(document).ready(function() {
         });
     });
 
-    // Function to show alert messages
-    function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const iconClass = type === 'success' ? 'fa-check' : 'fa-ban';
-        const title = type === 'success' ? 'Succès!' : 'Erreur!';
-        
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                <h5><i class="icon fas ${iconClass}"></i> ${title}</h5>
-                ${message}
-            </div>
-        `;
-        
-        // Remove any existing alerts
-        $('.alert-dismissible').remove();
-        
-        // Prepend the new alert
-        $('.card').before(alertHtml);
-        
-        // Auto-remove alert after 5 seconds
-        setTimeout(function() {
-            $('.alert-dismissible').fadeOut(300, function() {
-                $(this).remove();
-            });
-        }, 5000);
-    }
-
-    // Apply filters
-    $('#btn_apply_filters').click(function() {
-        table.ajax.reload();
-    });
-
-    // Reset filters
-    $('#btn_reset_filters').click(function() {
-        $('#filter_titre').val('');
-        $('#filter_priorite').val('').trigger('change');
-        $('#filter_statut').val('').trigger('change');
-        $('#filter_utilisateur').val('').trigger('change');
-        $('#filter_dossier').val('').trigger('change');
-        $('#filter_intervenant').val('').trigger('change');
-        $('#filter_date_debut').val('');
-        $('#filter_date_fin').val('');
-        table.ajax.reload();
-    });
-
-    // Apply filters on Enter key in text inputs
-    $('#filter_titre').keypress(function(e) {
-        if (e.which == 13) {
-            table.ajax.reload();
-        }
-    });
-
-    // Close modal when clicking the X button
-    $('#deleteTaskModal .close, #deleteTaskModal [data-dismiss="modal"]').on('click', function() {
-        taskToDelete = null;
-        taskRowToDelete = null;
-    });
-    
-    // Handle escape key to close modal
-    $(document).on('keydown', function(e) {
-        if (e.key === 'Escape' && $('#deleteTaskModal').is(':visible')) {
-            taskToDelete = null;
-            taskRowToDelete = null;
-        }
-    });
-});
-
-// JavaScript pour le modal d'édition
-function initTaskEditModal() {
-    // Initialize Select2 pour les selects du modal
-    // $('#edit_priorite, #edit_statut, #edit_utilisateur_id, #edit_dossier_id, #edit_intervenant_id').select2({
-    //     theme: 'bootstrap4',
-    //     dropdownParent: $('#editTaskModal')
-    // });
-
-    // Gestion de l'affichage du nom du fichier
-    $('#edit_file').on('change', function() {
-        var fileName = $(this).val().split('\\').pop();
-        $('#edit_file-label').text(fileName || 'Choisir un fichier...');
-    });
-
-    // Gestion de la suppression de fichier
-    $('#remove-file-btn').on('click', function() {
-        $('#remove_file').val('1');
-        $('#current-file-info').hide();
-        $('#edit_file').val('');
-        $('#edit_file-label').text('Choisir un fichier...');
-    });
-
-    // Soumission du formulaire d'édition
-    $('#submitEditTask').on('click', function() {
-        updateTask();
-    });
-
-    // Soumission avec Enter
-    $('#taskEditForm').on('keypress', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-            updateTask();
-        }
-    });
-
-    // Bouton de suppression
-    $('#deleteTaskBtn').on('click', function() {
-        const taskId = $('#edit_task_id').val();
-        if (taskId && confirm('Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action est irréversible.')) {
-            deleteTask(taskId);
-        }
-    });
-
-    function updateTask() {
-        const taskId = $('#edit_task_id').val();
-        if (!taskId) return;
-
-        // Réinitialiser les erreurs
-        $('.is-invalid').removeClass('is-invalid');
-        $('.invalid-feedback').text('');
-        
-        // Désactiver le bouton et afficher le loader
-        var submitBtn = $('#submitEditTask');
-        var originalText = submitBtn.html();
-        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mise à jour...');
-
-        // Créer FormData pour gérer les fichiers
-        var formData = new FormData($('#taskEditForm')[0]);
-
-        $.ajax({
-            url: '/tasks/' + taskId,
-            type: 'POST', // Laravel utilise POST avec _method=PUT
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                // Fermer le modal
-                $('#editTaskModal').modal('hide');
-                
-                    showAlert('success', 'Tâche mise à jour avec succès!');
-                
-                // Recharger la table si elle existe (dans index)
-                if (typeof table !== 'undefined') {
-                    table.ajax.reload();
-                }
-                
-                // Afficher le message de succès
-                // if (typeof showAlert !== 'undefined') {
-                //     showAlert('success', 'Tâche mise à jour avec succès!');
-                // } else {
-                //     alert('Tâche mise à jour avec succès!');
-                // }
-                
-                // Réactiver le bouton
-                submitBtn.prop('disabled', false).html(originalText);
-            },
-            error: function(xhr) {
-                // Réactiver le bouton
-                submitBtn.prop('disabled', false).html(originalText);
-                
-                if (xhr.status === 422) {
-                    // Gestion des erreurs de validation
-                    var errors = xhr.responseJSON.errors;
-                    $.each(errors, function(field, messages) {
-                        var input = $('#edit_' + field);
-                        var errorDiv = $('#edit_' + field + '-error');
-                        
-                        input.addClass('is-invalid');
-                        errorDiv.text(messages[0]);
-                        
-                        // Pour les selects de Select2
-                        if (input.hasClass('select2-hidden-accessible')) {
-                            input.next('.select2-container').find('.select2-selection')
-                                .addClass('is-invalid');
-                        }
-                    });
-                    
-                    // Scroll vers la première erreur
-                    $('.is-invalid').first().focus();
-                } else if (xhr.status === 403) {
-                    // Erreur de permission
-                    if (typeof showAlert !== 'undefined') {
-                        showAlert('error', 'Permission refusée', 'Vous n\'avez pas la permission de modifier des tâches.');
-                    } else {
-                        alert('Permission refusée');
-                    }
-                    $('#editTaskModal').modal('hide');
-                } else {
-                    // Erreur générale
-                    if (typeof showAlert !== 'undefined') {
-                        showAlert('error', 'Erreur', 'Une erreur est survenue lors de la mise à jour de la tâche.');
-                    } else {
-                        alert('Erreur lors de la mise à jour');
-                    }
-                }
-            }
-        });
-    }
- function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const iconClass = type === 'success' ? 'fa-check' : 'fa-ban';
-        const title = type === 'success' ? 'Succès!' : 'Erreur!';
-        
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                <h5><i class="icon fas ${iconClass}"></i> ${title}</h5>
-                ${message}
-            </div>
-        `;
-        
-        // Remove any existing alerts
-        $('.alert-dismissible').remove();
-        
-        // Prepend the new alert
-        $('.card').before(alertHtml);
-        
-        // Auto-remove alert after 5 seconds
-        setTimeout(function() {
-            $('.alert-dismissible').fadeOut(300, function() {
-                $(this).remove();
-            });
-        }, 5000);
-    }
-    function deleteTask(taskId) {
-        $.ajax({
-            url: '/tasks/' + taskId,
-            type: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                // Fermer le modal
-                $('#editTaskModal').modal('hide');
-                
-                // Recharger la table si elle existe
-                if (typeof table !== 'undefined') {
-                    table.ajax.reload();
-                }
-                
-                // Afficher le message de succès
-                if (typeof showAlert !== 'undefined') {
-                    showAlert('success', 'Tâche supprimée avec succès!');
-                } else {
-                    alert('Tâche supprimée avec succès!');
-                }
-            },
-            error: function(xhr) {
-                let errorMessage = 'Une erreur est survenue lors de la suppression.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                if (typeof showAlert !== 'undefined') {
-                    showAlert('error', errorMessage);
-                } else {
-                    alert(errorMessage);
-                }
-            }
-        });
-    }
-
-    // Réinitialiser le formulaire quand le modal est fermé
-    $('#editTaskModal').on('hidden.bs.modal', function () {
-        $('#taskEditForm')[0].reset();
-        $('#edit_file-label').text('Choisir un fichier...');
-        $('.invalid-feedback').text('');
-        $('.is-invalid').removeClass('is-invalid');
-        $('#current-file-info').hide();
-        $('#remove_file').val('0');
-        $('#deleteTaskBtn').hide();
-        
-        // Réinitialiser Select2
-        $('#edit_priorite, #edit_statut, #edit_utilisateur_id, #edit_dossier_id, #edit_intervenant_id')
-            .val('').trigger('change');
-    });
-
-    // Validation en temps réel
-    $('#edit_titre').on('blur', function() {
-        if ($(this).val().length > 0 && $(this).val().length < 3) {
-            showFieldError('edit_titre', 'Le titre doit contenir au moins 3 caractères');
-        } else {
-            clearFieldError('edit_titre');
-        }
-    });
-
-    $('#edit_date_fin').on('change', function() {
-        var dateDebut = $('#edit_date_debut').val();
-        var dateFin = $(this).val();
-        
-        if (dateDebut && dateFin) {
-            var start = new Date(dateDebut);
-            var end = new Date(dateFin);
-            
-            if (end < start) {
-                showFieldError('edit_date_fin', 'La date de fin doit être postérieure ou égale à la date de début');
-            } else {
-                clearFieldError('edit_date_fin');
-            }
-        }
-    });
-
-    function showFieldError(field, message) {
-        var input = $('#' + field);
-        var errorDiv = $('#' + field + '-error');
-        
-        input.addClass('is-invalid');
-        errorDiv.text(message);
-    }
-
-    function clearFieldError(field) {
-        var input = $('#' + field);
-        var errorDiv = $('#' + field + '-error');
-        
-        input.removeClass('is-invalid');
-        errorDiv.text('');
-        
-        if (input.hasClass('select2-hidden-accessible')) {
-            input.next('.select2-container').find('.select2-selection')
-                .removeClass('is-invalid');
-        }
-    }
-}
-
-// Initialiser le modal quand le document est prêt
-$(document).ready(function() {
-    initTaskEditModal();
-});
-</script>
-<script>
-$(document).ready(function() {
-    // Gestion du clic sur le bouton "Voir" des tâches
+    // Gestion du clic sur le bouton "Voir"
     $(document).on('click', '.view-task-btn', function() {
         const taskId = $(this).data('id');
         loadTaskDetails(taskId);
     });
 
-    // Fonction pour charger les détails de la tâche
+    // ============================
+    // FONCTIONS AJAX POUR ACTIONS
+    // ============================
+
+    // Fonction pour charger les données de la tâche (édition)
+    window.loadTaskData = function(taskId) {
+        $.ajax({
+            url: '/tasks/' + taskId + '/edit',
+            type: 'GET',
+            success: function(response) {
+                // Remplir le formulaire avec les données
+                $('#edit_task_id').val(response.id);
+                $('#edit_titre').val(response.titre);
+                $('#edit_priorite').val(response.priorite).trigger('change');
+                $('#edit_statut').val(response.statut).trigger('change');
+                $('#edit_utilisateur_id').val(response.utilisateur_id).trigger('change');
+                $('#edit_dossier_id').val(response.dossier_id).trigger('change');
+                $('#edit_intervenant_id').val(response.intervenant_id).trigger('change');
+                $('#edit_description').val(response.description);
+                $('#edit_note').val(response.note);
+                
+                // Dates
+                if (response.date_debut) {
+                    $('#edit_date_debut').val(response.date_debut.split('T')[0]);
+                }
+                if (response.date_fin) {
+                    $('#edit_date_fin').val(response.date_fin.split('T')[0]);
+                }
+                
+                // Fichier existant
+                if (response.file_path) {
+                    $('#current-file-name').text(response.file_name);
+                    $('#current-file-info').show();
+                } else {
+                    $('#current-file-info').hide();
+                }
+                
+                // Informations de suivi
+                let infoHtml = `<small>
+                    <strong>Créé le:</strong> ${new Date(response.created_at).toLocaleDateString('fr-FR')}<br>
+                    <strong>Modifié le:</strong> ${new Date(response.updated_at).toLocaleDateString('fr-FR')}`;
+                
+                if (response.dossier) {
+                    infoHtml += `<br><strong>Dossier:</strong> ${response.dossier.numero_dossier}`;
+                }
+                if (response.intervenant) {
+                    infoHtml += `<br><strong>Intervenant:</strong> ${response.intervenant.identite_fr}`;
+                }
+                infoHtml += `</small>`;
+                
+                $('#task-info').html(infoHtml);
+                
+                // Afficher le bouton de suppression si l'utilisateur a la permission
+                @if(auth()->user()->hasPermission('delete_tasks'))
+                    $('#deleteTaskBtn').show();
+                @endif
+                
+                // Ouvrir le modal
+                $('#editTaskModal').modal('show');
+            },
+            error: function(xhr) {
+                showAlert('error', 'Erreur lors du chargement des données de la tâche.');
+            }
+        });
+    };
+
+    // Fonction pour charger les détails de la tâche (visualisation)
     function loadTaskDetails(taskId) {
         // Afficher le spinner de chargement
         $('#taskDetailsModalBody').html(`
@@ -936,7 +737,7 @@ $(document).ready(function() {
                     }
                     else if (sectionHTML.includes('Notes supplémentaires')) {
                         modalContent += `
-                            <div class="row mt-4 d-block">
+                            <div class="row mt-4 d-none">
                                 ${sectionHTML}
                             </div>
                         `;
@@ -986,47 +787,335 @@ $(document).ready(function() {
         });
     }
 
-    // Fonction de confirmation de suppression de tâche depuis le modal
-    window.confirmDeleteTaskFromModal = function(taskId) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action est irréversible.')) {
-            // Afficher un indicateur de chargement
-            const deleteButton = $('.btn-danger[onclick*="confirmDeleteTaskFromModal"]');
-            const originalHtml = deleteButton.html();
-            deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
-            deleteButton.prop('disabled', true);
+    // ============================
+    // FORMULAIRE DE CRÉATION
+    // ============================
+    
+    // Gestion de l'affichage du nom du fichier (création)
+    $('#file').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        $('#file-label').text(fileName || 'Choisir un fichier...');
+    });
 
-            // Soumettre la suppression via AJAX
-            $.ajax({
-                url: '/tasks/' + taskId,
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    _method: 'DELETE'
-                },
-                success: function(response) {
-                    // Fermer le modal
-                    $('#taskDetailsModal').modal('hide');
-                    
-                    // Recharger la DataTable
-                    if (typeof tasksTable !== 'undefined' && $.fn.DataTable.isDataTable('#tasksTable')) {
-                        tasksTable.ajax.reload(null, false);
-                    }
-                    
-                    // Afficher un message de succès
-                    showTaskAlert('success', 'Tâche supprimée avec succès');
-                },
-                error: function(xhr) {
-                    showTaskAlert('danger', 'Erreur lors de la suppression de la tâche');
-                    
-                    // Réactiver le bouton
-                    deleteButton.html(originalHtml);
-                    deleteButton.prop('disabled', false);
-                }
-            });
+    // Soumission du formulaire de création
+    $('#submitCreateTask').on('click', function() {
+        createTask();
+    });
+
+    // Soumission avec Enter (création)
+    $('#taskCreateForm').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            createTask();
         }
-    };
+    });
 
-    // Nettoyer le modal quand il est fermé
+    function createTask() {
+        // Réinitialiser les erreurs
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+        
+        // Désactiver le bouton et afficher le loader
+        var submitBtn = $('#submitCreateTask');
+        var originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Création...');
+
+        // Créer FormData pour gérer les fichiers
+        var formData = new FormData($('#taskCreateForm')[0]);
+
+        $.ajax({
+            url: '{{ route("tasks.store") }}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                // Fermer le modal
+                $('#createTaskModal').modal('hide');
+                
+                // Recharger la table
+                table.ajax.reload();
+                
+                // Afficher le message de succès
+                showAlert('success', 'Tâche créée avec succès!');
+                
+                // Réactiver le bouton
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                // Réinitialiser le formulaire
+                $('#taskCreateForm')[0].reset();
+                $('#file-label').text('Choisir un fichier...');
+                $('#priorite, #statut, #utilisateur_id, #dossier_id, #intervenant_id')
+                    .val('').trigger('change');
+            },
+            error: function(xhr) {
+                // Réactiver le bouton
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                if (xhr.status === 422) {
+                    // Gestion des erreurs de validation
+                    var errors = xhr.responseJSON.errors;
+                    $.each(errors, function(field, messages) {
+                        var input = $('#' + field);
+                        var errorDiv = $('#' + field + '-error');
+                        
+                        input.addClass('is-invalid');
+                        errorDiv.text(messages[0]);
+                        
+                        // Pour les selects de Select2
+                        if (input.hasClass('select2-hidden-accessible')) {
+                            input.next('.select2-container').find('.select2-selection')
+                                .addClass('is-invalid');
+                        }
+                    });
+                    
+                    // Scroll vers la première erreur
+                    $('.is-invalid').first().focus();
+                } else if (xhr.status === 403) {
+                    // Erreur de permission
+                    showAlert('error', 'Permission refusée', 'Vous n\'avez pas la permission de créer des tâches.');
+                    $('#createTaskModal').modal('hide');
+                } else {
+                    // Erreur générale
+                    showAlert('error', 'Erreur', 'Une erreur est survenue lors de la création de la tâche.');
+                }
+            }
+        });
+    }
+
+    // Validation en temps réel (création)
+    $('#titre').on('blur', function() {
+        if ($(this).val().length > 0 && $(this).val().length < 3) {
+            showFieldError('titre', 'Le titre doit contenir au moins 3 caractères');
+        } else {
+            clearFieldError('titre');
+        }
+    });
+
+    $('#date_fin').on('change', function() {
+        var dateDebut = $('#date_debut').val();
+        var dateFin = $(this).val();
+        
+        if (dateDebut && dateFin) {
+            var start = new Date(dateDebut);
+            var end = new Date(dateFin);
+            
+            if (end < start) {
+                showFieldError('date_fin', 'La date de fin doit être postérieure ou égale à la date de début');
+            } else {
+                clearFieldError('date_fin');
+            }
+        }
+    });
+
+    // ============================
+    // FORMULAIRE D'ÉDITION
+    // ============================
+    
+    // Gestion de l'affichage du nom du fichier (édition)
+    $('#edit_file').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        $('#edit_file-label').text(fileName || 'Choisir un fichier...');
+    });
+
+    // Gestion de la suppression de fichier (édition)
+    $('#remove-file-btn').on('click', function() {
+        $('#remove_file').val('1');
+        $('#current-file-info').hide();
+        $('#edit_file').val('');
+        $('#edit_file-label').text('Choisir un fichier...');
+    });
+
+    // Soumission du formulaire d'édition
+    $('#submitEditTask').on('click', function() {
+        updateTask();
+    });
+
+    // Soumission avec Enter (édition)
+    $('#taskEditForm').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            updateTask();
+        }
+    });
+
+    // Bouton de suppression (édition)
+    $('#deleteTaskBtn').on('click', function() {
+        const taskId = $('#edit_task_id').val();
+        if (taskId && confirm('Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action est irréversible.')) {
+            deleteTask(taskId);
+        }
+    });
+
+    function updateTask() {
+        const taskId = $('#edit_task_id').val();
+        if (!taskId) return;
+
+        // Réinitialiser les erreurs
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').text('');
+        
+        // Désactiver le bouton et afficher le loader
+        var submitBtn = $('#submitEditTask');
+        var originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mise à jour...');
+
+        // Créer FormData pour gérer les fichiers
+        var formData = new FormData($('#taskEditForm')[0]);
+
+        $.ajax({
+            url: '/tasks/' + taskId,
+            type: 'POST', // Laravel utilise POST avec _method=PUT
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                // Fermer le modal
+                $('#editTaskModal').modal('hide');
+                
+                // Recharger la table
+                table.ajax.reload();
+                
+                // Afficher le message de succès
+                showAlert('success', 'Tâche mise à jour avec succès!');
+                
+                // Réactiver le bouton
+                submitBtn.prop('disabled', false).html(originalText);
+            },
+            error: function(xhr) {
+                // Réactiver le bouton
+                submitBtn.prop('disabled', false).html(originalText);
+                
+                if (xhr.status === 422) {
+                    // Gestion des erreurs de validation
+                    var errors = xhr.responseJSON.errors;
+                    $.each(errors, function(field, messages) {
+                        var input = $('#edit_' + field);
+                        var errorDiv = $('#edit_' + field + '-error');
+                        
+                        input.addClass('is-invalid');
+                        errorDiv.text(messages[0]);
+                        
+                        // Pour les selects de Select2
+                        if (input.hasClass('select2-hidden-accessible')) {
+                            input.next('.select2-container').find('.select2-selection')
+                                .addClass('is-invalid');
+                        }
+                    });
+                    
+                    // Scroll vers la première erreur
+                    $('.is-invalid').first().focus();
+                } else if (xhr.status === 403) {
+                    // Erreur de permission
+                    showAlert('error', 'Permission refusée', 'Vous n\'avez pas la permission de modifier des tâches.');
+                    $('#editTaskModal').modal('hide');
+                } else {
+                    // Erreur générale
+                    showAlert('error', 'Erreur', 'Une erreur est survenue lors de la mise à jour de la tâche.');
+                }
+            }
+        });
+    }
+
+    function deleteTask(taskId) {
+        $.ajax({
+            url: '/tasks/' + taskId,
+            type: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                // Fermer le modal
+                $('#editTaskModal').modal('hide');
+                
+                // Recharger la table
+                table.ajax.reload();
+                
+                // Afficher le message de succès
+                showAlert('success', 'Tâche supprimée avec succès!');
+            },
+            error: function(xhr) {
+                let errorMessage = 'Une erreur est survenue lors de la suppression.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showAlert('error', errorMessage);
+            }
+        });
+    }
+
+    // Validation en temps réel (édition)
+    $('#edit_titre').on('blur', function() {
+        if ($(this).val().length > 0 && $(this).val().length < 3) {
+            showFieldError('edit_titre', 'Le titre doit contenir au moins 3 caractères');
+        } else {
+            clearFieldError('edit_titre');
+        }
+    });
+
+    $('#edit_date_fin').on('change', function() {
+        var dateDebut = $('#edit_date_debut').val();
+        var dateFin = $(this).val();
+        
+        if (dateDebut && dateFin) {
+            var start = new Date(dateDebut);
+            var end = new Date(dateFin);
+            
+            if (end < start) {
+                showFieldError('edit_date_fin', 'La date de fin doit être postérieure ou égale à la date de début');
+            } else {
+                clearFieldError('edit_date_fin');
+            }
+        }
+    });
+
+    // ============================
+    // GESTION DES MODALS
+    // ============================
+
+    // Réinitialiser le formulaire quand le modal de création est fermé
+    $('#createTaskModal').on('hidden.bs.modal', function () {
+        $('#taskCreateForm')[0].reset();
+        $('#file-label').text('Choisir un fichier...');
+        $('.invalid-feedback').text('');
+        $('.is-invalid').removeClass('is-invalid');
+        
+        // Réinitialiser Select2
+        $('#priorite, #statut, #utilisateur_id, #dossier_id, #intervenant_id')
+            .val('').trigger('change');
+            
+        // Définir la date d'aujourd'hui par défaut
+        var today = new Date().toISOString().split('T')[0];
+        $('#date_debut').val(today);
+        
+        // Auto-sélection de l'utilisateur connecté si c'est un avocat/secrétaire
+        @if(auth()->user()->fonction === 'avocat' || auth()->user()->fonction === 'secrétaire')
+            $('#utilisateur_id').val('{{ auth()->id() }}').trigger('change');
+        @endif
+    });
+
+    // Réinitialiser le formulaire quand le modal d'édition est fermé
+    $('#editTaskModal').on('hidden.bs.modal', function () {
+        $('#taskEditForm')[0].reset();
+        $('#edit_file-label').text('Choisir un fichier...');
+        $('.invalid-feedback').text('');
+        $('.is-invalid').removeClass('is-invalid');
+        $('#current-file-info').hide();
+        $('#remove_file').val('0');
+        $('#deleteTaskBtn').hide();
+        
+        // Réinitialiser Select2
+        $('#edit_priorite, #edit_statut, #edit_utilisateur_id, #edit_dossier_id, #edit_intervenant_id')
+            .val('').trigger('change');
+    });
+
+    // Nettoyer le modal quand il est fermé (visualisation)
     $('#taskDetailsModal').on('hidden.bs.modal', function() {
         // Réinitialiser le contenu du modal
         $(this).find('.modal-content').html(`
@@ -1049,46 +1138,80 @@ $(document).ready(function() {
         `);
     });
 
-    // Fermer le modal avec la touche ESC
+    // Close modal when clicking the X button (suppression)
+    $('#deleteTaskModal .close, #deleteTaskModal [data-dismiss="modal"]').on('click', function() {
+        taskToDelete = null;
+        taskRowToDelete = null;
+    });
+
+    // Fermer les modals avec la touche ESC
     $(document).keydown(function(e) {
-        if (e.keyCode === 27 && $('#taskDetailsModal').hasClass('show')) {
-            $('#taskDetailsModal').modal('hide');
+        if (e.keyCode === 27) {
+            if ($('#taskDetailsModal').hasClass('show')) {
+                $('#taskDetailsModal').modal('hide');
+            }
+            if ($('#editTaskModal').hasClass('show')) {
+                $('#editTaskModal').modal('hide');
+            }
+            if ($('#deleteTaskModal').hasClass('show')) {
+                taskToDelete = null;
+                taskRowToDelete = null;
+                $('#deleteTaskModal').modal('hide');
+            }
         }
     });
-});
 
-// Fonction pour afficher les alertes pour les tâches
-function showTaskAlert(type, message) {
-    // Supprimer les alertes existantes
-    $('.alert.task-toast-alert').remove();
+    // ============================
+    // FONCTIONS DE CONFIRMATION
+    // ============================
+
+    // Fonction de confirmation de suppression de tâche depuis le modal de visualisation
+    window.confirmDeleteTaskFromModal = function(taskId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ? Cette action est irréversible.')) {
+            // Afficher un indicateur de chargement
+            const deleteButton = $('.btn-danger[onclick*="confirmDeleteTaskFromModal"]');
+            const originalHtml = deleteButton.html();
+            deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
+            deleteButton.prop('disabled', true);
+
+            // Soumettre la suppression via AJAX
+            $.ajax({
+                url: '/tasks/' + taskId,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    // Fermer le modal
+                    $('#taskDetailsModal').modal('hide');
+                    
+                    // Recharger la DataTable
+                    table.ajax.reload();
+                    
+                    // Afficher un message de succès
+                    showTaskAlert('success', 'Tâche supprimée avec succès');
+                },
+                error: function(xhr) {
+                    showTaskAlert('danger', 'Erreur lors de la suppression de la tâche');
+                    
+                    // Réactiver le bouton
+                    deleteButton.html(originalHtml);
+                    deleteButton.prop('disabled', false);
+                }
+            });
+        }
+    };
+
+    // Définir la date d'aujourd'hui par défaut (création)
+    var today = new Date().toISOString().split('T')[0];
+    $('#date_debut').val(today);
     
-    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
-    const title = type === 'success' ? 'Succès' : 'Erreur';
-    
-    const alertHtml = `
-        <div class="alert alert-${type} task-toast-alert alert-dismissible fade show" role="alert" 
-             style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;">
-            <div class="d-flex align-items-center">
-                <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
-                <div style="flex: 1;">
-                    <strong>${title}</strong>
-                    <div class="small">${message}</div>
-                </div>
-                <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
-                    <span>&times;</span>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Ajouter la nouvelle alerte
-    $('body').append(alertHtml);
-    
-    // Supprimer automatiquement après 5 secondes
-    setTimeout(() => {
-        $('.alert.task-toast-alert').alert('close');
-    }, 5000);
-}
+    // Auto-sélection de l'utilisateur connecté si c'est un avocat/secrétaire (création)
+    @if(auth()->user()->fonction === 'avocat' || auth()->user()->fonction === 'secrétaire')
+        $('#utilisateur_id').val('{{ auth()->id() }}').trigger('change');
+    @endif
+});
 </script>
 <style>
     .dataTables_wrapper .dataTables_filter {

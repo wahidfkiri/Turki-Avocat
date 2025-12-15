@@ -170,22 +170,9 @@ $(document).ready(function() {
                     </div>
                 </div>
 
-                <!-- Description -->
-                <div class="form-group">
-                    <label for="view_description" class="font-weight-bold">Description</label>
-                    <textarea class="form-control-plaintext bg-light p-2 rounded" 
-                              id="view_description" rows="4" readonly>${escapeHtml(task.description || 'Aucune description')}</textarea>
-                </div>
-
-                <!-- Note -->
-                <div class="form-group">
-                    <label for="view_note" class="font-weight-bold">Notes supplémentaires</label>
-                    <textarea class="form-control-plaintext bg-light p-2 rounded" 
-                              id="view_note" rows="3" readonly>${escapeHtml(task.note || 'Aucune note')}</textarea>
-                </div>
 
                 <!-- Informations de suivi -->
-                <div class="row mt-4">
+                <div class="row mt-4 d-none">
                     <div class="col-12">
                         <div class="alert alert-info text-black">
                             <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Informations de suivi</h6>
@@ -205,6 +192,12 @@ $(document).ready(function() {
                             </div>
                         </div>
                     </div>
+                </div>
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="view_description" class="font-weight-bold">Description</label>
+                    <textarea class="form-control-plaintext bg-light p-2 rounded" 
+                              id="view_description" rows="4" readonly>${escapeHtml(task.description || 'Aucune description')}</textarea>
                 </div>
             </form>
         `;

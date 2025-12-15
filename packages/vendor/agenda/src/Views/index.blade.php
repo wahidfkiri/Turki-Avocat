@@ -121,10 +121,8 @@
     <div class="col-md-6">
         <div class="form-group">
             <label for="filter_year">Année</label>
-            <select class="form-control" id="filter_year">
-                <option value="">Toutes les années</option>
-                <!-- Les années seront générées dynamiquement en JavaScript -->
-            </select>
+            
+            <input type="text" class="form-control" id="filter_year">
         </div>
     </div>
     <div class="col-md-6">

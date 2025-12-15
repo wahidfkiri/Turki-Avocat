@@ -35,6 +35,9 @@ return [
         'starts_with'      => false,
     ],
 
+    'charset' => 'utf8mb4',
+'collation' => 'utf8mb4_unicode_ci',
+
     /*
      * DataTables internal index id response column name.
      */
@@ -115,7 +118,7 @@ return [
      */
     'json'           => [
         'header'  => [],
-        'options' => 0,
+        'options' => JSON_UNESCAPED_UNICODE,
     ],
 
     /*

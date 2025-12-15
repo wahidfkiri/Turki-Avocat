@@ -588,13 +588,13 @@
               </div>
             @endif
           </div>
-          @if($notifications->count() > 0)
+         
           <div class="notification-footer">
             <a href="{{ route('notifications.index') }}" class="notification-view-all">
               Voir toutes les notifications
             </a>
           </div>
-          @endif
+          
         </div>
       </div>
     </li>

@@ -266,20 +266,27 @@
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.sumoselect/3.0.2/jquery.sumoselect.min.js"></script>
 <script>
-    $('.search_client').SumoSelect({search: true, searchText: 'Sélectionner un client...'});
-    $('.search_dossier').SumoSelect({search: true, searchText: 'Sélectionner un dossier...'});
-   
 $(document).ready(function() {
+    // ============================
+    // VARIABLES GLOBALES
+    // ============================
     let factureToDelete = null;
     let factureRowToDelete = null;
+    let table; // Déclaration de la variable table
 
+    // ============================
+    // INITIALISATION GENERALE
+    // ============================
+    
     // Initialize Select2
     $('.select2').select2({
         theme: 'bootstrap4'
     });
 
-    // DataTable initialization
-    var table = $('#factures-table').DataTable({
+    // ============================
+    // DATATABLE INITIALISATION
+    // ============================
+    table = $('#factures-table').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
@@ -482,6 +489,124 @@ $(document).ready(function() {
         }
     });
 
+    // ============================
+    // FONCTIONS UTILITAIRES
+    // ============================
+    
+    // Fonction pour effacer l'input file
+    function clearFileInput() {
+        $('#piece_jointe').val('');
+        $('#piece_jointe_label').text('Choisir un fichier (PDF, images, Word, Excel) - Max 10MB');
+        $('#file_preview').hide();
+    }
+
+    // Fonction pour afficher les messages
+    function showMessage(message, type = 'success') {
+        const messageDiv = $('#ajaxMessage');
+        messageDiv.removeClass('alert-success alert-danger alert-warning')
+                  .addClass(`alert-${type === 'error' ? 'danger' : type}`)
+                  .html(message)
+                  .show()
+                  .delay(5000)
+                  .fadeOut();
+    }
+
+    // Fonction pour afficher les alertes
+    function showAlert(type, message) {
+        // Supprimer les alertes existantes
+        $('.alert.toast-alert').remove();
+        
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+        const title = type === 'success' ? 'Succès' : 'Erreur';
+        
+        const alertHtml = `
+            <div class="alert alert-${type} toast-alert alert-dismissible fade show" role="alert" 
+                 style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;">
+                <div class="d-flex align-items-center">
+                    <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
+                    <div style="flex: 1;">
+                        <strong>${title}</strong>
+                        <div class="small">${message}</div>
+                    </div>
+                    <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter la nouvelle alerte
+        $('body').append(alertHtml);
+        
+        // Supprimer automatiquement après 5 secondes
+        setTimeout(() => {
+            $('.alert.toast-alert').alert('close');
+        }, 5000);
+    }
+
+    // Fonction pour réinitialiser le formulaire
+    function resetForm() {
+        if ($('#factureForm').length) {
+            $('#factureForm')[0].reset();
+            
+            // Réinitialiser les valeurs spécifiques
+            $('#montant_ht').val('0');
+            $('#montant_tva').val('0');
+            $('#montant').val('0');
+            $('#montantAlert').hide();
+            
+            // Réinitialiser le numéro automatique
+            @if(isset($nextNumber))
+            $('#numero').val('{{ $nextNumber }}');
+            @endif
+            
+            clearFileInput();
+            
+            // Réinitialiser la validation
+            if ($('#factureForm').validate()) {
+                $('#factureForm').validate().resetForm();
+            }
+            $('.is-invalid').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+        }
+    }
+
+    // ============================
+    // GESTION DES FILTRES
+    // ============================
+
+    // Apply filters
+    $('#btn_apply_filters').click(function() {
+        table.ajax.reload();
+    });
+
+    // Reset filters
+    $('#btn_reset_filters').click(function() {
+        $('#filter_numero').val('');
+        $('#filter_type_piece').val('').trigger('change');
+        $('#filter_statut').val('').trigger('change');
+        $('#filter_dossier').val('').trigger('change');
+        $('#filter_client').val('').trigger('change');
+        $('#filter_date_debut').val('');
+        $('#filter_date_fin').val('');
+        $('#filter_month').val('').trigger('change');
+        $('#filter_year').val('').trigger('change');
+        $('#filter_min_montant').val('');
+        $('#filter_max_montant').val('');
+        table.ajax.reload();
+    });
+
+    // Apply filters on Enter key in text inputs
+    $('#filter_numero, #filter_min_montant, #filter_max_montant').keypress(function(e) {
+        if (e.which == 13) {
+            table.ajax.reload();
+        }
+    });
+
+    // ============================
+    // GESTION DES BOUTONS ACTIONS
+    // ============================
+
     // Delete button click handler
     $(document).on('click', '.delete-facture-btn', function() {
         const factureId = $(this).data('id');
@@ -492,7 +617,7 @@ $(document).ready(function() {
         $('#facture-numero').text(factureNumero);
         $('#deleteFactureModal').modal('show');
     });
-    
+
     // Confirm delete button handler
     $('#confirm-facture-delete').on('click', function() {
         if (!factureToDelete) return;
@@ -548,84 +673,21 @@ $(document).ready(function() {
         });
     });
 
-    // Function to show alert messages
-    function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const iconClass = type === 'success' ? 'fa-check' : 'fa-ban';
-        const title = type === 'success' ? 'Succès!' : 'Erreur!';
-        
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible">
-                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                <h5><i class="icon fas ${iconClass}"></i> ${title}</h5>
-                ${message}
-            </div>
-        `;
-        
-        // Remove any existing alerts
-        $('.alert-dismissible').remove();
-        
-        // Prepend the new alert
-        $('.card').before(alertHtml);
-        
-        // Auto-remove alert after 5 seconds
-        setTimeout(function() {
-            $('.alert-dismissible').fadeOut(300, function() {
-                $(this).remove();
-            });
-        }, 5000);
-    }
-
-    // Apply filters
-    $('#btn_apply_filters').click(function() {
-        table.ajax.reload();
-    });
-
-    // Reset filters
-    $('#btn_reset_filters').click(function() {
-        $('#filter_numero').val('');
-        $('#filter_type_piece').val('').trigger('change');
-        $('#filter_statut').val('').trigger('change');
-        $('#filter_dossier').val('').trigger('change');
-        $('#filter_client').val('').trigger('change');
-        $('#filter_date_debut').val('');
-        $('#filter_date_fin').val('');
-        $('#filter_month').val('').trigger('change');
-        $('#filter_year').val('').trigger('change');
-        $('#filter_min_montant').val('');
-        $('#filter_max_montant').val('');
-        table.ajax.reload();
-    });
-
-    // Apply filters on Enter key in text inputs
-    $('#filter_numero, #filter_min_montant, #filter_max_montant').keypress(function(e) {
-        if (e.which == 13) {
-            table.ajax.reload();
-        }
-    });
-
-    // Close modal when clicking the X button
-    $('#deleteFactureModal .close, #deleteFactureModal [data-dismiss="modal"]').on('click', function() {
-        factureToDelete = null;
-        factureRowToDelete = null;
-    });
-    
-    // Handle escape key to close modal
-    $(document).on('keydown', function(e) {
-        if (e.key === 'Escape' && $('#deleteFactureModal').is(':visible')) {
-            factureToDelete = null;
-            factureRowToDelete = null;
-        }
-    });
-});
-</script>
-<script>
-$(document).ready(function() {
     // Gestion du clic sur le bouton "Voir"
     $(document).on('click', '.view-facture-btn', function() {
         const factureId = $(this).data('id');
         loadFactureDetails(factureId);
     });
+
+    // Gestion du clic sur le bouton "Modifier"
+    $(document).on('click', '.edit-facture-btn', function() {
+        const factureId = $(this).data('id');
+        loadEditForm(factureId);
+    });
+
+    // ============================
+    // FONCTIONS AJAX POUR ACTIONS
+    // ============================
 
     // Fonction pour charger les détails de la facture
     function loadFactureDetails(factureId) {
@@ -749,118 +811,6 @@ $(document).ready(function() {
         });
     }
 
-    // Fonction de confirmation de suppression depuis le modal
-    window.confirmDeleteFromModal = function(factureId) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.')) {
-            // Afficher un indicateur de chargement
-            const deleteButton = $('.btn-danger[onclick*="confirmDeleteFromModal"]');
-            const originalHtml = deleteButton.html();
-            deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
-            deleteButton.prop('disabled', true);
-
-            // Soumettre la suppression via AJAX
-            $.ajax({
-                url: '/factures/' + factureId,
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    _method: 'DELETE'
-                },
-                success: function(response) {
-                    // Fermer le modal
-                    $('#factureDetailsModal').modal('hide');
-                    
-                    // Recharger la DataTable
-                    if (typeof table !== 'undefined' && $.fn.DataTable.isDataTable('#facturesTable')) {
-                        table.ajax.reload(null, false);
-                    }
-                    
-                    // Afficher un message de succès
-                    showAlert('success', 'Facture supprimée avec succès');
-                },
-                error: function(xhr) {
-                    showAlert('danger', 'Erreur lors de la suppression');
-                    
-                    // Réactiver le bouton
-                    deleteButton.html(originalHtml);
-                    deleteButton.prop('disabled', false);
-                }
-            });
-        }
-    };
-
-    // Nettoyer le modal quand il est fermé
-    $('#factureDetailsModal').on('hidden.bs.modal', function() {
-        // Réinitialiser le contenu du modal
-        $(this).find('.modal-content').html(`
-            <div class="modal-header bg-primary">
-                <h5 class="modal-title" id="factureDetailsModalLabel">
-                    <i class="fas fa-file-invoice"></i> Détails de la facture
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="factureDetailsModalBody">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Chargement...</span>
-                    </div>
-                    <p class="mt-2">Chargement des détails...</p>
-                </div>
-            </div>
-        `);
-    });
-
-    // Fermer le modal avec la touche ESC
-    $(document).keydown(function(e) {
-        if (e.keyCode === 27 && $('#factureDetailsModal').hasClass('show')) {
-            $('#factureDetailsModal').modal('hide');
-        }
-    });
-});
-
-// Fonction pour afficher les alertes
-function showAlert(type, message) {
-    // Supprimer les alertes existantes
-    $('.alert.toast-alert').remove();
-    
-    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
-    const title = type === 'success' ? 'Succès' : 'Erreur';
-    
-    const alertHtml = `
-        <div class="alert alert-${type} toast-alert alert-dismissible fade show" role="alert" 
-             style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;">
-            <div class="d-flex align-items-center">
-                <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
-                <div style="flex: 1;">
-                    <strong>${title}</strong>
-                    <div class="small">${message}</div>
-                </div>
-                <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
-                    <span>&times;</span>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Ajouter la nouvelle alerte
-    $('body').append(alertHtml);
-    
-    // Supprimer automatiquement après 5 secondes
-    setTimeout(() => {
-        $('.alert.toast-alert').alert('close');
-    }, 5000);
-}
-</script>
-<script>
-$(document).ready(function() {
-    // Gestion du clic sur le bouton "Modifier"
-    $(document).on('click', '.edit-facture-btn', function() {
-        const factureId = $(this).data('id');
-        loadEditForm(factureId);
-    });
-
     // Fonction pour charger le formulaire d'édition
     function loadEditForm(factureId) {
         // Afficher le spinner de chargement
@@ -955,6 +905,10 @@ $(document).ready(function() {
         });
     }
 
+    // ============================
+    // FORMULAIRE D'ÉDITION
+    // ============================
+
     // Fonction pour initialiser les composants du formulaire d'édition
     function initEditFormComponents() {
         // Initialiser les événements du formulaire
@@ -1017,21 +971,29 @@ $(document).ready(function() {
 
     // Fonction pour calculer le montant TTC
     function calculateMontantTTC() {
-        const montantHT = parseFloat($('#editFactureModal #montant_ht').val()) || 0;
-        const montantTVA = parseFloat($('#editFactureModal #montant_tva').val()) || 0;
+        // Vérifier si on est dans le modal d'édition ou de création
+        const isEditModal = $('#editFactureModal').is(':visible');
+        const prefix = isEditModal ? '#editFactureModal ' : '';
+        
+        const montantHT = parseFloat($(prefix + '#montant_ht').val()) || 0;
+        const montantTVA = parseFloat($(prefix + '#montant_tva').val()) || 0;
         const montantTTC = montantHT + montantTVA;
         
-        $('#editFactureModal #montant').val(montantTTC.toFixed(2));
+        $(prefix + '#montant').val(montantTTC.toFixed(2));
         
         // Vérifier la cohérence
         const tolerance = 0.01;
-        const difference = Math.abs(montantTTC - parseFloat($('#editFactureModal #montant').val()));
+        const difference = Math.abs(montantTTC - parseFloat($(prefix + '#montant').val()));
         
         if (difference > tolerance) {
-            $('#editFactureModal #montantAlert').show();
-            $('#editFactureModal #montantAlertText').text('Attention : Le montant TTC calculé (' + montantTTC.toFixed(2) + ' DT) est différent du montant saisi. Vérifiez les montants HT et TVA.');
+            $(prefix + '#montantAlert').show();
+            if (isEditModal) {
+                $('#editFactureModal #montantAlertText').text('Attention : Le montant TTC calculé (' + montantTTC.toFixed(2) + ' DT) est différent du montant saisi. Vérifiez les montants HT et TVA.');
+            } else {
+                $('#montantAlertText').text('Attention : Le montant TTC calculé (' + montantTTC.toFixed(2) + ' DT) est différent du montant saisi. Vérifiez les montants HT et TVA.');
+            }
         } else {
-            $('#editFactureModal #montantAlert').hide();
+            $(prefix + '#montantAlert').hide();
         }
     }
 
@@ -1074,10 +1036,8 @@ $(document).ready(function() {
                     // Fermer le modal
                     $('#editFactureModal').modal('hide');
                     
-                    // Recharger la DataTable
-                    if (typeof table !== 'undefined' && $.fn.DataTable.isDataTable('#facturesTable')) {
-                        table.ajax.reload(null, false);
-                    }
+                    // Recharger la DataTable (REMPLACÉ - pas de reload de page)
+                    table.ajax.reload();
                     
                     // Afficher un message de succès
                     showAlert('success', response.message || 'Facture mise à jour avec succès');
@@ -1110,7 +1070,262 @@ $(document).ready(function() {
         });
     }
 
-    // Nettoyer le modal quand il est fermé
+    // ============================
+    // FORMULAIRE DE CRÉATION
+    // ============================
+
+    // Auto-sélection du client basé sur le dossier (création)
+    $('#dossier_id').change(function() {
+        var selectedOption = $(this).find('option:selected');
+        var clientId = selectedOption.data('client-id');
+        
+        if (clientId) {
+            $('#client_id').val(clientId).trigger('change');
+        }
+    });
+
+    // Gestion de l'input file (création)
+    $('#piece_jointe').on('change', function(e) {
+        var file = e.target.files[0];
+        if (file) {
+            var fileName = file.name;
+            var fileSize = (file.size / 1024 / 1024).toFixed(2);
+            
+            $('#piece_jointe_label').text(fileName);
+            $('#file_name').text(fileName + ' (' + fileSize + ' MB)');
+            $('#file_preview').show();
+            
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('Le fichier est trop volumineux. Taille maximum: 10MB', 'error');
+                clearFileInput();
+            }
+        }
+    });
+
+    // Validation pour le fichier
+    $.validator.addMethod('fileSize', function(value, element, param) {
+        return this.optional(element) || (element.files[0].size <= param);
+    }, 'La taille du fichier doit être inférieure à {0}');
+
+    $.validator.addMethod('fileType', function(value, element, param) {
+        return this.optional(element) || (element.files[0].type.match(param) || element.files[0].name.match(param));
+    }, 'Type de fichier non supporté');
+
+    // Écouter les changements sur HT et TVA (création)
+    $('#montant_ht, #montant_tva').on('input', function() {
+        calculateMontantTTC();
+    });
+
+    // Calcul initial (création)
+    calculateMontantTTC();
+
+    // Reset form when modal is shown (création)
+    $('#createFactureModal').on('show.bs.modal', function() {
+        // S'assurer que les calculs sont à jour
+        calculateMontantTTC();
+    });
+
+    // Reset form when modal is hidden (création)
+    $('#createFactureModal').on('hidden.bs.modal', function() {
+        resetForm();
+    });
+
+    // Validation côté client (création)
+    if ($('#factureForm').length) {
+        $('#factureForm').validate({
+            rules: {
+                type_piece: {
+                    required: true
+                },
+                numero: {
+                    required: true,
+                    minlength: 3
+                },
+                date_emission: {
+                    required: true
+                },
+                montant_ht: {
+                    required: true,
+                    min: 0
+                },
+                montant_tva: {
+                    required: true,
+                    min: 0
+                },
+                montant: {
+                    required: true,
+                    min: 0
+                },
+                statut: {
+                    required: true
+                },
+                piece_jointe: {
+                    fileSize: 10 * 1024 * 1024,
+                    fileType: /\.(pdf|jpg|jpeg|png|doc|docx|xls|xlsx)$/i
+                }
+            },
+            messages: {
+                type_piece: {
+                    required: "Le type de pièce est obligatoire"
+                },
+                numero: {
+                    required: "Le numéro est obligatoire",
+                    minlength: "Le numéro doit contenir au moins 3 caractères"
+                },
+                date_emission: {
+                    required: "La date d'émission est obligatoire"
+                },
+                montant_ht: {
+                    required: "Le montant HT est obligatoire",
+                    min: "Le montant HT doit être positif"
+                },
+                montant_tva: {
+                    required: "Le montant TVA est obligatoire",
+                    min: "Le montant TVA doit être positif"
+                },
+                montant: {
+                    required: "Le montant TTC est obligatoire",
+                    min: "Le montant TTC doit être positif"
+                },
+                statut: {
+                    required: "Le statut est obligatoire"
+                },
+                piece_jointe: {
+                    fileSize: "Le fichier ne doit pas dépasser 10MB",
+                    fileType: "Formats acceptés: PDF, JPG, JPEG, PNG, DOC, DOCX, XLS, XLSX"
+                }
+            },
+            errorElement: 'span',
+            errorPlacement: function (error, element) {
+                error.addClass('invalid-feedback');
+                element.closest('.form-group').append(error);
+            },
+            highlight: function (element, errorClass, validClass) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function (element, errorClass, validClass) {
+                $(element).removeClass('is-invalid');
+            },
+            submitHandler: function(form) {
+                // Vérification finale de la cohérence des montants
+                var montantHT = parseFloat($('#montant_ht').val()) || 0;
+                var montantTVA = parseFloat($('#montant_tva').val()) || 0;
+                var montantTTC = parseFloat($('#montant').val()) || 0;
+                var calculatedTTC = montantHT + montantTVA;
+                
+                if (Math.abs(calculatedTTC - montantTTC) > 0.01) {
+                    showMessage('Erreur : Le montant TTC doit être égal à HT + TVA.\nHT: ' + montantHT.toFixed(2) + ' DT\nTVA: ' + montantTVA.toFixed(2) + ' DT\nTTC calculé: ' + calculatedTTC.toFixed(2) + ' DT\nTTC saisi: ' + montantTTC.toFixed(2) + ' DT', 'error');
+                    return false;
+                }
+                
+                // Soumission AJAX
+                submitFormAjax(form);
+                return false; // Empêcher la soumission normale
+            }
+        });
+    }
+
+    // Fonction de soumission AJAX (création)
+    function submitFormAjax(form) {
+        const submitBtn = $('#submitBtn');
+        const originalText = submitBtn.html();
+        
+        // Désactiver le bouton et afficher le loader
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Création...');
+        
+        // Créer FormData pour gérer les fichiers
+        const formData = new FormData(form);
+        
+        $.ajax({
+            url: $(form).attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Fermer le modal
+                    $('#createFactureModal').modal('hide');
+                    
+                    // Recharger la DataTable (REMPLACÉ - pas de reload de page)
+                    table.ajax.reload();
+                    
+                    // Afficher un message de succès
+                    showAlert('success', response.message);
+                    
+                    // Réinitialiser le formulaire
+                    resetForm();
+                    
+                } else {
+                    showMessage(response.message, 'error');
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Une erreur est survenue lors de la création.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.status === 422) {
+                    // Gestion des erreurs de validation
+                    const errors = xhr.responseJSON.errors;
+                    errorMessage = 'Veuillez corriger les erreurs suivantes:<br>';
+                    for (const field in errors) {
+                        errorMessage += `- ${errors[field][0]}<br>`;
+                    }
+                } else if (xhr.status === 403) {
+                    errorMessage = 'Vous n\'avez pas la permission de créer des factures.';
+                }
+                
+                showMessage(errorMessage, 'error');
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    }
+
+    // Formater les montants à la sortie des champs
+    $('#montant_ht, #montant_tva').on('blur', function() {
+        var value = parseFloat($(this).val()) || 0;
+        $(this).val(value.toFixed(2));
+    });
+
+    // ============================
+    // GESTION DES MODALS
+    // ============================
+
+    // Close modal when clicking the X button (suppression)
+    $('#deleteFactureModal .close, #deleteFactureModal [data-dismiss="modal"]').on('click', function() {
+        factureToDelete = null;
+        factureRowToDelete = null;
+    });
+
+    // Nettoyer le modal quand il est fermé (visualisation)
+    $('#factureDetailsModal').on('hidden.bs.modal', function() {
+        // Réinitialiser le contenu du modal
+        $(this).find('.modal-content').html(`
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="factureDetailsModalLabel">
+                    <i class="fas fa-file-invoice"></i> Détails de la facture
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="factureDetailsModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails...</p>
+                </div>
+            </div>
+        `);
+    });
+
+    // Nettoyer le modal quand il est fermé (édition)
     $('#editFactureModal').on('hidden.bs.modal', function() {
         // Réinitialiser le contenu du modal
         $(this).find('.modal-content').html(`
@@ -1133,46 +1348,65 @@ $(document).ready(function() {
         `);
     });
 
-    // Fermer le modal avec la touche ESC
+    // Fermer les modals avec la touche ESC
     $(document).keydown(function(e) {
-        if (e.keyCode === 27 && $('#editFactureModal').hasClass('show')) {
-            $('#editFactureModal').modal('hide');
+        if (e.keyCode === 27) {
+            if ($('#factureDetailsModal').hasClass('show')) {
+                $('#factureDetailsModal').modal('hide');
+            }
+            if ($('#editFactureModal').hasClass('show')) {
+                $('#editFactureModal').modal('hide');
+            }
+            if ($('#deleteFactureModal').hasClass('show')) {
+                factureToDelete = null;
+                factureRowToDelete = null;
+                $('#deleteFactureModal').modal('hide');
+            }
         }
     });
-});
 
-// Fonction pour afficher les alertes
-function showAlert(type, message) {
-    // Supprimer les alertes existantes
-    $('.alert.edit-toast-alert').remove();
-    
-    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
-    const title = type === 'success' ? 'Succès' : 'Erreur';
-    
-    const alertHtml = `
-        <div class="alert alert-${type} edit-toast-alert alert-dismissible fade show" role="alert" 
-             style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;">
-            <div class="d-flex align-items-center">
-                <i class="fas ${icon} mr-2" style="font-size: 1.5rem;"></i>
-                <div style="flex: 1;">
-                    <strong>${title}</strong>
-                    <div class="small">${message}</div>
-                </div>
-                <button type="button" class="close ml-2" data-dismiss="alert" style="position: static;">
-                    <span>&times;</span>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Ajouter la nouvelle alerte
-    $('body').append(alertHtml);
-    
-    // Supprimer automatiquement après 5 secondes
-    setTimeout(() => {
-        $('.alert.edit-toast-alert').alert('close');
-    }, 5000);
-}
+    // ============================
+    // FONCTIONS DE CONFIRMATION
+    // ============================
+
+    // Fonction de confirmation de suppression depuis le modal
+    window.confirmDeleteFromModal = function(factureId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.')) {
+            // Afficher un indicateur de chargement
+            const deleteButton = $('.btn-danger[onclick*="confirmDeleteFromModal"]');
+            const originalHtml = deleteButton.html();
+            deleteButton.html('<i class="fas fa-spinner fa-spin"></i> Suppression...');
+            deleteButton.prop('disabled', true);
+
+            // Soumettre la suppression via AJAX
+            $.ajax({
+                url: '/factures/' + factureId,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    // Fermer le modal
+                    $('#factureDetailsModal').modal('hide');
+                    
+                    // Recharger la DataTable
+                    table.ajax.reload();
+                    
+                    // Afficher un message de succès
+                    showAlert('success', 'Facture supprimée avec succès');
+                },
+                error: function(xhr) {
+                    showAlert('danger', 'Erreur lors de la suppression');
+                    
+                    // Réactiver le bouton
+                    deleteButton.html(originalHtml);
+                    deleteButton.prop('disabled', false);
+                }
+            });
+        }
+    };
+});
 </script>
 <style>
     .dataTables_wrapper .dataTables_filter {

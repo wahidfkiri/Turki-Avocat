@@ -835,7 +835,14 @@ public function getDossiersData(Request $request)
 
     // Use globalSearch instead of DataTables search
     if ($request->has('globalSearch') && !empty($request->globalSearch)) {
+        if(auth()->user()->hasRole('admin')){
         $query = Dossier::with(['domaine'])->select('dossiers.*');
+        }else{
+        $query = Dossier::with(['domaine'])->select('dossiers.*')
+        ->whereHas('users', function($q) {
+            $q->where('users.id', auth()->id());
+        }); 
+        }
         $search = $request->globalSearch;
         $query->where(function ($q) use ($search) {
             $q->where('numero_dossier', 'LIKE', "%{$search}%")
@@ -875,7 +882,7 @@ public function getDossiersData(Request $request)
             case 'archive':
                 $query->where('archive', true);
                 break;
-            case 'all':
+            case 'in_progress':
                 $query->where('archive', false);
                 break;
         }
@@ -925,7 +932,7 @@ public function getDossiersData(Request $request)
             }
         })
         ->addColumn('archive_text', function (Dossier $dossier) {
-            return $dossier->archive ? 'Oui' : 'Non';
+            return $dossier->archive ? '<span class="badge badge-success">Oui</span>' : '<span class="badge badge-warning">Non</span>';
         })
         ->addColumn('action', function (Dossier $dossier) {
             $actions = '<div class="btn-group btn-group-sm">';
@@ -974,7 +981,7 @@ public function getDossiersData(Request $request)
                 $query->whereDate('date_entree', $date);
             }
         })
-        ->rawColumns(['action', 'type_badge', 'statut_badge'])
+        ->rawColumns(['action', 'type_badge', 'statut_badge','archive_text'])
         ->make(true);
 }
 

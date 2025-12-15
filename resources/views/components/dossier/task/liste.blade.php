@@ -145,7 +145,9 @@ $(document).ready(function() {
     // Stocker la liste des utilisateurs globalement
     window.usersList = [];
     
-    // Initialiser la DataTable
+    // ============================
+    // INITIALISATION DATATABLE
+    // ============================
     var tasksTable = $('#tasksTable').DataTable({
         processing: true,
         serverSide: true,
@@ -254,10 +256,13 @@ $(document).ready(function() {
         }
     });
 
-    // Fonction pour charger la liste des utilisateurs
+    // ============================
+    // FONCTIONS UTILITAIRES
+    // ============================
+    
     function loadUsersList() {
         $.ajax({
-            url: '{{ route("users.list") }}', // Créez cette route
+            url: '{{ route("users.list") }}',
             type: 'GET',
             dataType: 'json',
             success: function(users) {
@@ -270,12 +275,105 @@ $(document).ready(function() {
         });
     }
 
-    // Appliquer les filtres
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    function showAlert(type, message) {
+        if (typeof Swal !== 'undefined') {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+            
+            Toast.fire({
+                icon: type,
+                title: escapeHtml(message)
+            });
+        } else {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert" 
+                     style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    <i class="fas fa-${getAlertIcon(type)} mr-2"></i>
+                    ${escapeHtml(message)}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            `;
+            
+            $('body').append(alertHtml);
+            
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 3000);
+        }
+    }
+
+    function getAlertIcon(type) {
+        switch(type) {
+            case 'success': return 'check-circle';
+            case 'danger': return 'exclamation-circle';
+            case 'warning': return 'exclamation-triangle';
+            case 'info': return 'info-circle';
+            default: return 'bell';
+        }
+    }
+
+    function showFormErrors(form, errors) {
+        $.each(errors, function(field, messages) {
+            const input = form.find('[name="' + field + '"]');
+            const formGroup = input.closest('.form-group');
+            
+            if (formGroup.length) {
+                formGroup.find('.form-control, .custom-file-input').addClass('is-invalid');
+                const errorDiv = formGroup.find('.invalid-feedback');
+                
+                if (errorDiv.length === 0) {
+                    formGroup.append('<div class="invalid-feedback">' + messages.join('<br>') + '</div>');
+                } else {
+                    errorDiv.html(messages.join('<br>'));
+                }
+            }
+        });
+    }
+
+    function showModalError(message) {
+        $('#editTaskModal .modal-body').html(`
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+                <div class="mt-3">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Fermer
+                    </button>
+                </div>
+            </div>
+        `);
+    }
+
+    // ============================
+    // GESTION DES FILTRES
+    // ============================
+
     $('#filterStatut, #filterPriorite, #filterUser, #filterDateDebut').on('change', function() {
         tasksTable.ajax.reload();
     });
 
-    // Réinitialiser les filtres
     $('#resetFilters').click(function() {
         $('#filterStatut').val('');
         $('#filterPriorite').val('');
@@ -310,7 +408,7 @@ $(document).ready(function() {
     });
 
     // ============================
-    // FONCTIONS AJAX
+    // FONCTIONS AJAX POUR ACTIONS
     // ============================
 
     function loadTaskDetails(taskId) {
@@ -347,27 +445,12 @@ $(document).ready(function() {
         });
     }
 
-    function showModalError(message) {
-        $('#editTaskModal .modal-body').html(`
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i> ${message}
-                <div class="mt-3">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times"></i> Fermer
-                    </button>
-                </div>
-            </div>
-        `);
-    }
-
-    // Fonction pour charger le formulaire d'édition
     function loadEditTaskForm(taskId, taskTitle) {
         console.log('Chargement formulaire pour tâche:', taskId);
         
         $('#editTaskModal').modal('show');
         $('#editTaskModalLabel').html(`<i class="fas fa-edit"></i> Modifier : ${escapeHtml(taskTitle)}`);
         
-        // Afficher le loader
         $('#editTaskModal .modal-body').html(`
             <div class="text-center py-4">
                 <div class="spinner-border text-warning" role="status">
@@ -377,7 +460,6 @@ $(document).ready(function() {
             </div>
         `);
         
-        // Charger les données de la tâche
         $.ajax({
             url: '/tasks/' + taskId + '/edit',
             type: 'GET',
@@ -385,13 +467,9 @@ $(document).ready(function() {
             success: function(taskData) {
                 console.log('Données de la tâche reçues:', taskData);
                 
-                // Générer le formulaire HTML avec les données
                 const formHtml = generateEditFormHtml(taskData);
-                
-                // Injecter le formulaire
                 $('#editTaskModal .modal-body').html(formHtml);
                 
-                // Initialiser le formulaire
                 initEditForm(taskId);
             },
             error: function(xhr) {
@@ -409,7 +487,6 @@ $(document).ready(function() {
         });
     }
 
-    // Fonction pour générer le formulaire HTML - AVEC BOUCLE UTILISATEURS
     function generateEditFormHtml(taskData) {
         const formatDate = (dateString) => {
             if (!dateString) return '';
@@ -417,32 +494,17 @@ $(document).ready(function() {
             return date.toISOString().split('T')[0];
         };
 
-        const escapeHtml = (text) => {
-            if (!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        };
-
         const titreLength = taskData.titre ? taskData.titre.length : 0;
         const titreWarningClass = titreLength > 30 ? 'text-warning' : 'text-muted';
 
-        // GÉNÉRER LES OPTIONS D'UTILISATEURS AVEC BOUCLE
         let userOptions = '<option value="">Non assigné</option>';
         
-        // Option 1: Utiliser la liste globale chargée au démarrage
         if (window.usersList && window.usersList.length > 0) {
             window.usersList.forEach(function(user) {
-                // Vérifier si cet utilisateur est sélectionné
                 const isSelected = (taskData.utilisateur_id && user.id == taskData.utilisateur_id) ? 'selected' : '';
                 userOptions += `<option value="${user.id}" ${isSelected}>${escapeHtml(user.name)}</option>`;
             });
-        } 
-        // Option 2: Fallback - juste l'utilisateur actuel
-        else if (taskData.user) {
+        } else if (taskData.user) {
             userOptions += `<option value="${taskData.user.id}" selected>${escapeHtml(taskData.user.name)}</option>`;
         }
 
@@ -529,7 +591,7 @@ $(document).ready(function() {
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="edit_utilisateur_id">Assigné à</label>
-                        <select class="form-control " 
+                        <select class="form-control select2" 
                                 id="edit_utilisateur_id" 
                                 name="utilisateur_id">
                             ${userOptions}
@@ -551,30 +613,6 @@ $(document).ready(function() {
                                 </option>` : 
                                 ''}
                         </select>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                </div>
-                
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="edit_description">Description</label>
-                        <textarea class="form-control" 
-                                  id="edit_description" 
-                                  name="description" 
-                                  rows="4"
-                                  placeholder="Ajouter une description détaillée...">${escapeHtml(taskData.description || '')}</textarea>
-                        <div class="invalid-feedback"></div>
-                    </div>
-                </div>
-                
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="edit_note">Notes internes</label>
-                        <textarea class="form-control" 
-                                  id="edit_note" 
-                                  name="note" 
-                                  rows="3"
-                                  placeholder="Ajouter des notes internes...">${escapeHtml(taskData.note || '')}</textarea>
                         <div class="invalid-feedback"></div>
                     </div>
                 </div>
@@ -612,6 +650,18 @@ $(document).ready(function() {
                         ` : '<div id="edit_current_file" class="mt-2"></div>'}
                     </div>
                 </div>
+                
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="edit_description">Description</label>
+                        <textarea class="form-control" 
+                                  id="edit_description" 
+                                  name="description" 
+                                  rows="4"
+                                  placeholder="Ajouter une description détaillée...">${escapeHtml(taskData.description || '')}</textarea>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </div>
             </div>
             
             <div class="modal-footer">
@@ -626,11 +676,15 @@ $(document).ready(function() {
         `;
     }
 
-    // Fonction pour initialiser le formulaire d'édition
     function initEditForm(taskId) {
         console.log('Initialisation du formulaire pour ID:', taskId);
         
-             
+        // Initialiser Select2 pour le champ utilisateur
+        $('#edit_utilisateur_id').select2({
+            theme: 'bootstrap4',
+            dropdownParent: $('#editTaskModal')
+        });
+        
         // Gestion du nom du fichier
         $('#edit_file').on('change', function() {
             var fileName = $(this).val().split('\\').pop();
@@ -670,7 +724,6 @@ $(document).ready(function() {
         console.log('Formulaire initialisé avec succès');
     }
 
-    // Fonction pour mettre à jour la tâche via AJAX
     function updateTaskAjax(taskId) {
         const form = $('#editTaskForm');
         const submitBtn = form.find('button[type="submit"]');
@@ -719,36 +772,6 @@ $(document).ready(function() {
                 }
                 
                 showAlert('danger', errorMessage);
-            }
-        });
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-    }
-
-    function showFormErrors(form, errors) {
-        $.each(errors, function(field, messages) {
-            const input = form.find('[name="' + field + '"]');
-            const formGroup = input.closest('.form-group');
-            
-            if (formGroup.length) {
-                formGroup.find('.form-control, .custom-file-input').addClass('is-invalid');
-                const errorDiv = formGroup.find('.invalid-feedback');
-                
-                if (errorDiv.length === 0) {
-                    formGroup.append('<div class="invalid-feedback">' + messages.join('<br>') + '</div>');
-                } else {
-                    errorDiv.html(messages.join('<br>'));
-                }
             }
         });
     }
@@ -836,53 +859,162 @@ $(document).ready(function() {
         });
     }
 
-    function showAlert(type, message) {
-        if (typeof Swal !== 'undefined') {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                    toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
-            });
-            
-            Toast.fire({
-                icon: type,
-                title: escapeHtml(message)
-            });
-        } else {
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert" 
-                     style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-                    <i class="fas fa-${getAlertIcon(type)} mr-2"></i>
-                    ${escapeHtml(message)}
-                    <button type="button" class="close" data-dismiss="alert">
-                        <span>&times;</span>
-                    </button>
-                </div>
-            `;
-            
-            $('body').append(alertHtml);
-            
-            setTimeout(() => {
-                $('.alert').alert('close');
-            }, 3000);
-        }
+    // ============================
+    // FORMULAIRE DE CRÉATION (2ème script)
+    // ============================
+
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap4'
+    });
+
+    // Fonction pour afficher les messages
+    function showMessage(type, message) {
+        $('#ajax-messages').html(`
+            <div class="alert alert-${type} alert-dismissible">
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                ${type === 'success' ? '<h5><i class="icon fas fa-check"></i> Succès!</h5>' : '<h5><i class="icon fas fa-ban"></i> Erreur!</h5>'}
+                ${message}
+            </div>
+        `).show();
+        
+        setTimeout(function() {
+            $('#ajax-messages').fadeOut();
+        }, 2000);
     }
 
-    function getAlertIcon(type) {
-        switch(type) {
-            case 'success': return 'check-circle';
-            case 'danger': return 'exclamation-circle';
-            case 'warning': return 'exclamation-triangle';
-            case 'info': return 'info-circle';
-            default: return 'bell';
-        }
+    // Fonction pour réinitialiser les erreurs
+    function resetErrors() {
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').html('');
+        $('#ajax-messages').hide();
     }
+
+    // Fonction pour afficher les erreurs de validation
+    function showValidationErrors(errors) {
+        resetErrors();
+        $.each(errors, function(field, messages) {
+            var input = $('[name="' + field + '"]');
+            var errorElement = $('#' + field + '-error');
+            
+            input.addClass('is-invalid');
+            errorElement.html('<strong>' + messages[0] + '</strong>');
+        });
+    }
+
+    // Set today's date as default for date fields
+    function setDefaultDates() {
+        var today = new Date().toISOString().split('T')[0];
+        $('#date_debut').val(today);
+    }
+
+    // Gérer l'affichage du nom du fichier
+    $('#file').on('change', function() {
+        var fileName = $(this).val().split('\\').pop();
+        $('#file-label').text(fileName || 'Choisir un fichier...');
+    });
+
+    // Soumission du formulaire avec AJAX
+    $('#taskForm').submit(function(e) {
+        e.preventDefault();
+        
+        resetErrors();
+        
+        var submitBtn = $('#submitBtnTask');
+        var originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Création en cours...');
+        
+        var formData = new FormData(this);
+        formData.append('_token', '{{ csrf_token() }}');
+        
+        $.ajax({
+            url: '{{ route("dossiers.tasks.store", ["dossier" => $dossier->id]) }}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showMessage('success', response.message);
+                    
+                    $('#taskForm')[0].reset();
+                    $('#file-label').text('Choisir un fichier...');
+                    
+                    $('#taskModal').modal('hide');
+                    
+                    // Rafraîchir la DataTable
+                    tasksTable.ajax.reload();
+                } else {
+                    showMessage('error', response.message || 'Une erreur est survenue.');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    var errors = xhr.responseJSON.errors;
+                    showValidationErrors(errors);
+                } else {
+                    showMessage('error', 'Une erreur est survenue lors de la création de la tâche.');
+                }
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+
+    // Auto-sélection de l'utilisateur connecté si c'est un avocat/secrétaire
+    @if(auth()->user()->fonction === 'avocat' || auth()->user()->fonction === 'secrétaire')
+        $('#utilisateur_id').val('{{ auth()->id() }}').trigger('change');
+    @endif
+
+    // Reset form when modal is opened
+    $('#taskModal').on('show.bs.modal', function () {
+        $('#taskForm')[0].reset();
+        $('#file-label').text('Choisir un fichier...');
+        
+        resetErrors();
+        
+        $('.select2').val(null).trigger('change');
+        
+        $('#submitBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Créer la tâche');
+        
+        setDefaultDates();
+        
+        @if(auth()->user()->fonction === 'avocat' || auth()->user()->fonction === 'secrétaire')
+            $('#utilisateur_id').val('{{ auth()->id() }}').trigger('change');
+        @endif
+        
+        $('#dossier_id').val('{{ $dossier->id }}').trigger('change');
+    });
+
+    // Gérer la fermeture de la modal
+    $('#taskModal').on('hidden.bs.modal', function () {
+        $('#taskForm')[0].reset();
+        resetErrors();
+    });
+
+    // Validation des dates
+    $('#date_fin').on('change', function() {
+        var startDate = $('#date_debut').val();
+        var endDate = $(this).val();
+        
+        if (startDate && endDate) {
+            var start = new Date(startDate);
+            var end = new Date(endDate);
+            
+            if (end < start) {
+                $(this).addClass('is-invalid');
+                $('#date_fin-error').html('<strong>La date de fin doit être postérieure ou égale à la date de début</strong>');
+            } else {
+                $(this).removeClass('is-invalid');
+                $('#date_fin-error').html('');
+            }
+        }
+    });
+
+    // ============================
+    // GESTION DES MODALS
+    // ============================
 
     $(document).on('hidden.bs.modal', '.modal', function() {
         if ($(this).attr('id') === 'editTaskModal') {

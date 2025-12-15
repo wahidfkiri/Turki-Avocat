@@ -112,8 +112,11 @@
                                     <select class="form-control @error('client_id') is-invalid @enderror" 
                                             id="client_id" name="client_id">
                                         <option value="">Sélectionnez un client</option>
-                                        @foreach(\App\Models\Intervenant::all() as $client)
-                                            <option value="{{ $client->id }}" {{ old('client_id') == $client->id ? 'selected' : '' }}>
+                                        @foreach(\DB::table('dossier_intervenant')
+                                        ->join('intervenants','intervenants.id','=','dossier_intervenant.intervenant_id')
+                                        ->where('dossier_intervenant.dossier_id', $dossier->id)->where('intervenants.categorie','client')
+                                        ->select('intervenants.*')->get() as $client)
+                                            <option value="{{ $client->id }}" @if($loop->first) selected @endif>
                                                 {{ $client->identite_fr ?? $client->name }}
                                             </option>
                                         @endforeach

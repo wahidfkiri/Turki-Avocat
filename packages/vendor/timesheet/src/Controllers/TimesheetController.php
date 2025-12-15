@@ -545,7 +545,7 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
                 'typeRelation:id,nom'
             ])
             ->where('dossier_id', $dossier->id)
-            ->select('time_sheets.*');
+            ->select('time_sheets.*')->orderBy('date_timesheet','DESC');
         
         if(!auth()->user()->hasRole('admin')) {
             $query->where('utilisateur_id', auth()->id());
@@ -553,9 +553,31 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
 
         return DataTables::eloquent($query)
             ->addColumn('actions', function (Timesheet $timesheet) {
-                // NOTE: On retourne juste un placeholder, le rendu sera fait côté client
-                // avec les permissions réelles de l'utilisateur
-                return '';
+                $actions = '<div class="btn-group btn-group-sm">';
+                
+                // Bouton Voir
+                if (auth()->user()->hasPermission('view_timesheets')) {
+                    $actions .= '<a href="' . route('time-sheets.show', $timesheet->id) . '" class="btn btn-info" title="Voir">
+                        <i class="fas fa-eye"></i>
+                    </a>';
+                }
+                
+                // Bouton Modifier
+                if (auth()->user()->hasPermission('edit_timesheets')) {
+                    $actions .= '<a href="' . route('time-sheets.edit', $timesheet->id) . '" class="btn btn-primary" title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </a>';
+                }
+                
+                // Bouton Supprimer
+                if (auth()->user()->hasPermission('delete_timesheets')) {
+                    $actions .= '<button type="button" class="btn btn-danger delete-btn" data-id="' . $timesheet->id . '" title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>';
+                }
+                
+                $actions .= '</div>';
+                return $actions;
             })
             ->editColumn('date_timesheet', function (Timesheet $timesheet) {
                 return $timesheet->date_timesheet ? 
@@ -573,7 +595,7 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
             ->editColumn('prix', function (Timesheet $timesheet) {
                 return number_format($timesheet->prix, 2, ',', ' ') . ' DT';
             })
-            ->editColumn('total', function (Timesheet $timesheet) {
+            ->addColumn('total', function (Timesheet $timesheet) {
                 return number_format($timesheet->total, 2, ',', ' ') . ' DT';
             })
             ->addColumn('user.name', function (Timesheet $timesheet) {
@@ -591,7 +613,7 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
             ->addColumn('utilisateur_id', function (Timesheet $timesheet) {
                 return $timesheet->utilisateur_id; // Important pour vérifier le propriétaire côté client
             })
-            ->rawColumns(['actions'])
+            ->rawColumns(['total','actions'])
             ->make(true);
             
     } catch (\Exception $e) {
@@ -606,7 +628,7 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
     {
         $timeSheets = TimeSheet::where('dossier_id', $dossierId)
             ->with(['user', 'categorieRelation', 'typeRelation'])
-            ->paginate(10);
+            ->orderBy('date_timesheet','DESC')->paginate(10);
             
         return TimeSheetResource::collection($timeSheets);
     }
@@ -702,7 +724,7 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
             'dossier.intervenants:id,identite_fr',
             'categorieRelation:id,nom',
             'typeRelation:id,nom'
-        ])->select('time_sheets.*');
+        ])->select('time_sheets.*')->orderBy('date_timesheet','DESC');
     }else{
     $query = Timesheet::with([
         'user:id,name',
@@ -711,7 +733,7 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
         'categorieRelation:id,nom',
         'typeRelation:id,nom'
     ])->where('utilisateur_id', auth()->id())
-    ->select('time_sheets.*');
+    ->select('time_sheets.*')->orderBy('date_timesheet','DESC');
     }
 
     // Filtre par date
@@ -845,7 +867,7 @@ public function getDossierTimesheetsData(Request $request, Dossier $dossier)
                  substr($timesheet->description, 0, 50) . '...' : 
                  $timesheet->description) : '-';
         })
-        ->rawColumns(['action', 'description'])
+        ->rawColumns(['action', 'description','total'])
         ->toJson();
 }
 public function ajax()

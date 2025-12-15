@@ -344,7 +344,7 @@ $(document).ready(function() {
         @endif
         
         @if(auth()->user()->hasPermission('edit_timesheets'))
-            actions += '<button type="button" class="btn btn-primary btn-sm edit-timesheet-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
+            actions += '<button type="button" class="btn btn-warning btn-sm edit-timesheet-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
         @endif
 
         @if(auth()->user()->hasPermission('delete_timesheets'))

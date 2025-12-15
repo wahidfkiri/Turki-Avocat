@@ -34,7 +34,6 @@ use App\Http\Controllers\DomaineController;
 Route::get('/', function () {
     return view('auth.login');
 });
-
 Auth::routes();
 Route::middleware(['web','auth','active'])
     ->group(function () {

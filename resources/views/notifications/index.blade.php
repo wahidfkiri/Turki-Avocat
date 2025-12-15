@@ -183,10 +183,11 @@
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        <div class="notification-message">
+                                                        <div class="notification-message"><a href="{{ route('notification.show', ['notificationId' => $notification->id]) }}">
                                                             <strong>{{ $notification->message }}</strong>
                                                             @if($notification->data)
                                                                 <br>
+                                                                
                                                                 <small class="text-muted">
                                                                     @php
                                                                         $data = json_decode($notification->data, true);
@@ -196,6 +197,7 @@
                                                                     @endphp
                                                                 </small>
                                                             @endif
+                                                                    </a>
                                                         </div>
                                                     </td>
                                                     <td>

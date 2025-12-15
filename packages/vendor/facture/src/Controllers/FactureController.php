@@ -29,7 +29,7 @@ class FactureController extends Controller
 
         $factures = Facture::where('dossier_id', $dossierId)
             ->with(['dossier'])
-            ->select('factures.*');
+            ->select('factures.*')->orderBy('date_emission','DESC');
 
         return DataTables::of($factures)
             ->addColumn('actions', function($facture) {
@@ -132,7 +132,7 @@ class FactureController extends Controller
         $query = Facture::with([
             'dossier:id,numero_dossier',
             'client:id,identite_fr,identite_ar'
-        ])->select('factures.*');
+        ])->select('factures.*')->orderBy('date_emission','DESC');
     } else {
         $query = Facture::with([
             'dossier:id,numero_dossier',
@@ -141,7 +141,7 @@ class FactureController extends Controller
         ->whereHas('dossier.users', function($q) {
             $q->where('users.id', auth()->id());
         })
-        ->select('factures.*');
+        ->select('factures.*')->orderBy('date_emission','DESC');
     }
     // Filtre par numéro
     if ($request->has('numero') && !empty($request->numero)) {
@@ -287,7 +287,7 @@ class FactureController extends Controller
         $query = Facture::with([
             'dossier:id,numero_dossier',
             'client:id,identite_fr,identite_ar'
-        ])->where('statut', 'payé')->select('factures.*');
+        ])->where('statut', 'payé')->select('factures.*')->orderBy('date_emission','DESC');
 
         // Filtre par numéro
         if ($request->has('numero') && !empty($request->numero)) {
@@ -417,7 +417,7 @@ class FactureController extends Controller
         $query = Facture::with([
             'dossier:id,numero_dossier',
             'client:id,identite_fr,identite_ar'
-        ])->where('statut', 'non_payé')->select('factures.*');
+        ])->where('statut', 'non_payé')->select('factures.*')->orderBy('date_emission','DESC');
 
         // Filtre par numéro
         if ($request->has('numero') && !empty($request->numero)) {
@@ -690,10 +690,26 @@ class FactureController extends Controller
         return view('factures.show', compact('facture'));
     }
 
+
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Facture $facture, Request $request)
+    public function edit(Facture $facture)
+    {
+       if(!auth()->user()->hasPermission('edit_factures')){
+         abort(403, 'Unauthorized action.');
+       }
+        
+        $dossiers = Dossier::with('intervenants')->get();
+        $clients = Intervenant::where('categorie', 'client')->get();
+        
+        return view('factures.edit', compact('facture', 'dossiers', 'clients'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function editInDossier(Facture $facture, Request $request)
     {
        if(!auth()->user()->hasPermission('edit_factures')){
          abort(403, 'Unauthorized action.');
@@ -716,10 +732,67 @@ class FactureController extends Controller
         return view('factures.edit', compact('facture', 'dossiers', 'clients'));
     }
 
-    /**
+     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Facture $facture)
+    {
+       if(!auth()->user()->hasPermission('edit_factures')){
+         abort(403, 'Unauthorized action.');
+       }
+        
+        $validated = $request->validate([
+            'dossier_id' => 'nullable|exists:dossiers,id',
+            'client_id' => 'nullable|exists:intervenants,id',
+            'type_piece' => 'required|in:facture,note_frais,note_provision,avoir',
+            'numero' => 'required|string|max:100|unique:factures,numero,' . $facture->id,
+            'date_emission' => 'required|date',
+            'montant_ht' => 'required|numeric|min:0',
+            'montant_tva' => 'required|numeric|min:0',
+            'montant' => 'required|numeric|min:0',
+            'statut' => 'required|in:payé,non_payé',
+            'commentaires' => 'nullable|string',
+            'piece_jointe' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx|max:10240', 
+        ]);
+
+        // Vérifier la cohérence des montants
+        $calculatedMontant = $validated['montant_ht'] + $validated['montant_tva'];
+        if (abs($calculatedMontant - $validated['montant']) > 0.01) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Le montant TTC doit être égal à HT + TVA.');
+        }
+        // Gestion de la pièce jointe
+    if ($request->hasFile('piece_jointe')) {
+        // Supprimer l'ancien fichier s'il existe
+        if ($facture->piece_jointe) {
+            Storage::disk('public')->delete('factures/' . $facture->piece_jointe);
+        }
+        
+        $file = $request->file('piece_jointe');
+        $fileName = time() . '_' . $file->getClientOriginalName();
+        $filePath = $file->storeAs('factures', $fileName, 'public');
+        $validated['piece_jointe'] = $fileName;
+    }
+
+        $facture->update($validated);
+
+        if($request->ajax()){
+            return response()->json([
+                'success' => true,
+                'message' => 'Facture mise à jour avec succès.',
+                'redirect_url' => route('factures.index')
+            ]);
+        }
+
+        return redirect()->route('factures.index')
+            ->with('success', 'Facture mise à jour avec succès.');
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function updateInDossier(Request $request, Facture $facture)
 {
     if(!auth()->user()->hasPermission('edit_factures')){
         return response()->json(['error' => 'Unauthorized'], 403);
