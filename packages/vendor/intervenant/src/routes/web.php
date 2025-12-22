@@ -35,4 +35,20 @@ Route::post('/intervenants/{intervenant}/file-url', [IntervenantController::clas
 Route::post('/intervenants/{intervenant}/upload-folder', [IntervenantController::class, 'uploadFolder'])->name('intervenant.upload-folder');
 Route::get('/intervenants/{intervenant}/files', [IntervenantController::class, 'getFiles'])->name('intervenant.files');
 Route::post('/intervenants/{intervenant}/upload', [IntervenantController::class, 'uploadFiles'])->name('intervenant.upload');
+
+
+ Route::get('/intervenants/{intervenant}/lies/datatable', [IntervenantController::class, 'getIntervenantsLiesDatatable'])
+        ->name('intervenants.lies.datatable');
+    
+    // Recherche AJAX d'intervenants
+    Route::get('/intervenants/search-ajax', [IntervenantController::class, 'searchAjax'])
+        ->name('intervenants.search.ajax');
+    
+    // Attacher un intervenant
+    Route::post('/intervenants/{intervenant}/lies/attach', [IntervenantController::class, 'attachIntervenant'])
+        ->name('intervenants.lies.attach');
+    
+    // Détacher un intervenant
+    Route::post('/intervenants/{intervenant}/lies/detach', [IntervenantController::class, 'detachIntervenant'])
+        ->name('intervenants.lies.detach');
     });

@@ -191,11 +191,13 @@ return [
          Vendor\Apps\AppsServiceProvider::class,
          Vendor\Intervenant\IntervenantServiceProvider::class,
          Vendor\Timesheet\TimesheetServiceProvider::class,
+         Vendor\TimesheetFolder\TimesheetFolderServiceProvider::class,
          Vendor\Facture\FactureServiceProvider::class,
          Vendor\Task\TaskServiceProvider::class,
          Vendor\Dossier\DossierServiceProvider::class,
          Vendor\Agenda\AgendaServiceProvider::class,
          Vendor\Webmail\WebmailServiceProvider::class,
+         Vendor\DossierComponent\DossierComponentServiceProvider::class,
 
         /*
          * Application Service Providers...

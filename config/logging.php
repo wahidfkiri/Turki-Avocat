@@ -51,6 +51,21 @@ return [
     */
 
     'channels' => [
+
+        'roundcube' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/roundcube/laravel.log'),
+        'level' => 'debug',
+        'days' => 14,
+        'permission' => 0664,
+    ],
+    
+    'roundcube_imap' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/roundcube/imap.log'),
+        'level' => 'debug',
+        'days' => 7,
+    ],
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],

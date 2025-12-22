@@ -268,108 +268,19 @@
 </div>
 
 
-                                        <x-dossier.intervenant.tab-list :dossier="$dossier" />
+                                        <x-dossier.intervenant.tab-list :dossier="$dossier" :intervenants="$intervenants"/>
 
                                         <!-- Onglet Équipe -->
-                                        <div class="tab-pane fade" id="equipe" role="tabpanel" aria-labelledby="equipe-tab">
-                                            <div class="p-3">
-                                                <h5 class="text-primary mb-3"><i class="fas fa-users-cog"></i> Équipe en charge</h5>
-                                                
-                                                <!-- Avocat responsable -->
-                                                <div class="row d-none">
-                                                    <div class="col-md-12">
-                                                        <div class="form-group">
-                                                            <label>Avocat responsable</label>
-                                                            @php
-                                                                $avocatResponsable = $dossier->users()->wherePivot('role', 'avocat')->first();
-                                                            @endphp
-                                                            @if($avocatResponsable)
-                                                                <div class="bg-light p-3 rounded">
-                                                                    <h6 class="mb-1">{{ $avocatResponsable->name }}</h6>
-                                                                    <small class="text-muted">
-                                                                        {{ $avocatResponsable->fonction }} • 
-                                                                        {{ $avocatResponsable->email }} • 
-                                                                        Priorité: {{ $avocatResponsable->pivot->ordre ?? 1 }}
-                                                                    </small>
-                                                                </div>
-                                                            @else
-                                                                <p class="form-control-plaintext bg-light p-2 rounded text-muted">
-                                                                    Aucun avocat responsable défini
-                                                                </p>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Équipe supplémentaire -->
-                                                <div class="row mt-4">
-                                                    <div class="col-md-12">
-                                                        <div class="form-group">
-                                                           
-                                                            @php
-                                                                $equipeSupplementaire = $dossier->users()->get();
-                                                            @endphp
-                                                            @if($equipeSupplementaire->count() > 0)
-                                                                <div class="bg-light p-3 rounded">
-                                                                    @foreach($equipeSupplementaire as $membre)
-                                                                        <div class="mb-2 pb-2 border-bottom">
-                                                                            <h6 class="mb-1">{{ $membre->name }}  <small class="text-muted">
-                                                                                 {{ $membre->pivot->role }} 
-                                                                            </small></h6>
-                                                                           
-                                                                        </div>
-                                                                    @endforeach
-                                                                </div>
-                                                            @else
-                                                                <p class="form-control-plaintext bg-light p-2 rounded text-muted">
-                                                                    Aucun membre supplémentaire dans l'équipe
-                                                                </p>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        @include('dossier_component::users')
                                         <!-- Onglet Dossiers -->
-                                        <x-dossier.tab-list :dossier="$dossier" />
+                                        <x-dossier.tab-list :dossier="$dossier" :dossiers="$dossiers"/>
                                         <!-- Onglet Notes -->
-                                        <div class="tab-pane fade" id="notes" role="tabpanel" aria-labelledby="notes-tab">
-                                            <div class="p-3">
-                                                <div class="form-group">
-                                                    <label>Notes et observations</label>
-                                                    <div class="bg-light p-3 rounded" style="min-height: 200px;">
-                                                        @if($dossier->note)
-                                                            {!! nl2br(e($dossier->note)) !!}
-                                                        @else
-                                                            <span class="text-muted">Aucune note ou observation</span>
-                                                        @endif
-                                                    </div>
-                                                </div>
-
-                                                <!-- Informations de suivi -->
-                                                <h5 class="text-primary mb-3 mt-4"><i class="fas fa-history"></i> Informations de suivi</h5>
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <div class="alert alert-info" style="color:black;">
-                                                            <small>
-                                                                <strong>Créé le:</strong> {{ $dossier->created_at->format('d/m/Y à H:i') }}<br>
-                                                                <strong>Modifié le:</strong> {{ $dossier->updated_at->format('d/m/Y à H:i') }}<br>
-                                                                @if($dossier->domaine)
-                                                                    <strong>Domaine:</strong> {{ $dossier->domaine->nom }}<br>
-                                                                @endif
-                                                                @if($dossier->sousDomaine)
-                                                                    <strong>Sous-domaine:</strong> {{ $dossier->sousDomaine->nom ?? N/A}}
-                                                                @endif
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        @include('dossier_component::notes')
                                         <x-dossier.agenda.list :dossier="$dossier" :users="$users" :intervenants="$intervenants" :categories="$categories" :types="$types" />
                                         <x-dossier.task.liste :dossier="$dossier" />
                                         <x-dossier.facturation.list :dossier="$dossier" />
-                                        <x-dossier.timesheet.liste :dossier="$dossier" />
+                                      
+                                         @include('timesheet_folder::index')
                                         <x-dossier.email.liste :dossier="$dossier" />
                                         <x-dossier.folder.liste :dossier="$dossier" />
                                     </div>
@@ -418,7 +329,6 @@
 @include('dossiers.timesheets.create')
 @include('dossiers.factures.create')
 @include('dossiers.tasks.create')
-@section('scripts')
 <script>
 // Fonction de confirmation de suppression
 function confirmDelete(dossierId, dossierTitle = 'ce dossier') {
@@ -442,38 +352,4 @@ $(document).ready(function() {
     });
 });
 </script>
-@endsection
-
-<style>
-.form-control-plaintext {
-    min-height: 38px;
-    border: 1px solid #ced4da;
-}
-.btn-lg {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.1rem;
-}
-.alert-info {
-    background-color: #e8f4fd;
-    border-color: #b6e0fe;
-}
-.bg-light {
-    background-color: #f8f9fa !important;
-}
-.table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
-
-.table-bordered {
-    border: 1px solid #dee2e6;
-}
-
-.table-bordered th,
-.table-bordered td {
-    border: 1px solid #dee2e6;
-    padding: 0.75rem;
-    vertical-align: top;
-}
-</style>
 @endsection

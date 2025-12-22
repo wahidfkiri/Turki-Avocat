@@ -1,112 +1,93 @@
- <!-- Onglet dossiers Liés -->
-                                            <div class="tab-pane fade" id="dossiers" role="tabpanel" aria-labelledby="dossiers-tab">
-                                                <div class="p-3">
-                                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                                        <h5 class="text-primary mb-0"><i class="fas fa-users"></i> Dossiers Liés</h5>
-                                                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#linkDossierModal">
-                                                            <i class="fas fa-link"></i> Lier un dossier
-                                                        </button>
-                                                    </div>
+<!-- Onglet dossiers Liés -->
+<div class="tab-pane fade" id="dossiers" role="tabpanel" aria-labelledby="dossiers-tab">
+    <div class="p-3">
+        <!-- AJAX Alert Container - NEW -->
+        <div id="dossierAjaxAlert" style="display: none;"></div>
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-primary mb-0"><i class="fas fa-users"></i> Dossiers Liés</h5>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#linkDossierModal">
+                <i class="fas fa-link"></i> Lier un dossier
+            </button>
+        </div>
 
-                                                    <!-- Tableau des dossiers liés -->
-                                                    <div class="card">
-                                                        <div class="card-header bg-light">
-                                                            <h6 class="mb-0"><i class="fas fa-table"></i> Liste des dossiers liés</h6>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <div class="table-responsive">
-                                                                <table class="table table-bordered table-striped" id="linkedDossiersTable">
-                                                                    <thead class="thead-dark">
-                                                                        <tr>
-                                                                            <th width="40%">Dossier Lié</th>
-                                                                            <th width="40%">Relation</th>
-                                                                            <th width="20%">Actions</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody id="linked-dossiers-container">
-                                                                        @php
-    $existingLinkedDossiers = [];
-    if ($dossier->dossiersLies->count() > 0) {
-        foreach ($dossier->dossiersLies as $index => $linkedDossier) {
-            $pivot = $linkedDossier->pivot;
-            
-            $existingLinkedDossiers[] = [
-                'dossier_id' => $linkedDossier->id,
-                'dossier_lie_id' => $linkedDossier->dossier_lie_id,
-                'numero_dossier' => $linkedDossier->numero_dossier,
-                'relation' => $pivot->relation
-            ];
-        }
-    }
-@endphp
+        <!-- Tableau des dossiers liés -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-table"></i> Liste des dossiers liés</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" id="linkedDossiersTable">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th width="40%">Dossier Lié</th>
+                                <th width="40%">Relation</th>
+                                <th width="20%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linked-dossiers-container">
+                            @php
+                                $existingLinkedDossiers = [];
+                                if ($dossier->dossiersLies->count() > 0) {
+                                    foreach ($dossier->dossiersLies as $index => $linkedDossier) {
+                                        $pivot = $linkedDossier->pivot;
+                                        
+                                        $existingLinkedDossiers[] = [
+                                            'dossier_id' => $linkedDossier->id,
+                                            'dossier_lie_id' => $linkedDossier->dossier_lie_id,
+                                            'numero_dossier' => $linkedDossier->numero_dossier,
+                                            'relation' => $pivot->relation
+                                        ];
+                                    }
+                                }
+                            @endphp
 
-                                                                        @if(old('linked_dossiers'))
-                                                                            <!-- Afficher les dossiers depuis la validation -->
-                                                                            @foreach(old('linked_dossiers') as $index => $linkedDossier)
-                                                                            <tr class="linked-dossier-item">
-                                                                                <td>
-                                                                                    <strong>{{ $linkedDossier['numero_dossier'] ?? 'Dossier' }}</strong>
-                                                                                    <input type="hidden" name="linked_dossiers[{{ $index }}][dossier_id]" 
-                                                                                           value="{{ $linkedDossier['dossier_id'] }}">
-                                                                                    <input type="hidden" name="linked_dossiers[{{ $index }}][numero_dossier]" 
-                                                                                           value="{{ $linkedDossier['numero_dossier'] }}">
-                                                                                </td>
-                                                                                <td>
-                                                                                    <input type="text" class="form-control" 
-                                                                                           name="linked_dossiers[{{ $index }}][relation]" 
-                                                                                           value="{{ $linkedDossier['relation'] ?? '' }}"
-                                                                                           placeholder=""
-                                                                                           required>
-                                                                                </td>
-                                                                                <td class="text-center">
-                                                                                    <button type="button" class="btn btn-danger btn-sm remove-linked-dossier">
-                                                                                        <i class="fas fa-trash"></i>
-                                                                                    </button>
-                                                                                </td>
-                                                                            </tr>
-                                                                            @endforeach
-                                                                        @elseif(count($existingLinkedDossiers) > 0)
-                                                                            <!-- Afficher les dossiers existants depuis la base de données -->
-                                                                            @foreach($existingLinkedDossiers as $index => $linkedDossier)
-                                                                            <tr class="linked-dossier-item">
-                                                                                <td>
-                                                                                    <strong>{{ $linkedDossier['numero_dossier'] }}</strong>
-                                                                                    <input type="hidden" name="linked_dossiers[{{ $index }}][dossier_id]" 
-                                                                                           value="{{ $linkedDossier['dossier_id'] }}">
-                                                                                    <input type="hidden" name="linked_dossiers[{{ $index }}][numero_dossier]" 
-                                                                                           value="{{ $linkedDossier['numero_dossier'] }}">
-                                                                                </td>
-                                                                                <td>
-                                                                                    <input type="text" class="form-control" 
-                                                                                           name="linked_dossiers[{{ $index }}][relation]" 
-                                                                                           value="{{ $linkedDossier['relation'] }}"
-                                                                                           placeholder=""
-                                                                                           required>
-                                                                                </td>
-                                                                                <td class="text-center">
-                                                                                    <button type="button" class="btn btn-danger btn-sm remove-linked-dossier">
-                                                                                        <i class="fas fa-trash"></i>
-                                                                                    </button>
-                                                                                </td>
-                                                                            </tr>
-                                                                            @endforeach
-                                                                        @endif
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
+                            @if(count($existingLinkedDossiers) > 0)
+                                @foreach($existingLinkedDossiers as $index => $linkedDossier)
+                                <tr class="linked-dossier-item" 
+                                    data-dossier-id="{{ $linkedDossier['dossier_id'] }}" 
+                                    data-saved="true">
+                                    <td>
+                                        <strong>{{ $linkedDossier['numero_dossier'] }}</strong>
+                                        <input type="hidden" name="linked_dossiers[{{ $index }}][dossier_id]" 
+                                               value="{{ $linkedDossier['dossier_id'] }}">
+                                        <input type="hidden" name="linked_dossiers[{{ $index }}][numero_dossier]" 
+                                               value="{{ $linkedDossier['numero_dossier'] }}">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control" 
+                                               name="linked_dossiers[{{ $index }}][relation]" 
+                                               value="{{ $linkedDossier['relation'] }}"
+                                               placeholder=""
+                                               required>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-danger btn-sm remove-linked-dossier" 
+                                                data-dossier-id="{{ $linkedDossier['dossier_id'] }}"
+                                                data-dossier-numero="{{ $linkedDossier['numero_dossier'] }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
 
-                                                            <!-- Message quand aucun dossier n'est lié -->
-                                                            <div id="no-linked-dossiers" class="text-center py-4" 
-                                                                 style="{{ (old('linked_dossiers') || count($existingLinkedDossiers) > 0) ? 'display: none;' : '' }}">
-                                                                <i class="fas fa-folder fa-3x text-muted mb-3"></i>
-                                                                <p class="text-muted">Aucun dossier lié pour le moment</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                <!-- Message quand aucun dossier n'est lié -->
+                <div id="no-linked-dossiers" class="text-center py-4" 
+                     style="{{ (old('linked_dossiers') || count($existingLinkedDossiers) > 0) ? 'display: none;' : '' }}">
+                    <i class="fas fa-folder fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun dossier lié pour le moment</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                                            <!-- Modal pour lier un dossier -->
+<!-- Modal pour lier un dossier (UNCHANGED) -->
 <div class="modal fade" id="linkDossierModal" tabindex="-1" role="dialog" aria-labelledby="linkDossierModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -216,6 +197,109 @@
 <script>
     $('.search_test1').SumoSelect({search: true, searchText: 'Sélectionner un dossier...'});
    
+// ============================
+// FONCTIONS AJAX POUR DÉTACHEMENT
+// ============================
+
+// Fonction pour détacher un dossier via AJAX
+function detachLinkedDossier(dossierId, dossierNumero, $button) {
+    if (!confirm(`Êtes-vous sûr de vouloir détacher le dossier "${dossierNumero}" ?`)) {
+        return;
+    }
+    
+    const mainDossierId = {{ $dossier->id }};
+    const originalHtml = $button.html();
+    
+    // Afficher l'état de chargement
+    $button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+    
+    $.ajax({
+        url: `/dossiers/${mainDossierId}/detach-dossier`,
+        type: 'POST',
+        data: {
+            dossier_lie_id: dossierId,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Trouver et supprimer la ligne correspondante
+                const $row = $button.closest('.linked-dossier-item');
+                
+                $row.fadeOut(300, function() {
+                    $(this).remove();
+                    
+                    // Mettre à jour le compteur
+                    linkedDossiersCount--;
+                    
+                    // Afficher le message "aucun dossier lié" si vide
+                    if ($('#linked-dossiers-container').children().length === 0) {
+                        $('#no-linked-dossiers').show();
+                    }
+                    
+                    // Réindexer les champs restants pour le formulaire
+                    reindexLinkedDossiers();
+                    
+                    // Afficher le message de succès
+                    showDossierAlert('success', response.message);
+                    
+                    // Mettre à jour le compteur restant si nécessaire
+                    if (response.remaining_count !== undefined) {
+                        console.log('Dossiers restants:', response.remaining_count);
+                    }
+                });
+            } else {
+                $button.prop('disabled', false).html(originalHtml);
+                showDossierAlert('danger', response.message || 'Erreur lors du détachement');
+            }
+        },
+        error: function(xhr) {
+            $button.prop('disabled', false).html(originalHtml);
+            
+            let errorMessage = 'Une erreur est survenue lors du détachement';
+            
+            if (xhr.status === 422) {
+                errorMessage = 'Données invalides';
+                if (xhr.responseJSON?.errors?.dossier_lie_id) {
+                    errorMessage += ': ' + xhr.responseJSON.errors.dossier_lie_id[0];
+                }
+            } else if (xhr.status === 404) {
+                errorMessage = 'Dossier non trouvé ou déjà détaché';
+            } else if (xhr.status === 403) {
+                errorMessage = 'Vous n\'avez pas la permission de détacher ce dossier';
+            } else if (xhr.responseJSON?.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            
+            showDossierAlert('danger', errorMessage);
+        }
+    });
+}
+
+// Fonction pour afficher des alertes
+function showDossierAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    $('#dossierAjaxAlert').html(alertHtml).show();
+    
+    setTimeout(() => {
+        $('#dossierAjaxAlert').fadeOut(500, function() {
+            $(this).html('').hide();
+        });
+    }, 5000);
+}
+
+// ============================
+// FONCTIONS EXISTANTES (MAINTENUES)
+// ============================
+
 // Gestion des dossiers liés
 let linkedDossiersCount = {{ max(
     old('linked_dossiers') ? count(old('linked_dossiers')) : 0,
@@ -308,11 +392,13 @@ $('#confirmLinkDossier').click(function() {
     $('#linkDossierModal').modal('hide');
 });
 
+// Fonction pour ajouter un dossier lié
 function addLinkedDossier(dossierId, dossierNumero) {
     const newIndex = linkedDossiersCount++;
     
+    // Nouveaux dossiers n'ont pas l'attribut data-saved="true"
     const linkedItem = `
-        <tr class="linked-dossier-item">
+        <tr class="linked-dossier-item" data-dossier-id="${dossierId}">
             <td>
                 <strong>${dossierNumero}</strong>
                 <input type="hidden" name="linked_dossiers[${newIndex}][dossier_id]" value="${dossierId}">
@@ -325,7 +411,9 @@ function addLinkedDossier(dossierId, dossierNumero) {
                        required>
             </td>
             <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm remove-linked-dossier">
+                <button type="button" class="btn btn-danger btn-sm remove-linked-dossier"
+                        data-dossier-id="${dossierId}"
+                        data-dossier-numero="${dossierNumero}">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -334,22 +422,9 @@ function addLinkedDossier(dossierId, dossierNumero) {
 
     $('#linked-dossiers-container').append(linkedItem);
     $('#no-linked-dossiers').hide();
-
-    // Ajouter l'événement de suppression
-    $('.remove-linked-dossier').off('click').on('click', function() {
-        $(this).closest('.linked-dossier-item').remove();
-        linkedDossiersCount--;
-        
-        // Réindexer les éléments restants
-        reindexLinkedDossiers();
-        
-        // Afficher le message si plus dossiers liés
-        if ($('#linked-dossiers-container').children().length === 0) {
-            $('#no-linked-dossiers').show();
-        }
-    });
 }
 
+// Réindexer les dossiers liés
 function reindexLinkedDossiers() {
     $('#linked-dossiers-container .linked-dossier-item').each(function(index) {
         $(this).find('input').each(function() {
@@ -359,10 +434,28 @@ function reindexLinkedDossiers() {
     });
 }
 
-// Initialiser les boutons de suppression pour les dossiers existants
-$(document).ready(function() {
-    $('.remove-linked-dossier').click(function() {
-        $(this).closest('.linked-dossier-item').remove();
+// ============================
+// GESTION DES ÉVÉNEMENTS DE SUPPRESSION
+// ============================
+
+// Gestion du clic sur les boutons de suppression
+$(document).on('click', '.remove-linked-dossier', function(e) {
+    e.preventDefault();
+    
+    const $button = $(this);
+    const dossierId = $button.data('dossier-id');
+    const dossierNumero = $button.data('dossier-numero');
+    const $row = $button.closest('.linked-dossier-item');
+    
+    // Vérifier si c'est un dossier déjà sauvegardé (venant de la base)
+    const isSavedDossier = $row.data('saved') === true;
+    
+    if (isSavedDossier && dossierId) {
+        // Utiliser AJAX pour détacher les dossiers sauvegardés
+        detachLinkedDossier(dossierId, dossierNumero, $button);
+    } else {
+        // Pour les nouveaux dossiers (pas encore sauvegardés)
+        $row.remove();
         linkedDossiersCount--;
         
         reindexLinkedDossiers();
@@ -370,8 +463,17 @@ $(document).ready(function() {
         if ($('#linked-dossiers-container').children().length === 0) {
             $('#no-linked-dossiers').show();
         }
-    });
+    }
+});
 
+// ============================
+// INITIALISATION
+// ============================
+
+$(document).ready(function() {
+    // Initialiser SumoSelect
+    $('.search_test1').SumoSelect({search: true, searchText: 'Sélectionner un dossier...'});
+    
     // Reset de la modal quand elle se ferme
     $('#linkDossierModal').on('hidden.bs.modal', function() {
         $('#dossierList').val('');
@@ -385,5 +487,21 @@ $(document).ready(function() {
     $('#linkDossierModal').on('shown.bs.modal', function() {
         $('#dossierFilter').focus();
     });
+    
+    // Fonction de test (optionnelle)
+    window.testDetach = function() {
+        const firstDossier = $('#linked-dossiers-container .linked-dossier-item[data-saved="true"]:first');
+        if (firstDossier.length) {
+            const dossierId = firstDossier.data('dossier-id');
+            const dossierNumero = firstDossier.find('strong').text();
+            const $button = firstDossier.find('.remove-linked-dossier');
+            
+            console.log('Testing detach for dossier:', dossierNumero, 'ID:', dossierId);
+            detachLinkedDossier(dossierId, dossierNumero, $button);
+        } else {
+            console.log('No saved dossiers to test');
+            alert('Aucun dossier sauvegardé à tester');
+        }
+    };
 });
     </script>

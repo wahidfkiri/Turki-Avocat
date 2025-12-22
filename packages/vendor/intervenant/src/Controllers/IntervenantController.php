@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Auth;
+use Yajra\DataTables\Facades\DataTables;
 
 
 class IntervenantController extends Controller
@@ -1462,4 +1463,231 @@ public function uploadFolder(Request $request, Intervenant $intervenant)
         ], 500);
     }
 }
+
+
+
+ public function getIntervenantsLiesDatatable(Request $request, $intervenantId)
+    {
+        $intervenant = Intervenant::findOrFail($intervenantId);
+        
+        // Récupérer les intervenants liés (directs + inverses)
+        $intervenantsLies = $intervenant->intervenantsLies()
+            ->select([
+                'intervenants.*',
+                'intervenant_intervenant.id as pivot_id',
+                'intervenant_intervenant.relation as type_lien',
+                'intervenant_intervenant.created_at as linked_at'
+            ]);
+        
+        $intervenantsLiesInverse = $intervenant->intervenantsLiesInverse()
+            ->select([
+                'intervenants.*',
+                'intervenant_intervenant.id as pivot_id',
+                'intervenant_intervenant.relation as type_lien',
+                'intervenant_intervenant.created_at as linked_at'
+            ]);
+        
+        // Union des deux requêtes
+        $query = $intervenantsLies->union($intervenantsLiesInverse);
+        
+        return DataTables::query($query)
+            ->addIndexColumn()
+            ->addColumn('DT_RowIndex', function ($row) {
+                static $index = 0;
+                return ++$index + (request()->input('start', 0));
+            })
+            ->editColumn('categorie', function ($row) {
+                return $row->categorie ?? null;
+            })
+            ->editColumn('type', function ($row) {
+                return $row->type ?? null;
+            })
+            ->editColumn('portable1', function ($row) {
+                return $row->portable1 ?? null;
+            })
+            ->addColumn('actions', function ($row) {
+                // Les actions sont gérées côté client
+                return '';
+            })
+            ->filterColumn('identite_fr', function ($query, $keyword) use ($intervenantId) {
+                // Cette fonction est pour le filtrage côté serveur
+                // Le filtrage est déjà géré par DataTables
+            })
+            ->filterColumn('categorie', function ($query, $keyword) {
+                // Filtrage pour la catégorie
+            })
+            ->rawColumns(['actions'])
+            ->make(true);
+    }
+    
+    /**
+     * Recherche AJAX d'intervenants
+     */
+    public function searchAjax(Request $request)
+    {
+        $request->validate([
+            'search' => 'nullable|string|min:2',
+            'exclude' => 'nullable|exists:intervenants,id'
+        ]);
+        
+        $search = $request->input('search', '');
+        $excludeId = $request->input('exclude');
+        
+        $query = Intervenant::query();
+        
+        // Exclure l'intervenant courant
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+            
+            // Exclure les intervenants déjà liés
+            $currentIntervenant = Intervenant::find($excludeId);
+            if ($currentIntervenant) {
+                $alreadyLinkedIds = $currentIntervenant->getAllIntervenantsLiesAttribute()
+                    ->pluck('id')
+                    ->toArray();
+                
+                if (!empty($alreadyLinkedIds)) {
+                    $query->whereNotIn('id', $alreadyLinkedIds);
+                }
+            }
+        }
+        
+        // Recherche
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('identite_fr', 'like', '%' . $search . '%')
+                  ->orWhere('identite_ar', 'like', '%' . $search . '%')
+                  ->orWhere('mail1', 'like', '%' . $search . '%')
+                  ->orWhere('mail2', 'like', '%' . $search . '%')
+                  ->orWhere('portable1', 'like', '%' . $search . '%')
+                  ->orWhere('portable2', 'like', '%' . $search . '%')
+                  ->orWhere('fonction', 'like', '%' . $search . '%')
+                  ->orWhere('categorie', 'like', '%' . $search . '%');
+            });
+        }
+        
+        // Limiter les résultats
+        $intervenants = $query->orderBy('identite_fr')
+            ->limit(20)
+            ->get(['id', 'identite_fr', 'identite_ar', 'categorie', 'type', 'portable1', 'mail1', 'fonction']);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $intervenants
+        ]);
+    }
+    
+    /**
+     * Attacher un intervenant
+     */
+    public function attachIntervenant(Request $request, $intervenantId)
+    {
+        $request->validate([
+            'intervenant_id' => 'required|exists:intervenants,id',
+            'type_lien' => 'required|in:collaborateur,associe,contact,correspondant,autre'
+        ]);
+        
+        try {
+            DB::beginTransaction();
+            
+            $intervenant = Intervenant::findOrFail($intervenantId);
+            $intervenantToAttach = Intervenant::findOrFail($request->intervenant_id);
+            
+            // Vérifier si le lien existe déjà (dans les deux sens)
+            $alreadyLinked = $intervenant->intervenantsLies()
+                ->where('intervenant_lie_id', $request->intervenant_id)
+                ->exists();
+            
+            if ($alreadyLinked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cet intervenant est déjà lié'
+                ], 400);
+            }
+            
+            // Vérifier le lien inverse
+            $alreadyLinkedInverse = $intervenant->intervenantsLiesInverse()
+                ->where('intervenant_id', $request->intervenant_id)
+                ->exists();
+            
+            if ($alreadyLinkedInverse) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cet intervenant est déjà lié'
+                ], 400);
+            }
+            
+            // Créer le lien
+            $intervenant->intervenantsLies()->attach($request->intervenant_id, [
+                'relation' => $request->type_lien,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Intervenant attaché avec succès'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'attachement: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Détacher un intervenant
+     */
+    public function detachIntervenant(Request $request, $intervenantId)
+    {
+        $request->validate([
+            'pivot_id' => 'required|exists:intervenant_intervenant,id'
+        ]);
+        
+        try {
+            DB::beginTransaction();
+            
+            // Vérifier que le pivot appartient bien à cet intervenant
+            $pivot = DB::table('intervenant_intervenant')
+                ->where('id', $request->pivot_id)
+                ->where(function ($query) use ($intervenantId) {
+                    $query->where('intervenant_id', $intervenantId)
+                          ->orWhere('intervenant_lie_id', $intervenantId);
+                })
+                ->first();
+            
+            if (!$pivot) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lien non trouvé ou non autorisé'
+                ], 404);
+            }
+            
+            // Supprimer le lien
+            DB::table('intervenant_intervenant')
+                ->where('id', $request->pivot_id)
+                ->delete();
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Intervenant détaché avec succès'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du détachement: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

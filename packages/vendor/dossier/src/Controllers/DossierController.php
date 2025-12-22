@@ -28,6 +28,8 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use App\Notifications\TaskAssignedNotification;
 
 
@@ -388,8 +390,9 @@ public function getTasksData(Request $request, Dossier $dossier)
         ->rawColumns(['priorite', 'statut', 'actions'])
         ->make(true);
 }
-    public function show(Dossier $dossier)
+    public function show(Dossier $dossier, Request $request)
     {
+       // return $dossier->dossiersLies;
         if (!auth()->user()->hasPermission('view_dossiers')) {
             abort(403, 'Unauthorized action.');
         }
@@ -399,12 +402,17 @@ public function getTasksData(Request $request, Dossier $dossier)
         $intervenants = Intervenant::orderBy('identite_fr')->get();
         $categories = \App\Models\Categorie::all();
         $types = \App\Models\Type::all();
+        $dossiers = \App\Models\Dossier::where('id', '!=',  $dossier->id)->get();
         // Générer le prochain numéro de facture
         $lastFacture = \App\Models\Facture::orderBy('id', 'desc')->first();
         $nextNumber = 'FACT-' . date('Y') . '-' . str_pad(($lastFacture ? $lastFacture->id + 1 : 1), 4, '0', STR_PAD_LEFT);
-        return view('dossiers.show', compact('dossier', 'users', 'intervenants', 'categories', 'types','nextNumber'));
+        if($request->ajax()){
+            return null;
+        }
+        return view('dossiers.show', compact('dossier', 'users', 'intervenants', 'categories', 'types','nextNumber', 'dossiers'));
     }
-public function update(UpdateDossierRequest $request, Dossier $dossier)
+
+    public function update(UpdateDossierRequest $request, Dossier $dossier)
 {
     if(!auth()->user()->hasPermission('edit_dossiers')) {
         abort(403, 'Unauthorized action.');
@@ -416,7 +424,6 @@ public function update(UpdateDossierRequest $request, Dossier $dossier)
     $dossier->update($validatedData);
     $this->createImapFolderSafe($dossier);
 
-      
     $result = $this->syncDossierFolder($dossier);
     
     // Valider les données de base du dossier
@@ -431,6 +438,7 @@ public function update(UpdateDossierRequest $request, Dossier $dossier)
         $dossier->contentieux = false;
     }
     $dossier->save();
+    
     // Synchroniser le client principal comme intervenant
     if ($request->has('client_id')) {
         // Supprimer l'ancien client et ajouter le nouveau
@@ -444,178 +452,174 @@ public function update(UpdateDossierRequest $request, Dossier $dossier)
     }
     
     if ($request->has('linked_intervenants')) {
-            foreach ($request->linked_intervenants as $linkedIntervenant) {
-                if (!empty($linkedIntervenant['intervenant_id']) && 
-                    !empty($linkedIntervenant['role'])) {
-                    
-                    // Relation de cet intervenant vers l'intervenant lié
-                    $intervenantsLiesFrom[$linkedIntervenant['intervenant_id']] = [
-                        'intervenant_id' => $linkedIntervenant['intervenant_id'],
-                        'dossier_id' => $dossier->id,
-                        'role' => $linkedIntervenant['role'],
-                        'updated_at' => now()
-                    ];
-                }
-            }
-        }
-
-       // dd($intervenantsLiesFrom);die;
-        // Synchroniser les relations de cet intervenant vers les autres
-        foreach(\DB::table('dossier_intervenant')->where('dossier_id', $dossier->id)->get() as $dossier_inter){
-            //dd($dossier_inter);die;
-            \DB::table('dossier_intervenant')->where('id', $dossier_inter->id)->delete();
-        }
-       if (!empty($intervenantsLiesFrom)) {
-                // Attacher les relations de cet intervenant vers les autres
-                $dossier->intervenants()->attach($intervenantsLiesFrom);
-            }
-
-
-    
-        // Gestion des dossiers liés avec les deux relations
-        $dossiersLiesFrom = []; // Relations de cet intervenant vers les autres
-        
-        if ($request->has('linked_dossiers')) {
-            foreach ($request->linked_dossiers as $linkedDossier) {
-                if (!empty($linkedDossier['dossier_id']) && 
-                    !empty($linkedDossier['relation'])) {
-                    
-                    // Relation de cet intervenant vers l'intervenant lié
-                    $dossiersLiesFrom[$linkedDossier['dossier_id']] = [
-                        'dossier_id' => $dossier->id,
-                        'dossier_lie_id' => $linkedDossier['dossier_id'],
-                        'relation' => $linkedDossier['relation'],
-                        'updated_at' => now()
-                    ];
-                }
-            }
-        }
-        
-        // Synchroniser les relations de cet dossier vers les autres
-        $dossier->dossiersLies()->sync($dossiersLiesFrom);
-        
-        
-        // Supprimer les relations qui ne sont plus présentes
-        $currentLinkedIds = array_keys($dossiersLiesFrom);
-        $allLinkedDossiers = $dossier->DossiersLies()->pluck('dossier_id')->toArray();
-        
-        $dossiersToDetach = array_diff($allLinkedDossiers, $currentLinkedIds);
-        
-        foreach ($dossiersToDetach as $dossierIdToDetach) {
-            // Détacher de cet dossier
-            $dossier->DossiersLies()->detach($dossierIdToDetach);
-            
-            // Détacher la relation inverse
-            $dossierToDetach = Dossier::find($dossierIdToDetach);
-            if ($dossierToDetach) {
-                $dossierToDetach->DossiersLies()->detach($dossier->id);
-            }
-        }
-
-        // Ancien format de gestion (pour compatibilité) - à supprimer éventuellement
-        if ($request->has('dossiers_lies')) {
-            $intervenantsLiesOld = [];
-            foreach ($request->dossiers_lies as $intervenantLieId) {
-                $intervenantsLiesOld[$intervenantLieId] = [
-                    'relation' => 'représente',
-                    'updated_at' => now()
-                ];
-            }
-            $dossier->DossiersLies()->sync($intervenantsLiesOld);
-        } elseif (!$request->has('linked_dossiers')) {
-            // Si aucun format n'est utilisé, détacher toutes les relations
-            $dossier->dossiersLies()->detach();
-        }
-
-
-
-        // Utilisateurs liés 
-        // Gestion des utilisateurs liés 
-        $utilisateursLiesFrom = []; // Relations de cet intervenant vers les autres
-        
-        if ($request->has('linked_utilisateurs')) {
-            foreach ($request->linked_utilisateurs as $linkedUtilisateur) {
-                if (!empty($linkedUtilisateur['user_id']) && 
-                    !empty($linkedUtilisateur['role'])) {
-                    
-                    // Relation de cet utilisateur 
-                    $utilisateursLiesFrom[$linkedUtilisateur['user_id']] = [
-                        'dossier_id' => $dossier->id,
-                        'user_id' => $linkedUtilisateur['user_id'],
-                        'role' => $linkedUtilisateur['role'],
-                        'ordre' => 1,
-                        'updated_at' => now()
-                    ];
-                }
-            }
-        }
-        
-        // Synchroniser les relations de cet dossier vers les autres
-        $dossier->users()->sync($utilisateursLiesFrom);
-        
-        
-        // Supprimer les relations qui ne sont plus présentes
-        $currentLinkedUsersIds = array_keys($utilisateursLiesFrom);
-        $allLinkedUsers = $dossier->users()->pluck('dossier_id')->toArray();
-        
-        $usersToDetach = array_diff($allLinkedUsers, $currentLinkedUsersIds);
-        
-        foreach ($usersToDetach as $userIdToDetach) {
-            // Détacher de cet dossier
-            $dossier->users()->detach($userIdToDetach);
-            
-            // Détacher la relation inverse
-            $userToDetach = Dossier::find($userIdToDetach);
-            if ($userToDetach) {
-                $userToDetach->users()->detach($dossier->id);
-            }
-        }
-
-        // Ancien format de gestion (pour compatibilité) - à supprimer éventuellement
-        if ($request->has('users_lies')) {
-            $usersLiesOld = [];
-            foreach ($request->users_lies as $userLieId) {
-                $usersLiesOld[$userLieId] = [
-                    'relation' => 'représente',
-                    'updated_at' => now()
-                ];
-            }
-            $dossier->users()->sync($usersLiesOld);
-        } elseif (!$request->has('linked_utilisateurs')) {
-            // Si aucun format n'est utilisé, détacher toutes les relations
-            $dossier->users()->detach();
-        }
-    
-
-    
-    // // Synchroniser l'équipe supplémentaire
-    // if ($request->has('equipe_supplementaire')) {
-    //     // Récupérer les IDs des utilisateurs actuels (sauf l'avocat responsable)
-    //     $currentTeam = $dossier->users()
-    //         ->wherePivot('role', '!=', 'avocat')
-    //         ->pluck('users.id')
-    //         ->toArray();
-        
-    //     // Détacher les utilisateurs supprimés
-    //     $usersToDetach = array_diff($currentTeam, $request->equipe_supplementaire);
-    //     $dossier->users()->detach($usersToDetach);
-        
-    //     // Attacher les nouveaux utilisateurs
-    //     foreach ($request->equipe_supplementaire as $userId) {
-    //         if (!in_array($userId, $currentTeam)) {
-    //             $user = User::find($userId);
-    //             $role = $user->fonction; // ou une logique plus spécifique
+        foreach ($request->linked_intervenants as $linkedIntervenant) {
+            if (!empty($linkedIntervenant['intervenant_id']) && 
+                !empty($linkedIntervenant['role'])) {
                 
-    //             $dossier->users()->attach($userId, [
-    //                 'role' => $role,
-    //                 'ordre' => $request->ordre ?? 2
-    //             ]);
-    //         }
-    //     }
-    // } else {
-    //     // Si aucune équipe supplémentaire n'est sélectionnée, supprimer toute l'équipe sauf l'avocat
-    //     $dossier->users()->wherePivot('role', '!=', 'avocat')->detach();
-    // }
+                // Relation de cet intervenant vers l'intervenant lié
+                $intervenantsLiesFrom[$linkedIntervenant['intervenant_id']] = [
+                    'intervenant_id' => $linkedIntervenant['intervenant_id'],
+                    'dossier_id' => $dossier->id,
+                    'role' => $linkedIntervenant['role'],
+                    'updated_at' => now()
+                ];
+            }
+        }
+    }
+
+    // Synchroniser les relations de cet intervenant vers les autres
+    foreach(\DB::table('dossier_intervenant')->where('dossier_id', $dossier->id)->get() as $dossier_inter){
+        \DB::table('dossier_intervenant')->where('id', $dossier_inter->id)->delete();
+    }
+    
+    if (!empty($intervenantsLiesFrom)) {
+        // Attacher les relations de cet intervenant vers les autres
+        $dossier->intervenants()->attach($intervenantsLiesFrom);
+    }
+
+    // GESTION DES DOSSIERS LIÉS - CORRIGÉ
+    // ====================================
+    
+    if ($request->has('linked_dossiers')) {
+        $newLinkedDossierIds = [];
+        $dossiersLiesData = [];
+        
+        foreach ($request->linked_dossiers as $linkedDossier) {
+            if (!empty($linkedDossier['dossier_id']) && 
+                !empty($linkedDossier['relation'])) {
+                
+                $linkedDossierId = $linkedDossier['dossier_id'];
+                $newLinkedDossierIds[] = $linkedDossierId;
+                
+                // Préparer les données pour l'attachement
+                $dossiersLiesData[$linkedDossierId] = [
+                    'relation' => $linkedDossier['relation'],
+                    'updated_at' => now()
+                ];
+            }
+        }
+        
+        // Éviter la duplication : vérifier si le dossier n'est pas déjà lié à lui-même
+        $newLinkedDossierIds = array_unique($newLinkedDossierIds);
+        $newLinkedDossierIds = array_diff($newLinkedDossierIds, [$dossier->id]);
+        
+        // Synchroniser les relations (cela gère l'attachement et le détachement automatiquement)
+        $dossier->dossiersLies()->sync($dossiersLiesData);
+        
+        // Créer la relation inverse pour chaque dossier lié (bidirectionnelle)
+        foreach ($newLinkedDossierIds as $linkedDossierId) {
+            $linkedDossier = Dossier::find($linkedDossierId);
+            
+            if ($linkedDossier) {
+                // Vérifier si la relation inverse n'existe pas déjà
+                $existingInverseLink = $linkedDossier->dossiersLies()
+                    ->where('dossier_lie_id', $dossier->id)
+                    ->exists();
+                
+                if (!$existingInverseLink) {
+                    // Créer la relation inverse
+                    $linkedDossier->dossiersLies()->attach($dossier->id, [
+                        'relation' => $this->getInverseRelation($dossiersLiesData[$linkedDossierId]['relation']),
+                        'updated_at' => now()
+                    ]);
+                }
+            }
+        }
+        
+        // Détacher les relations inverses pour les dossiers qui ne sont plus liés
+        $currentLinkedDossiers = $dossier->dossiersLies()->pluck('dossiers.id')->toArray();
+        $allDossiers = Dossier::whereIn('id', $currentLinkedDossiers)->get();
+        
+        foreach ($allDossiers as $otherDossier) {
+            if ($otherDossier->id != $dossier->id) {
+                // Si ce dossier n'est plus dans la liste des liés, détacher la relation inverse
+                if (!in_array($otherDossier->id, $newLinkedDossierIds)) {
+                    $otherDossier->dossiersLies()->detach($dossier->id);
+                }
+            }
+        }
+    } else {
+        // Si aucun dossier n'est lié, détacher toutes les relations
+        $dossier->dossiersLies()->detach();
+        
+        // Détacher également toutes les relations inverses
+        $allLinkedDossiers = Dossier::whereHas('dossiersLies', function($query) use ($dossier) {
+            $query->where('dossier_lie_id', $dossier->id);
+        })->get();
+        
+        foreach ($allLinkedDossiers as $linkedDossier) {
+            $linkedDossier->dossiersLies()->detach($dossier->id);
+        }
+    }
+
+    // Ancien format de gestion (pour compatibilité) - à supprimer éventuellement
+    if ($request->has('dossiers_lies')) {
+        $intervenantsLiesOld = [];
+        foreach ($request->dossiers_lies as $intervenantLieId) {
+            $intervenantsLiesOld[$intervenantLieId] = [
+                'relation' => 'représente',
+                'updated_at' => now()
+            ];
+        }
+        $dossier->DossiersLies()->sync($intervenantsLiesOld);
+    }
+
+    // UTILISATEURS LIÉS - Laissez tel quel
+    // ====================================
+    
+    $utilisateursLiesFrom = []; // Relations de cet intervenant vers les autres
+    
+    if ($request->has('linked_utilisateurs')) {
+        foreach ($request->linked_utilisateurs as $linkedUtilisateur) {
+            if (!empty($linkedUtilisateur['user_id']) && 
+                !empty($linkedUtilisateur['role'])) {
+                
+                // Relation de cet utilisateur 
+                $utilisateursLiesFrom[$linkedUtilisateur['user_id']] = [
+                    'dossier_id' => $dossier->id,
+                    'user_id' => $linkedUtilisateur['user_id'],
+                    'role' => $linkedUtilisateur['role'],
+                    'ordre' => 1,
+                    'updated_at' => now()
+                ];
+            }
+        }
+    }
+    
+    // Synchroniser les relations de cet dossier vers les autres
+    $dossier->users()->sync($utilisateursLiesFrom);
+    
+    // Supprimer les relations qui ne sont plus présentes
+    $currentLinkedUsersIds = array_keys($utilisateursLiesFrom);
+    $allLinkedUsers = $dossier->users()->pluck('dossier_id')->toArray();
+    
+    $usersToDetach = array_diff($allLinkedUsers, $currentLinkedUsersIds);
+    
+    foreach ($usersToDetach as $userIdToDetach) {
+        // Détacher de cet dossier
+        $dossier->users()->detach($userIdToDetach);
+        
+        // Détacher la relation inverse
+        $userToDetach = Dossier::find($userIdToDetach);
+        if ($userToDetach) {
+            $userToDetach->users()->detach($dossier->id);
+        }
+    }
+
+    // Ancien format de gestion (pour compatibilité) - à supprimer éventuellement
+    if ($request->has('users_lies')) {
+        $usersLiesOld = [];
+        foreach ($request->users_lies as $userLieId) {
+            $usersLiesOld[$userLieId] = [
+                'relation' => 'représente',
+                'updated_at' => now()
+            ];
+        }
+        $dossier->users()->sync($usersLiesOld);
+    } elseif (!$request->has('linked_utilisateurs')) {
+        // Si aucun format n'est utilisé, détacher toutes les relations
+        $dossier->users()->detach();
+    }
     
     // Gérer l'upload des nouveaux fichiers
     if ($request->hasFile('fichiers')) {
@@ -658,6 +662,28 @@ public function update(UpdateDossierRequest $request, Dossier $dossier)
         ->with('success', 'Dossier mis à jour avec succès.');
 }
 
+/**
+ * Helper function to get inverse relation type
+ */
+private function getInverseRelation($relation)
+{
+    $inverseMap = [
+        'parent' => 'enfant',
+        'enfant' => 'parent',
+        'frère' => 'frère',
+        'sœur' => 'sœur',
+        'associé' => 'associé',
+        'concurrent' => 'concurrent',
+        'client' => 'fournisseur',
+        'fournisseur' => 'client',
+        'partenaire' => 'partenaire',
+        'représente' => 'représenté par',
+        'représenté par' => 'représente'
+    ];
+    
+    return $inverseMap[$relation] ?? 'lié à';
+}
+
     public function destroy(Dossier $dossier): JsonResponse
     {
         $this->authorize('delete_dossiers', Dossier::class);
@@ -667,6 +693,275 @@ public function update(UpdateDossierRequest $request, Dossier $dossier)
             'message' => 'Dossier supprimé avec succès.'
         ], 200);
     }
+    
+    // Dans votre DossierController.php
+
+
+    /**
+     * Récupérer les données des dossiers liés pour DataTables
+     */
+    public function getLinkedDossiersData(Dossier $dossier)
+    {
+        try {
+            // Récupérer les dossiers liés avec les informations nécessaires
+            // On utilise la relation dossiersLies() qui fait référence à la table dossier_dossier
+            $linkedDossiers = $dossier->dossiersLies()
+                ->select([
+                    'dossiers.id',
+                    'dossiers.numero_dossier',
+                    'dossiers.nom_dossier',
+                    'dossiers.objet',
+                    'dossiers.date_entree',
+                    'dossier_dossier.relation as pivot_relation',
+                    'dossier_dossier.created_at as pivot_created_at'
+                ])
+                ->orderBy('dossier_dossier.created_at', 'desc')
+                ->get();
+
+            // Formater les données pour DataTables
+            $formattedData = $linkedDossiers->map(function ($linkedDossier) {
+                return [
+                    'id' => $linkedDossier->id,
+                    'numero_dossier' => $linkedDossier->numero_dossier,
+                    'nom_dossier' => $linkedDossier->nom_dossier,
+                    'objet' => $linkedDossier->objet,
+                    'date_entree' => $linkedDossier->date_entree ? $linkedDossier->date_entree : null,
+                    'pivot_relation' => $linkedDossier->pivot_relation ?? 'Non définie',
+                    'pivot_created_at' => $linkedDossier->pivot_created_at ? $linkedDossier->pivot_created_at->format('d/m/Y H:i') : null,
+                    'DT_RowId' => 'row_' . $linkedDossier->id,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedData,
+                'message' => 'Dossiers liés récupérés avec succès',
+                'count' => $linkedDossiers->count(),
+                'draw' => request()->input('draw', 1)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur getLinkedDossiersData:', [
+                'dossier_id' => $dossier->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des dossiers liés',
+                'data' => [],
+                'count' => 0
+            ], 500);
+        }
+    }
+
+    /**
+     * Attacher un dossier
+     */
+    public function attachDossier(Request $request, Dossier $dossier)
+    {
+        // Validation
+        $validator = Validator::make($request->all(), [
+            'dossier_lie_id' => [
+                'required',
+                'exists:dossiers,id',
+                function ($attribute, $value, $fail) use ($dossier) {
+                    if ($value == $dossier->id) {
+                        $fail('Vous ne pouvez pas lier un dossier à lui-même.');
+                    }
+                }
+            ],
+            'relation' => 'nullable|string|max:255'
+        ], [
+            'dossier_lie_id.required' => 'Veuillez sélectionner un dossier',
+            'dossier_lie_id.exists' => 'Le dossier sélectionné n\'existe pas',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Vérifier si la relation existe déjà (dans un sens)
+            $alreadyLinked = $dossier->dossiersLies()
+                ->where('dossier_lie_id', $request->dossier_lie_id)
+                ->exists();
+
+            if ($alreadyLinked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce dossier est déjà lié'
+                ], 409); // 409 Conflict
+            }
+
+            // Vérifier la relation inverse
+            $inverseLinked = DB::table('dossier_dossier')
+                ->where('dossier_id', $request->dossier_lie_id)
+                ->where('dossier_lie_id', $dossier->id)
+                ->exists();
+
+            // if ($inverseLinked) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Cette relation existe déjà dans l\'autre sens'
+            //     ], 409);
+            // }
+
+            // Attacher le dossier avec la relation
+            $dossier->dossiersLies()->attach($request->dossier_lie_id, [
+                'relation' => $request->input('relation', 'Dossier connexe'),
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            // Récupérer les informations du dossier attaché
+            $attachedDossier = Dossier::findOrFail($request->dossier_lie_id);
+
+            DB::commit();
+
+            // Journalisation
+            \Log::info('Dossier lié', [
+                'dossier_id' => $dossier->id,
+                'dossier_numero' => $dossier->numero_dossier,
+                'dossier_lie_id' => $attachedDossier->id,
+                'dossier_lie_numero' => $attachedDossier->numero_dossier,
+                'relation' => $request->input('relation', 'Dossier connexe'),
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dossier lié avec succès',
+                'data' => [
+                    'dossier' => [
+                        'id' => $attachedDossier->id,
+                        'numero_dossier' => $attachedDossier->numero_dossier,
+                        'nom_dossier' => $attachedDossier->nom_dossier,
+                        'objet' => $attachedDossier->objet,
+                        'date_entree' => $attachedDossier->date_entree ? $attachedDossier->date_entree->format('d/m/Y') : null
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            \Log::error('Erreur attachDossier:', [
+                'dossier_id' => $dossier->id,
+                'dossier_lie_id' => $request->dossier_lie_id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'attachement du dossier: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Récupérer les dossiers disponibles pour le lien
+     */
+    public function getAvailableDossiers(Dossier $dossier)
+    {
+        try {
+            // IDs déjà liés (dans les deux sens)
+            $linkedIds = $dossier->dossiersLies()->pluck('dossier_lie_id')->toArray();
+            
+            // Ajouter les IDs où ce dossier est lié à d'autres
+            $linkedFromIds = DB::table('dossier_dossier')
+                ->where('dossier_lie_id', $dossier->id)
+                ->pluck('dossier_id')
+                ->toArray();
+            
+            $allLinkedIds = array_unique(array_merge($linkedIds, $linkedFromIds));
+            $allLinkedIds[] = $dossier->id; // Exclure le dossier actuel
+
+            // Récupérer les dossiers disponibles
+            $availableDossiers = Dossier::whereNotIn('id', $allLinkedIds)
+                ->select([
+                    'id', 
+                    'numero_dossier', 
+                    'nom_dossier', 
+                    'objet', 
+                    'date_entree',
+                    'domaine_id'
+                ])
+                ->with('domaine:id,nom')
+                ->orderBy('numero_dossier')
+                ->get()
+                ->map(function ($dossierItem) {
+                    return [
+                        'id' => $dossierItem->id,
+                        'numero_dossier' => $dossierItem->numero_dossier,
+                        'nom_dossier' => $dossierItem->nom_dossier,
+                        'objet' => $dossierItem->objet,
+                        'date_entree' => $dossierItem->date_entree ? $dossierItem->date_entree->format('d/m/Y') : null,
+                        'domaine' => $dossierItem->domaine->nom ?? null,
+                        'display_text' => $dossierItem->numero_dossier . ' - ' . ($dossierItem->objet ?? 'Sans objet')
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $availableDossiers,
+                'count' => $availableDossiers->count(),
+                'message' => 'Dossiers disponibles récupérés'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur getAvailableDossiers:', [
+                'dossier_id' => $dossier->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des dossiers disponibles',
+                'data' => [],
+                'count' => 0
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtenir les statistiques des dossiers liés
+     */
+    public function getLinkedDossiersStats(Dossier $dossier)
+    {
+        try {
+            $linkedCount = $dossier->dossiersLies()->count();
+            $linkedFromCount = DB::table('dossier_dossier')
+                ->where('dossier_lie_id', $dossier->id)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'linked_to' => $linkedCount,
+                    'linked_from' => $linkedFromCount,
+                    'total_links' => $linkedCount + $linkedFromCount
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des statistiques'
+            ], 500);
+        }
+    }
+
+
 
     public function search(Request $request): AnonymousResourceCollection
     {
@@ -717,23 +1012,132 @@ public function update(UpdateDossierRequest $request, Dossier $dossier)
         ], 200);
     }
 
+    public function getIntervenantsData(Dossier $dossier)
+{
+    try {
+        $intervenants = $dossier->intervenants()->get()->map(function ($intervenant) {
+            return [
+                'id' => $intervenant->id,
+                'identite_fr' => $intervenant->identite_fr,
+                'identite_ar' => $intervenant->identite_ar,
+                'categorie' => $intervenant->categorie,
+                'type' => $intervenant->type,
+                'mail1' => $intervenant->mail1,
+                'portable1' => $intervenant->portable1,
+                'pivot_role' => $intervenant->pivot->role ?? $intervenant->categorie,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $intervenants
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors du chargement des intervenants'
+        ], 500);
+    }
+}
     public function attachIntervenant(Request $request, Dossier $dossier): JsonResponse
-    {
+{
+    try {
         $request->validate([
             'intervenant_id' => 'required|exists:intervenants,id',
-            'role' => 'required|in:client,avocat,avocat_secondaire,adversaire,huissier,notaire,expert,juridiction,administrateur_judiciaire,mandataire_judiciaire,autre'
+            'role' => 'nullable|string|max:255' // Laissez le rôle libre ou utilisez les valeurs que vous voulez
         ]);
         
+        // Si le rôle n'est pas fourni, utilisez la catégorie de l'intervenant
+        $intervenant = Intervenant::find($request->intervenant_id);
+        $role = $request->role ?? $intervenant->categorie ?? 'Non défini';
+        
+        // Vérifier si l'intervenant n'est pas déjà attaché
+        if ($dossier->intervenants()->where('intervenants.id', $request->intervenant_id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cet intervenant est déjà lié à ce dossier.'
+            ], 422);
+        }
+        
+        // Attacher l'intervenant
         $dossier->intervenants()->attach($request->intervenant_id, [
-            'role' => $request->role
+            'role' => $role
         ]);
+        
+        // Recharger l'intervenant avec les données fraîches
+        $attachedIntervenant = Intervenant::find($request->intervenant_id);
         
         return response()->json([
-            'message' => 'Intervenant attaché au dossier avec succès.'
+            'success' => true,
+            'message' => 'Intervenant attaché au dossier avec succès.',
+            'data' => [
+                'intervenant' => $attachedIntervenant
+            ]
         ], 200);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de l\'attachement de l\'intervenant: ' . $e->getMessage()
+        ], 500);
     }
+}
 
+    /**
+ * Detach a dossier from another dossier
+ */
+public function detachDossier(Request $request, Dossier $dossier)
+{
+    try {
+        $request->validate([
+            'dossier_lie_id' => 'required|exists:dossiers,id'
+        ]);
 
+        // Check if the dossier is actually linked to this dossier
+        $isLinked = $dossier->dossiersLies()
+            ->where('dossier_lie_id', $request->dossier_lie_id)
+            ->exists();
+
+        if (!$isLinked) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce dossier n\'est pas lié à ce dossier.'
+            ], 404);
+        }
+
+        // Detach the dossier
+        $dossier->dossiersLies()->detach($request->dossier_lie_id);
+
+        // Return remaining count for UI update
+        $remainingCount = $dossier->dossiersLies()->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Dossier détaché avec succès.',
+            'remaining_count' => $remainingCount
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Données invalides.',
+            'errors' => $e->errors()
+        ], 422);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error detaching dossier: ' . $e->getMessage(), [
+            'dossier_id' => $dossier->id,
+            'dossier_lie_id' => $request->dossier_lie_id,
+            'user_id' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Une erreur est survenue lors du détachement du dossier.'
+        ], 500);
+    }
+}
     public function detachIntervenant(Request $request, Dossier $dossier)
     {
         try {

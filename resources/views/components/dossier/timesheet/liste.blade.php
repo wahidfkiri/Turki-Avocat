@@ -1,3 +1,114 @@
+<!-- Modal pour créer une feuille de temps -->
+<div class="modal fade" id="timesheetModal" tabindex="-1" role="dialog" aria-labelledby="timesheetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title text-white" id="timesheetModalLabel">
+                    <i class="fas fa-plus"></i> Ajouter une feuille de temps
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="timesheetForm">
+                <div class="modal-body">
+                    <div id="ajaxAlertContainer"></div>
+                    
+                    <!-- Date -->
+                    <div class="form-group">
+                        <label for="date_timesheet">Date *</label>
+                        <input type="date" class="form-control" id="date_timesheet" name="date_timesheet" value="{{ date('Y-m-d') }}" required>
+                        <div class="invalid-feedback" id="error_date_timesheet"></div>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="description">Description *</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Description de la tâche..." required></textarea>
+                        <div class="invalid-feedback" id="error_description"></div>
+                    </div>
+                    
+                    <!-- Utilisateur -->
+                    <div class="form-group">
+                        <label for="utilisateur_id">Utilisateur *</label>
+                        <select class="form-control" id="utilisateur_id" name="utilisateur_id" required>
+                            <option value="">Sélectionnez un utilisateur</option>
+                            @foreach($users ?? [] as $user)
+                                <option value="{{ $user->id }}" {{ auth()->id() == $user->id ? 'selected' : '' }}>
+                                    {{ $user->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="invalid-feedback" id="error_utilisateur_id"></div>
+                    </div>
+                    
+                    <!-- Catégorie -->
+                    <div class="form-group">
+                        <label for="categorieList">Catégorie *</label>
+                        <select class="form-control" id="categorieList" name="categorie_id" required>
+                            <option value="">Sélectionnez une catégorie</option>
+                            <!-- Les options seront chargées via AJAX -->
+                        </select>
+                        <div class="invalid-feedback" id="error_categorie_id"></div>
+                    </div>
+                    
+                    <!-- Type -->
+                    <div class="form-group">
+                        <label for="type">Type</label>
+                        <select class="form-control" id="type" name="type_id">
+                            <option value="">Sélectionnez d'abord une catégorie</option>
+                        </select>
+                        <div class="invalid-feedback" id="error_type_id"></div>
+                    </div>
+                    
+                    <!-- Quantité et Prix -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="quantite">Quantité *</label>
+                                <input type="number" step="0.01" min="0.01" class="form-control" id="quantite" name="quantite" value="1" required>
+                                <div class="invalid-feedback" id="error_quantite"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="prix">Prix unitaire (DT) *</label>
+                                <input type="number" step="0.01" min="0.01" class="form-control" id="prix" name="prix" value="0" required>
+                                <div class="invalid-feedback" id="error_prix"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Total calculé -->
+                    <div class="form-group">
+                        <label>Total calculé</label>
+                        <input type="text" class="form-control-plaintext bg-light p-2 rounded" id="total_calcule" value="0,00 DT" readonly>
+                    </div>
+                    
+                    <!-- Fichier -->
+                    <div class="form-group">
+                        <label for="file">Fichier (optionnel)</label>
+                        <input type="file" class="form-control-file" id="file" name="file">
+                        <small class="form-text text-muted">Formats acceptés: PDF, Word, Excel, Images (max: 10MB)</small>
+                        <div class="invalid-feedback" id="error_file"></div>
+                    </div>
+                    
+                    <!-- Champ caché pour le dossier_id -->
+                    <input type="hidden" name="dossier_id" value="{{ $dossier->id }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i> Créer la feuille de temps
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Onglet Feuille de temps -->
 <div class="tab-pane fade" id="timesheet" role="tabpanel" aria-labelledby="timesheet-tab">
     <div class="p-3">
@@ -135,6 +246,7 @@
         </div>
     </div>
 </div>
+
 <script>
 $(document).ready(function() {
     // ============================
@@ -144,11 +256,15 @@ $(document).ready(function() {
     var currentTimesheetId = null;
     let currentCategorieId = null;
     
+    // Variables pour les routes avec le dossier actuel
+    window.dossierId = {{ $dossier->id }};
+    window.createTimesheetUrl = '{{ route("time-sheets.store") }}'; // Route globale
+    window.timesheetsDataUrl = '{{ route("dossier.timesheets.data", $dossier) }}'; // Data spécifique au dossier
+    
     // ============================
-    // FONCTIONS UTILITAIRES COMMUNES
+    // FONCTIONS UTILITAIRES
     // ============================
     
-    // Function to parse French number format with spaces
     function parseFrenchNumber(numberStr) {
         if (!numberStr) return 0;
         
@@ -161,7 +277,6 @@ $(document).ready(function() {
         return parseFloat(cleanStr) || 0;
     }
 
-    // Fonction pour formater les nombres en français
     function formatFrenchNumber(number, decimals = 2) {
         if (number === null || number === undefined) return '0,00 DT';
         
@@ -170,7 +285,6 @@ $(document).ready(function() {
             .replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' DT';
     }
 
-    // Fonction pour échapper le HTML
     function escapeHtml(text) {
         if (!text) return '';
         const map = {
@@ -183,25 +297,10 @@ $(document).ready(function() {
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
-    // Fonction pour formater les dates
-    function formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR');
-    }
-
-    // Fonction pour formater les dates pour input type="date"
-    function formatDateForInput(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toISOString().split('T')[0];
-    }
-
     // ============================
-    // FONCTIONS DE MESSAGES ET ERREURS
+    // FONCTIONS DE MESSAGES
     // ============================
     
-    // Fonction pour afficher les alertes
     function showAlert(type, message, container = '#ajaxAlertContainer') {
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
         const alertHtml = `
@@ -213,20 +312,13 @@ $(document).ready(function() {
             </div>
         `;
         
-        $(container).html(alertHtml);
+        $(container).html(alertHtml).show();
         
-        // Supprimer automatiquement après 5 secondes
         setTimeout(() => {
             $(container + ' .alert').alert('close');
         }, 5000);
     }
 
-    // Fonction pour afficher une alerte
-    function showTimesheetAlert(message, type = 'danger') {
-        showAlert(type, message, '#timesheetAjaxAlert');
-    }
-
-    // Fonction pour afficher une alerte SweetAlert
     function showTimesheetToast(type, message) {
         if (typeof Swal !== 'undefined') {
             const Toast = Swal.mixin({
@@ -246,23 +338,21 @@ $(document).ready(function() {
                 title: message
             });
         } else {
-            showTimesheetAlert(message, type);
+            showAlert(message, type, '#timesheetAjaxAlert');
         }
     }
 
-    // Fonction pour effacer les erreurs de validation
     function clearValidationErrors() {
         $('.is-invalid').removeClass('is-invalid');
         $('.invalid-feedback').text('');
     }
 
-    // Fonction pour afficher les erreurs de validation
     function showValidationErrors(errors) {
         clearValidationErrors();
         
         $.each(errors, function(field, messages) {
             const input = $(`[name="${field}"]`);
-            const errorDiv = $(`#${field}_error`);
+            const errorDiv = $(`#error_${field}`);
             
             if (input.length) {
                 input.addClass('is-invalid');
@@ -273,24 +363,10 @@ $(document).ready(function() {
         });
     }
 
-    // Fonction pour afficher les erreurs de formulaire timesheet
-    function showTimesheetFormErrors(errors) {
-        $.each(errors, function(field, messages) {
-            const $input = $('#' + field);
-            const $errorDiv = $('#error_' + field);
-            
-            $input.addClass('is-invalid');
-            if ($errorDiv.length) {
-                $errorDiv.html(messages[0]);
-            }
-        });
-    }
-
     // ============================
     // GESTION DES CATÉGORIES ET TYPES
     // ============================
     
-    // Fonction pour charger les catégories
     function loadCategories() {
         $.ajax({
             url: '{{ route("categories.ajax") }}',
@@ -308,7 +384,6 @@ $(document).ready(function() {
                             );
                         });
                         
-                        // Si une catégorie était sélectionnée avant le rechargement, la reselectionner
                         if (currentCategorieId && $select.attr('id') === 'categorieList') {
                             $select.val(currentCategorieId).trigger('change');
                         }
@@ -321,7 +396,6 @@ $(document).ready(function() {
         });
     }
 
-    // Fonction pour charger les types d'une catégorie
     function loadTypes(categorieId, targetSelect = '#type') {
         if (!categorieId) {
             $(targetSelect).empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>');
@@ -355,20 +429,18 @@ $(document).ready(function() {
     // GESTION DU FORMULAIRE DE CRÉATION
     // ============================
     
-    // Calcul automatique du total
     function calculateTotal() {
         const quantite = parseFloat($('#quantite').val()) || 0;
         const prix = parseFloat($('#prix').val()) || 0;
         const total = quantite * prix;
         
-        $('#total_calcule').val(total.toFixed(2) + ' DT');
+        $('#total_calcule').val(formatFrenchNumber(total));
     }
 
     // Gérer la soumission du formulaire de création via AJAX
     $('#timesheetForm').on('submit', function(e) {
         e.preventDefault();
         
-        // Désactiver le bouton de soumission
         const submitBtn = $('#submitBtn');
         const originalText = submitBtn.html();
         submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Création en cours...');
@@ -376,53 +448,62 @@ $(document).ready(function() {
         // Récupérer les données du formulaire
         const formData = new FormData(this);
         
-        // Récupérer l'URL depuis l'attribut action du formulaire original
-        const url = '{{ route("dossiers.timesheets.store", ["dossier" => $dossier->id]) }}';
+        // Ajouter le token CSRF
+        formData.append('_token', '{{ csrf_token() }}');
+        
+        console.log('Création de feuille de temps pour le dossier:', window.dossierId);
+        console.log('URL:', window.createTimesheetUrl);
         
         // Envoyer la requête AJAX
         $.ajax({
-            url: url,
+            url: window.createTimesheetUrl,
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             success: function(response) {
-                // Réactiver le bouton
                 submitBtn.prop('disabled', false).html(originalText);
                 
+                console.log('Réponse:', response);
+                
                 if (response.success) {
-                    // Afficher le message de succès
-                    showAlert('success', response.message);
+                    // Afficher message de succès
+                    showAlert('success', response.message, '#ajaxAlertContainer');
                     
                     // Réinitialiser le formulaire
                     $('#timesheetForm')[0].reset();
-                    $('#total_calcule').val('0.00 DT');
-                    loadTypes('');
+                    $('#date_timesheet').val('{{ date("Y-m-d") }}');
+                    $('#total_calcule').val('0,00 DT');
+                    $('#type').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>');
+                    currentCategorieId = null;
                     
-                    // Rafraîchir le tableau des feuilles de temps
+                    // Rafraîchir SEULEMENT le DataTable
                     if (timesheetTable) {
                         timesheetTable.ajax.reload(null, false);
+                        showTimesheetToast('success', 'Feuille de temps créée avec succès');
                     }
                     
-                    // Fermer le modal après 2 secondes
+                    // Fermer le modal après 1.5 secondes
                     setTimeout(function() {
                         $('#timesheetModal').modal('hide');
-                    }, 2000);
+                        $('#ajaxAlertContainer').empty();
+                    }, 1500);
                 }
             },
             error: function(xhr) {
-                // Réactiver le bouton
                 submitBtn.prop('disabled', false).html(originalText);
                 
+                console.error('Erreur:', xhr);
+                
                 if (xhr.status === 422) {
-                    // Erreurs de validation
                     const errors = xhr.responseJSON.errors;
                     showValidationErrors(errors);
-                    showAlert('danger', 'Veuillez corriger les erreurs dans le formulaire');
+                    showAlert('danger', 'Veuillez corriger les erreurs', '#ajaxAlertContainer');
+                } else if (xhr.status === 403) {
+                    showAlert('danger', 'Permission refusée', '#ajaxAlertContainer');
                 } else {
-                    // Autres erreurs
-                    const message = xhr.responseJSON?.message || 'Une erreur est survenue lors de la création';
-                    showAlert('danger', message);
+                    const message = xhr.responseJSON?.message || 'Erreur lors de la création';
+                    showAlert('danger', message, '#ajaxAlertContainer');
                 }
             }
         });
@@ -432,7 +513,6 @@ $(document).ready(function() {
     // DATATABLE DES FEUILLES DE TEMPS
     // ============================
     
-    // Fonction pour calculer les totaux
     function calculateTimesheetTotals() {
         var totalQuantite = 0;
         var totalPrix = 0;
@@ -457,23 +537,21 @@ $(document).ready(function() {
         $('#totalMontant').text(formatFrenchNumber(totalMontant));
     }
 
-    // Initialiser la DataTable
     function initTimesheetDataTable() {
         if ($('#timesheetsTable').length) {
             timesheetTable = $('#timesheetsTable').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: '{{ route("dossier.timesheets.data", $dossier->id) }}',
+                    url: window.timesheetsDataUrl,
                     type: 'GET',
                     dataSrc: function (json) {
-                        console.log('Données reçues du serveur:', json);
                         return json.data;
                     },
                     error: function(xhr, error, thrown) {
                         console.error('Erreur DataTable:', error, thrown);
                         if (xhr.status === 403) {
-                            showTimesheetAlert('Vous n\'avez pas la permission de voir les feuilles de temps', 'danger');
+                            showTimesheetToast('danger', 'Vous n\'avez pas la permission de voir les feuilles de temps');
                         }
                     }
                 },
@@ -481,45 +559,12 @@ $(document).ready(function() {
                     { 
                         data: 'date_timesheet',
                         name: 'date_timesheet',
-                        render: function(data, type, row) {
+                        render: function(data) {
                             if (!data) return '';
-                            
                             try {
-                                // If data is already a formatted date, return it
-                                if (typeof data === 'string' && data.match(/\d{2}\/\d{2}\/\d{4}/)) {
-                                    return data;
-                                }
-                                
-                                // Parse the date
-                                let dateObj;
-                                
-                                // Try parsing as ISO string first
-                                if (data.includes('T')) {
-                                    dateObj = new Date(data);
-                                } else {
-                                    // Try parsing as date string
-                                    dateObj = new Date(data);
-                                    
-                                    // If that fails, check if it's a timestamp
-                                    if (isNaN(dateObj.getTime()) && !isNaN(data)) {
-                                        dateObj = new Date(parseInt(data));
-                                    }
-                                }
-                                
-                                // Check if date is valid (not 1970)
-                                if (isNaN(dateObj.getTime()) || dateObj.getFullYear() === 1970) {
-                                    console.warn('Invalid or 1970 date:', data, 'for row:', row.id);
-                                    return data; // Return original data
-                                }
-                                
-                                // Format as French date
-                                return dateObj.toLocaleDateString('fr-FR', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric'
-                                });
+                                const date = new Date(data);
+                                return isNaN(date.getTime()) ? data : date.toLocaleDateString('fr-FR');
                             } catch (e) {
-                                console.error('Error parsing date:', data, e);
                                 return data;
                             }
                         }
@@ -527,43 +572,31 @@ $(document).ready(function() {
                     { 
                         data: 'description',
                         name: 'description',
-                        render: function(data) {
-                            return data ? escapeHtml(data) : '';
-                        }
+                        render: escapeHtml
                     },
                     { 
                         data: 'user.name',
                         name: 'user.name',
-                        render: function(data) {
-                            return data ? escapeHtml(data) : '';
-                        }
+                        render: escapeHtml
                     },
                     { 
                         data: 'dossier.numero_dossier',
                         name: 'dossier.numero_dossier',
-                        render: function(data) {
-                            return data ? escapeHtml(data) : '';
-                        }
+                        render: escapeHtml
                     },
                     { 
                         data: 'categorieRelation.nom',
                         name: 'categorieRelation.nom',
-                        render: function(data) {
-                            return data ? escapeHtml(data) : '';
-                        }
+                        render: escapeHtml
                     },
                     { 
                         data: 'typeRelation.nom',
                         name: 'typeRelation.nom',
-                        render: function(data) {
-                            return data ? escapeHtml(data) : '';
-                        }
+                        render: escapeHtml
                     },
                     { 
                         data: 'quantite',
                         name: 'quantite',
-                        orderable: false,
-                        searchable: false,
                         render: function(data) {
                             var quantite = parseFloat(data) || 0;
                             return `<span data-value="${quantite}">${quantite}</span>`;
@@ -572,8 +605,6 @@ $(document).ready(function() {
                     { 
                         data: 'prix',
                         name: 'prix',
-                        orderable: false,
-                        searchable: false,
                         render: function(data) {
                             var prix = parseFloat(data) || 0;
                             return `<span data-value="${prix}">${formatFrenchNumber(prix)}</span>`;
@@ -582,8 +613,6 @@ $(document).ready(function() {
                     { 
                         data: 'total',
                         name: 'total',
-                        orderable: false,
-                        searchable: false,
                         render: function(data) {
                             var total = parseFloat(data) || 0;
                             return `<span data-value="${total}">${formatFrenchNumber(total)}</span>`;
@@ -598,22 +627,19 @@ $(document).ready(function() {
                         render: function(data, type, row) {
                             var html = '';
                             
-                            // Vérifier les permissions
                             var hasViewPermission = {{ auth()->user()->hasPermission('view_timesheets') ? 'true' : 'false' }};
                             var hasEditPermission = {{ auth()->user()->hasPermission('edit_timesheets') ? 'true' : 'false' }};
                             var hasDeletePermission = {{ auth()->user()->hasPermission('delete_timesheets') ? 'true' : 'false' }};
                             var isAdmin = {{ auth()->user()->hasRole('admin') ? 'true' : 'false' }};
                             var isOwner = row.utilisateur_id == {{ auth()->id() }};
                             
-                            // Bouton Voir
                             if (hasViewPermission) {
-                                html += `<button type="button" class="btn btn-sm btn-info view-timesheet-btn mr-1"  style="padding: 0.3rem 0.3rem;"
+                                html += `<button type="button" class="btn btn-sm btn-info view-timesheet-btn mr-1" style="padding: 0.3rem 0.3rem;"
                                         data-timesheet-id="${row.id}" title="Voir">
                                     <i class="fas fa-eye"></i>
                                 </button>`;
                             }
                             
-                            // Bouton Modifier
                             if (hasEditPermission && (isAdmin || isOwner)) {
                                 html += `<button type="button" class="btn btn-sm btn-warning edit-timesheet-btn mr-1" style="padding: 0.3rem 0.3rem;"
                                         data-timesheet-id="${row.id}" title="Modifier">
@@ -621,7 +647,6 @@ $(document).ready(function() {
                                 </button>`;
                             }
                             
-                            // Bouton Supprimer
                             if (hasDeletePermission && (isAdmin || isOwner)) {
                                 var description = row.description ? escapeHtml(row.description) : 'N/A';
                                 html += `<button type="button" class="btn btn-sm btn-danger delete-timesheet-btn" 
@@ -648,9 +673,6 @@ $(document).ready(function() {
                 autoWidth: false,
                 pageLength: 10,
                 dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                footerCallback: function () {
-                    setTimeout(calculateTimesheetTotals, 100);
-                },
                 drawCallback: function() {
                     calculateTimesheetTotals();
                     attachTimesheetEvents();
@@ -671,21 +693,17 @@ $(document).ready(function() {
     // ÉVÉNEMENTS DES FEUILLES DE TEMPS
     // ============================
     
-    // Fonction pour attacher les événements
     function attachTimesheetEvents() {
-        // Bouton Voir
         $(document).off('click', '.view-timesheet-btn').on('click', '.view-timesheet-btn', function(e) {
             e.preventDefault();
             loadTimesheetDetails($(this).data('timesheet-id'));
         });
 
-        // Bouton Modifier
         $(document).off('click', '.edit-timesheet-btn').on('click', '.edit-timesheet-btn', function(e) {
             e.preventDefault();
             loadEditTimesheetForm($(this).data('timesheet-id'));
         });
 
-        // Bouton Supprimer
         $(document).off('click', '.delete-timesheet-btn').on('click', '.delete-timesheet-btn', function(e) {
             e.preventDefault();
             const $btn = $(this);
@@ -697,7 +715,6 @@ $(document).ready(function() {
     // FONCTIONS AJAX POUR LES ACTIONS
     // ============================
     
-    // Fonction pour charger les détails
     function loadTimesheetDetails(timesheetId) {
         $('#viewTimesheetModal').modal('show');
         $('#viewTimesheetModalBody').html(`
@@ -710,182 +727,75 @@ $(document).ready(function() {
         `);
 
         $.ajax({
-            url: '/time-sheets/' + timesheetId,
+            url: '{{ route("time-sheets.details.ajax", ":id") }}'.replace(':id', timesheetId),
             type: 'GET',
             success: function(response) {
-                if (response.success && response.data) {
-                    displayTimesheetView(response.data);
+                if (response.success && response.timesheet) {
+                    displayTimesheetView(response.timesheet);
                 } else {
                     showTimesheetViewError('Erreur lors du chargement des données.');
                 }
             },
             error: function(xhr) {
-                handleAjaxError(xhr, 'voir', showTimesheetViewError);
+                showTimesheetViewError(xhr.responseJSON?.message || 'Erreur de chargement');
             }
         });
     }
 
-    // Fonction pour afficher la vue détaillée
     function displayTimesheetView(timesheet) {
-        console.log('DEBUG - Detail view timesheet data:', timesheet);
-        
-        // Helper function to safely get values
-        const getValue = (value, fallback = 'N/A') => {
-            return value !== null && value !== undefined && value !== '' ? value : fallback;
-        };
-        
-        // Format dates
-        const formatDate = (dateString) => {
-            if (!dateString) return 'N/A';
-            try {
-                const date = new Date(dateString);
-                return isNaN(date.getTime()) ? dateString : date.toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            } catch (e) {
-                return dateString;
-            }
-        };
-        
-        // Get all values
-        const date = formatDate(timesheet.date_timesheet);
-        const description = escapeHtml(getValue(timesheet.description));
-        const userName = escapeHtml(getValue(timesheet.user?.name, timesheet.user_name));
-        const userEmail = timesheet.user?.email ? `(${timesheet.user.email})` : '';
-        const dossierNum = escapeHtml(getValue(timesheet.dossier?.numero_dossier, timesheet.numero_dossier));
-        const dossierNom = escapeHtml(getValue(timesheet.dossier?.nom_dossier, timesheet.nom_dossier));
-        const categorie = escapeHtml(getValue(timesheet.categorieRelation?.nom, timesheet.categorie_nom, timesheet.categorie));
-        const type = escapeHtml(getValue(timesheet.typeRelation?.nom, timesheet.type_nom, timesheet.type));
-        const quantite = getValue(timesheet.quantite, 0);
-        const prix = getValue(timesheet.prix, 0);
-        const total = getValue(timesheet.total, quantite * prix);
-        const created_at = formatDate(timesheet.created_at);
-        const updated_at = formatDate(timesheet.updated_at);
-        
         const html = `
             <div class="timesheet-details">
-                <div class="row mb-4">
+                <div class="row">
                     <div class="col-md-12">
                         <h5 class="border-bottom pb-2 text-primary">
                             <i class="fas fa-info-circle"></i> Informations générales
                         </h5>
                         <table class="table table-sm">
                             <tr>
-                                <th width="40%">ID:</th>
-                                <td><span class="badge badge-secondary">${timesheet.id}</span></td>
-                            </tr>
-                            <tr>
-                                <th>Date:</th>
-                                <td><span class="badge badge-info">${date}</span></td>
+                                <th width="40%">Date:</th>
+                                <td><span class="badge badge-info">${timesheet.date_timesheet || 'N/A'}</span></td>
                             </tr>
                             <tr>
                                 <th width="40%;">Description:</th>
-                                <td>
-                                    <div class="bg-light p-2 rounded">
-                                        ${description}
-                                    </div>
-                                </td>
+                                <td><div class="bg-light p-2 rounded">${escapeHtml(timesheet.description || 'N/A')}</div></td>
                             </tr>
                             <tr>
                                 <th>Utilisateur:</th>
-                                <td>
-                                    ${userName}
-                                    ${userEmail ? `<br><small class="text-muted">${userEmail}</small>` : ''}
-                                    ${timesheet.user_id ? `<br><small class="text-muted">ID: ${timesheet.user_id}</small>` : ''}
-                                </td>
+                                <td>${escapeHtml(timesheet.user?.name || 'N/A')}</td>
                             </tr>
-                        </table>
-                    </div>
-                    <div class="col-md-12">
-                        <h5 class="border-bottom pb-2 text-primary">
-                            <i class="fas fa-tasks"></i> Détails techniques
-                        </h5>
-                        <table class="table table-sm">
                             <tr>
-                                <th width="40%">Dossier:</th>
-                                <td>
-                                    ${dossierNum}
-                                    ${dossierNom !== 'N/A' ? `<br><small class="text-muted">${dossierNom}</small>` : ''}
-                                    ${timesheet.dossier_id ? `<br><small class="text-muted">ID: ${timesheet.dossier_id}</small>` : ''}
-                                </td>
+                                <th>Dossier:</th>
+                                <td>${escapeHtml(timesheet.dossier?.numero_dossier || 'N/A')}</td>
                             </tr>
                             <tr>
                                 <th>Catégorie:</th>
-                                <td><span class="badge badge-warning">${categorie}</span></td>
+                                <td><span class="badge badge-warning">${escapeHtml(timesheet.categorie || 'N/A')}</span></td>
                             </tr>
                             <tr>
                                 <th>Type:</th>
-                                <td><span class="badge badge-success">${type}</span></td>
+                                <td><span class="badge badge-success">${escapeHtml(timesheet.type || 'N/A')}</span></td>
                             </tr>
                             <tr>
                                 <th>Quantité:</th>
-                                <td><span class="font-weight-bold">${quantite}</span></td>
+                                <td><span class="font-weight-bold">${timesheet.quantite || 0}</span></td>
                             </tr>
                             <tr>
                                 <th>Prix unitaire:</th>
-                                <td class="text-success font-weight-bold">${formatFrenchNumber(prix)}</td>
+                                <td class="text-success font-weight-bold">${timesheet.prix || '0,00 DT'}</td>
                             </tr>
                             <tr>
                                 <th>Total:</th>
-                                <td class="text-success font-weight-bold" style="font-size: 1.1rem;">${formatFrenchNumber(total)}</td>
+                                <td class="text-success font-weight-bold" style="font-size: 1.1rem;">${timesheet.total || '0,00 DT'}</td>
                             </tr>
                         </table>
                     </div>
                 </div>
-
-                <div class="row">
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <h6 class="alert-heading text-dark">
-                                <i class="fas fa-history"></i> Informations de suivi
-                            </h6>
-                            <div class="row">
-                                <div class="col-md-6 text-dark">
-                                    <small>
-                                        <strong><i class="fas fa-plus-circle"></i> Créé le:</strong><br>
-                                        ${created_at}
-                                    </small>
-                                </div>
-                                <div class="col-md-6 text-dark">
-                                    <small>
-                                        <strong><i class="fas fa-edit"></i> Dernière modification:</strong><br>
-                                        ${updated_at}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Fichier joint -->
-                ${timesheet.file_path ? `
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="alert alert-secondary">
-                                <h6 class="alert-heading text-dark">
-                                    <i class="fas fa-paperclip"></i> Fichier joint
-                                </h6>
-                                <p>
-                                    <i class="fas fa-file"></i> 
-                                    <a href="/storage/${timesheet.file_path}" target="_blank" class="ml-2 text-dark">
-                                        ${timesheet.file_name || 'Télécharger le fichier'}
-                                    </a>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
             </div>
         `;
         
         $('#viewTimesheetModalBody').html(html);
     }
 
-    // Fonction pour charger le formulaire d'édition
     function loadEditTimesheetForm(timesheetId) {
         currentTimesheetId = timesheetId;
         $('#editTimesheetModal').modal('show');
@@ -899,42 +809,32 @@ $(document).ready(function() {
         `);
 
         $.ajax({
-            url: '/time-sheets/' + timesheetId + '/edit',
+            url: '{{ route("time-sheets.edit", ":id") }}'.replace(':id', timesheetId),
             type: 'GET',
+            data: { ajax: true },
             success: function(response) {
-                console.log('Edit form response:', response);
                 if (response.success && response.data) {
-                    // Charger les catégories et types
                     loadCategoriesForEdit(response.data, response.categories, response.types);
                 } else {
                     showEditTimesheetError('Erreur lors du chargement du formulaire');
                 }
             },
             error: function(xhr) {
-                console.error('Error loading edit form:', xhr);
-                handleAjaxError(xhr, 'modifier', showEditTimesheetError);
+                showEditTimesheetError(xhr.responseJSON?.message || 'Erreur de chargement');
             }
         });
     }
 
-    // Fonction pour charger les catégories pour l'édition
     function loadCategoriesForEdit(timesheetData, categories = [], types = []) {
-        // Si les catégories ne sont pas fournies, les charger via AJAX
         if (!categories || categories.length === 0) {
             $.ajax({
                 url: '{{ route("categories.ajax") }}',
                 type: 'GET',
                 success: function(catResponse) {
-                    // Charger les types si nécessaire
                     loadTypesForEdit(timesheetData, catResponse, types);
                 },
                 error: function() {
-                    // Générer le formulaire avec les catégories vides
-                    $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(
-                        timesheetData, 
-                        [], 
-                        types
-                    ));
+                    $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(timesheetData, [], types));
                     initEditTimesheetForm();
                 }
             });
@@ -943,111 +843,74 @@ $(document).ready(function() {
         }
     }
 
-    // Fonction pour charger les types pour l'édition
     function loadTypesForEdit(timesheetData, categories, types) {
-        // Si les types ne sont pas fournis, les charger via AJAX
+        const categorieId = timesheetData.categorie_id || timesheetData.categorie;
         if (!types || types.length === 0) {
-            const categorieId = timesheetData.categorie_id || timesheetData.categorie;
             if (categorieId) {
                 $.ajax({
                     url: `{{ url("categories") }}/${categorieId}/types`,
                     type: 'GET',
                     success: function(typeResponse) {
-                        $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(
-                            timesheetData, 
-                            categories, 
-                            typeResponse
-                        ));
+                        $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(timesheetData, categories, typeResponse));
                         initEditTimesheetForm();
                     },
                     error: function() {
-                        // Générer le formulaire avec les types vides
-                        $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(
-                            timesheetData, 
-                            categories, 
-                            []
-                        ));
+                        $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(timesheetData, categories, []));
                         initEditTimesheetForm();
                     }
                 });
             } else {
-                $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(
-                    timesheetData, 
-                    categories, 
-                    []
-                ));
+                $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(timesheetData, categories, []));
                 initEditTimesheetForm();
             }
         } else {
-            $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(
-                timesheetData, 
-                categories, 
-                types
-            ));
+            $('#editTimesheetModalBody').html(generateEditTimesheetFormHtml(timesheetData, categories, types));
             initEditTimesheetForm();
         }
     }
 
-    // Fonction pour générer le formulaire HTML
     function generateEditTimesheetFormHtml(timesheetData, categories = [], types = []) {
-        console.log('Timesheet data for form:', timesheetData);
-        
-        // Get the date
+        // Format date for input
         let dateValue = '';
         if (timesheetData.date_timesheet) {
-            // If date is already in YYYY-MM-DD format
-            if (timesheetData.date_timesheet.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                dateValue = timesheetData.date_timesheet;
-            } else {
-                // Parse and format
-                const dateObj = new Date(timesheetData.date_timesheet);
-                if (!isNaN(dateObj.getTime())) {
-                    dateValue = dateObj.toISOString().split('T')[0];
-                }
+            const dateObj = new Date(timesheetData.date_timesheet);
+            if (!isNaN(dateObj.getTime())) {
+                dateValue = dateObj.toISOString().split('T')[0];
             }
         }
         
-        // Get utilisateur_id
         const utilisateurId = timesheetData.utilisateur_id || timesheetData.user_id || '{{ auth()->id() }}';
         const userName = timesheetData.user_name || timesheetData.user?.name || 'Utilisateur inconnu';
-        
-        // Get description
         const descriptionValue = timesheetData.description || '';
-        
-        // Get categorie and type IDs
-        const categorieId = timesheetData.categorie_id || timesheetData.categorie || timesheetData.categorieRelation?.id || '';
-        const typeId = timesheetData.type_id || timesheetData.type || timesheetData.typeRelation?.id || '';
+        const categorieId = timesheetData.categorie_id || timesheetData.categorie || '';
+        const typeId = timesheetData.type_id || timesheetData.type || '';
+        const quantiteValue = timesheetData.quantite || 0;
+        const prixValue = timesheetData.prix || 0;
 
-        // Options pour les catégories
+        // Catégories options
         let categorieOptions = '<option value="">Sélectionnez une catégorie</option>';
         if (categories && categories.length > 0) {
             categories.forEach(function(categorie) {
                 const selected = categorie.id == categorieId ? 'selected' : '';
                 categorieOptions += `<option value="${categorie.id}" ${selected}>${escapeHtml(categorie.nom)}</option>`;
             });
-        } else {
-            // Si pas de catégories chargées, montrer au moins la catégorie actuelle
-            if (categorieId) {
-                categorieOptions += `<option value="${categorieId}" selected>Catégorie ${categorieId}</option>`;
-            }
         }
 
-        // Options pour les types
+        // Types options
         let typeOptions = '<option value="">Sélectionnez un type (optionnel)</option>';
         if (types && types.length > 0) {
             types.forEach(function(type) {
                 const selected = type.id == typeId ? 'selected' : '';
                 typeOptions += `<option value="${type.id}" ${selected}>${escapeHtml(type.nom)}</option>`;
             });
-        } else {
-            // Si pas de types chargés, montrer au moins le type actuel
-            if (typeId) {
-                typeOptions += `<option value="${typeId}" selected>Type ${typeId}</option>`;
-            }
         }
 
         return `
             <form id="editTimesheetForm">
+                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="_method" value="PUT">
+                <input type="hidden" name="dossier_id" value="${window.dossierId}">
+                
                 <div class="row">
                     <!-- Date -->
                     <div class="col-md-6">
@@ -1062,11 +925,10 @@ $(document).ready(function() {
                     <!-- Utilisateur -->
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="user">Utilisateur *</label>
+                            <label>Utilisateur *</label>
                             <input type="text" class="form-control-plaintext bg-light p-2 rounded" 
                                    value="${escapeHtml(userName)}" readonly>
                             <input type="hidden" name="utilisateur_id" id="utilisateur_id" value="${utilisateurId}">
-                            <div class="invalid-feedback" id="error_utilisateur_id"></div>
                         </div>
                     </div>
 
@@ -1105,9 +967,9 @@ $(document).ready(function() {
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="quantite">Quantité *</label>
-                            <input type="number" step="0.01" class="form-control" 
+                            <input type="number" step="0.01" min="0.01" class="form-control" 
                                    id="quantite" name="quantite" 
-                                   value="${timesheetData.quantite || 0}" required>
+                                   value="${quantiteValue}" required>
                             <div class="invalid-feedback" id="error_quantite"></div>
                         </div>
                     </div>
@@ -1115,10 +977,10 @@ $(document).ready(function() {
                     <!-- Prix -->
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="prix">Prix unitaire *</label>
-                            <input type="number" step="0.01" class="form-control" 
+                            <label for="prix">Prix unitaire (DT) *</label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" 
                                    id="prix" name="prix" 
-                                   value="${timesheetData.prix || 0}" required>
+                                   value="${prixValue}" required>
                             <div class="invalid-feedback" id="error_prix"></div>
                         </div>
                     </div>
@@ -1126,9 +988,9 @@ $(document).ready(function() {
                     <!-- Total -->
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="total">Total</label>
+                            <label>Total calculé</label>
                             <input type="text" class="form-control-plaintext bg-light p-2 rounded" 
-                                   id="total" value="${formatFrenchNumber((parseFloat(timesheetData.quantite) || 0) * (parseFloat(timesheetData.prix) || 0))}" readonly>
+                                   id="total" value="${formatFrenchNumber(quantiteValue * prixValue)}" readonly>
                         </div>
                     </div>
                 </div>
@@ -1136,186 +998,188 @@ $(document).ready(function() {
         `;
     }
 
-    // Fonction pour initialiser le formulaire d'édition
     function initEditTimesheetForm() {
         // Calcul automatique du total
-        function calculateTotal() {
+        function calculateEditTotal() {
             const quantite = parseFloat($('#quantite').val()) || 0;
             const prix = parseFloat($('#prix').val()) || 0;
             $('#total').val(formatFrenchNumber(quantite * prix));
         }
         
-        $('#quantite, #prix').on('input', calculateTotal);
+        $('#quantite, #prix').on('input', calculateEditTotal);
         
         // Gérer le changement de catégorie pour charger les types
         $('#categorie_id').change(function() {
             const categorieId = $(this).val();
-            loadTypes(categorieId, '#type_id');
+            if (categorieId) {
+                $.ajax({
+                    url: `{{ url("categories") }}/${categorieId}/types`,
+                    type: 'GET',
+                    success: function(response) {
+                        const typeSelect = $('#type_id');
+                        typeSelect.empty().append('<option value="">Sélectionnez un type (optionnel)</option>');
+                        
+                        if (response.length > 0) {
+                            response.forEach(function(type) {
+                                typeSelect.append(
+                                    `<option value="${type.id}">${escapeHtml(type.nom)}</option>`
+                                );
+                            });
+                        }
+                    }
+                });
+            }
         });
     }
 
-    // Fonction pour mettre à jour une feuille de temps
+    // FONCTION POUR LA MISE À JOUR
     function updateTimesheet() {
-        // Get form values
-        const dateToSend = $('#date_timesheet').val();
-        
-        // Get utilisateur_id
-        let utilisateurId = $('#utilisateur_id').val();
-        console.log('DEBUG - utilisateur_id from form input:', utilisateurId);
-        
-        // If it's empty, use a fallback
-        if (!utilisateurId || utilisateurId === '') {
-            console.warn('DEBUG - utilisateur_id is empty! Using fallback.');
-            utilisateurId = '{{ auth()->id() }}';
-            $('#utilisateur_id').val(utilisateurId);
-        }
-        
-        // Get description
-        let description = $('#description').val();
-        if (!description || description.trim() === '') {
-            description = 'Modification effectuée';
-            $('#description').val(description);
-        }
-        
+        // Récupérer les valeurs du formulaire
         const formData = {
-            date_timesheet: dateToSend,
-            description: description,
+            date_timesheet: $('#date_timesheet').val(),
+            description: $('#description').val(),
+            utilisateur_id: $('#utilisateur_id').val(),
             categorie_id: $('#categorie_id').val(),
-            type_id: $('#type_id').val(),
-            utilisateur_id: utilisateurId,
-            quantite: parseFloat($('#quantite').val()) || 0,
-            prix: parseFloat($('#prix').val()) || 0,
-            dossier_id: {{ $dossier->id }},
+            type_id: $('#type_id').val() || null,
+            quantite: $('#quantite').val(),
+            prix: $('#prix').val(),
+            dossier_id: window.dossierId,
             _token: '{{ csrf_token() }}',
             _method: 'PUT'
         };
+
+        console.log('Données envoyées pour mise à jour:', formData);
+
+        // Validation basique côté client
+        const requiredFields = ['date_timesheet', 'description', 'utilisateur_id', 'categorie_id', 'quantite', 'prix'];
+        let isValid = true;
         
-        console.log('DEBUG - Final form data to send:', formData);
-        
-        // Validate required fields
-        const requiredFields = {
-            'utilisateur_id': 'Utilisateur',
-            'description': 'Description',
-            'categorie_id': 'Catégorie',
-            'quantite': 'Quantité',
-            'prix': 'Prix'
-        };
-        
-        const missingFields = [];
-        for (const [field, label] of Object.entries(requiredFields)) {
-            if (!formData[field] || formData[field] === '') {
-                missingFields.push(label);
+        requiredFields.forEach(field => {
+            const value = formData[field];
+            const $input = $(`#${field}`);
+            const $error = $(`#error_${field}`);
+            
+            if (!value || value === '') {
+                $input.addClass('is-invalid');
+                $error.text('Ce champ est requis');
+                isValid = false;
+            } else if ((field === 'quantite' || field === 'prix') && parseFloat(value) <= 0) {
+                $input.addClass('is-invalid');
+                $error.text('La valeur doit être supérieure à 0');
+                isValid = false;
+            } else {
+                $input.removeClass('is-invalid');
+                $error.text('');
             }
-        }
-        
-        if (missingFields.length > 0) {
-            showTimesheetToast('danger', 'Champs obligatoires manquants: ' + missingFields.join(', '));
-            
-            // Highlight missing fields
-            missingFields.forEach(fieldLabel => {
-                const fieldName = Object.keys(requiredFields).find(key => requiredFields[key] === fieldLabel);
-                if (fieldName) {
-                    $(`#${fieldName}`).addClass('is-invalid');
-                    $(`#error_${fieldName}`).text(`Le champ ${fieldLabel} est requis`);
-                }
-            });
-            
+        });
+
+        if (!isValid) {
+            showTimesheetToast('danger', 'Veuillez corriger les erreurs dans le formulaire');
             return;
         }
-        
+
         const $submitBtn = $('#submitEditTimesheet');
         const originalText = $submitBtn.html();
         
         $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Enregistrement...');
-        $('.is-invalid').removeClass('is-invalid');
-        $('.invalid-feedback').empty();
+
+        // URL de mise à jour - Utiliser la route globale avec le dossier_id dans les données
+        const updateUrl = '{{ route("time-sheets.update", ":id") }}'.replace(':id', currentTimesheetId);
         
         $.ajax({
-            url: '/dossiers/time-sheets/' + currentTimesheetId,
-            type: 'POST',
+            url: updateUrl,
+            type: 'POST', // Laravel accepte POST avec _method: 'PUT'
             data: formData,
             success: function(response) {
                 $submitBtn.prop('disabled', false).html(originalText);
                 
+                console.log('Réponse mise à jour:', response);
+                
                 if (response.success) {
                     $('#editTimesheetModal').modal('hide');
-                    if (timesheetTable) timesheetTable.ajax.reload(null, false);
-                    showTimesheetToast('success', response.message || 'Feuille de temps modifiée avec succès');
+                    // Rafraîchir SEULEMENT le DataTable
+                    if (timesheetTable) {
+                        timesheetTable.ajax.reload(null, false);
+                        showTimesheetToast('success', response.message || 'Feuille de temps modifiée avec succès');
+                    }
                 } else {
                     if (response.errors) {
-                        showTimesheetFormErrors(response.errors);
+                        // Afficher les erreurs de validation
+                        $.each(response.errors, function(field, messages) {
+                            const $input = $(`#${field}`);
+                            const $error = $(`#error_${field}`);
+                            if ($input.length) {
+                                $input.addClass('is-invalid');
+                                if ($error.length) {
+                                    $error.text(messages[0]);
+                                }
+                            }
+                        });
+                        showTimesheetToast('danger', 'Veuillez corriger les erreurs');
                     } else {
-                        showTimesheetToast('danger', response.message || 'Erreur inconnue');
+                        showTimesheetToast('danger', response.message || 'Erreur lors de la modification');
                     }
                 }
             },
             error: function(xhr) {
                 $submitBtn.prop('disabled', false).html(originalText);
                 
-                console.error('Update error response:', xhr.responseJSON);
-                console.error('Update error status:', xhr.status);
+                console.error('Erreur mise à jour:', xhr);
                 
                 if (xhr.status === 422) {
-                    // Laravel validation errors
-                    if (xhr.responseJSON && xhr.responseJSON.errors) {
-                        showTimesheetFormErrors(xhr.responseJSON.errors);
-                        return;
-                    }
+                    // Erreurs de validation Laravel
+                    const errors = xhr.responseJSON.errors;
+                    $.each(errors, function(field, messages) {
+                        const $input = $(`#${field}`);
+                        const $error = $(`#error_${field}`);
+                        if ($input.length) {
+                            $input.addClass('is-invalid');
+                            if ($error.length) {
+                                $error.text(messages[0]);
+                            }
+                        }
+                    });
+                    showTimesheetToast('danger', 'Veuillez corriger les erreurs de validation');
+                } else {
+                    const message = xhr.responseJSON?.message || 'Erreur lors de la modification';
+                    showTimesheetToast('danger', message);
                 }
-                
-                let errorMessage = 'Erreur lors de la modification';
-                if (xhr.responseJSON?.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                
-                showTimesheetToast('danger', errorMessage);
             }
         });
     }
 
-    // Fonction pour gérer les erreurs AJAX
-    function handleAjaxError(xhr, action, errorCallback) {
-        let errorMessage = `Erreur lors du chargement pour ${action}`;
-        
-        if (xhr.responseJSON?.error) {
-            errorMessage = xhr.responseJSON.error;
-        } else if (xhr.status === 403) {
-            errorMessage = `Vous n'avez pas la permission de ${action} cette feuille de temps`;
-        } else if (xhr.status === 404) {
-            errorMessage = 'Feuille de temps non trouvée';
-        }
-        
-        if (errorCallback) errorCallback(errorMessage);
-    }
-
-    // Fonction pour afficher la modal de suppression
     function showDeleteTimesheetModal(timesheetId, timesheetDescription) {
         currentTimesheetId = timesheetId;
         $('#deleteTimesheetDescription').text(timesheetDescription || 'N/A');
         $('#deleteTimesheetModal').modal('show');
     }
 
-    // Fonction pour supprimer une feuille de temps
     function deleteTimesheet() {
         const $deleteBtn = $('#confirmDeleteTimesheet');
         const originalText = $deleteBtn.html();
         
         $deleteBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Suppression...');
         
+        // URL de suppression - Utiliser la route globale
+        const deleteUrl = '{{ route("time-sheets.destroy", ":id") }}'.replace(':id', currentTimesheetId);
+        
         $.ajax({
-            url: '/time-sheets/' + currentTimesheetId,
+            url: deleteUrl,
             type: 'DELETE',
             data: {
                 _token: '{{ csrf_token() }}',
-                dossier_id: '{{ $dossier->id }}'
+                dossier_id: window.dossierId
             },
             success: function(response) {
                 $deleteBtn.prop('disabled', false).html(originalText);
                 
                 if (response.success) {
                     $('#deleteTimesheetModal').modal('hide');
-                    if (timesheetTable) timesheetTable.ajax.reload(null, false);
-                    showTimesheetToast('success', response.message || 'Feuille de temps supprimée avec succès');
+                    // Rafraîchir SEULEMENT le DataTable
+                    if (timesheetTable) {
+                        timesheetTable.ajax.reload(null, false);
+                        showTimesheetToast('success', response.message || 'Feuille de temps supprimée avec succès');
+                    }
                 } else {
                     showTimesheetToast('danger', response.message || 'Erreur lors de la suppression');
                 }
@@ -1323,17 +1187,14 @@ $(document).ready(function() {
             error: function(xhr) {
                 $deleteBtn.prop('disabled', false).html(originalText);
                 
-                let errorMessage = 'Erreur lors de la suppression';
-                if (xhr.responseJSON?.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                showTimesheetToast('danger', errorMessage);
+                const message = xhr.responseJSON?.message || 'Erreur lors de la suppression';
+                showTimesheetToast('danger', message);
             }
         });
     }
 
     // ============================
-    // FONCTIONS D'ERREUR LOCALES
+    // FONCTIONS D'ERREUR
     // ============================
     
     function showTimesheetViewError(message) {
@@ -1374,17 +1235,13 @@ $(document).ready(function() {
         });
 
         // Écouter les changements sur quantité et prix
-        $('#quantite, #prix').on('input', function() {
-            calculateTotal();
-        });
+        $('#quantite, #prix').on('input', calculateTotal);
 
         // Confirmer la suppression
         $('#confirmDeleteTimesheet').on('click', deleteTimesheet);
 
         // Soumission du formulaire d'édition
-        $('#submitEditTimesheet').on('click', function() {
-            if (currentTimesheetId) updateTimesheet();
-        });
+        $('#submitEditTimesheet').on('click', updateTimesheet);
 
         // Réinitialiser les modals quand ils sont fermés
         $('#viewTimesheetModal').on('hidden.bs.modal', function() {
@@ -1408,12 +1265,10 @@ $(document).ready(function() {
                     <p class="mt-2">Chargement du formulaire...</p>
                 </div>
             `);
-            $('#submitEditTimesheet').prop('disabled', false).html('<i class="fas fa-save"></i> Enregistrer');
         });
 
         $('#deleteTimesheetModal').on('hidden.bs.modal', function() {
             currentTimesheetId = null;
-            $('#confirmDeleteTimesheet').prop('disabled', false).html('<i class="fas fa-trash"></i> Supprimer');
         });
 
         // Reset form when modal is closed (création)
@@ -1421,11 +1276,11 @@ $(document).ready(function() {
             clearValidationErrors();
             $('#ajaxAlertContainer').empty();
             $('#timesheetForm')[0].reset();
-            $('#total_calcule').val('0.00 DT');
+            $('#date_timesheet').val('{{ date("Y-m-d") }}');
+            $('#total_calcule').val('0,00 DT');
             $('#type').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>');
             currentCategorieId = null;
             
-            // Réinitialiser le bouton
             $('#submitBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Créer la feuille de temps');
         });
     }
@@ -1434,12 +1289,7 @@ $(document).ready(function() {
     // INITIALISATION
     // ============================
     
-    // Auto-sélection de l'utilisateur connecté si c'est un avocat/secrétaire
-    @if(auth()->user()->fonction === 'avocat' || auth()->user()->fonction === 'secrétaire')
-        $('#utilisateur_id').val('{{ auth()->id() }}').trigger('change');
-    @endif
-
-    // Initialisation des composants
+    // Initialisation
     loadCategories();
     calculateTotal();
     initTimesheetDataTable();

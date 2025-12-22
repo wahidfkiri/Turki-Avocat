@@ -124,4 +124,60 @@ class Dossier extends Model
                     ->orderBy('email_date', 'desc')
                     ->paginate($perPage);
     }
+
+    // Dans votre modèle Dossier.php, ajoutez ces méthodes
+// (à ajouter à votre modèle existant)
+
+/**
+ * Scope pour rechercher des dossiers par numéro ou objet
+ */
+public function scopeSearch($query, $search)
+{
+    return $query->where(function($q) use ($search) {
+        $q->where('numero_dossier', 'LIKE', "%{$search}%")
+          ->orWhere('nom_dossier', 'LIKE', "%{$search}%")
+          ->orWhere('objet', 'LIKE', "%{$search}%");
+    });
+}
+
+/**
+ * Récupérer tous les dossiers liés (dans les deux sens)
+ */
+public function getAllLinkedDossiers()
+{
+    $linkedTo = $this->dossiersLies;
+    $linkedFrom = $this->dossiersLieDe; // Vous devez ajouter cette relation
+    
+    return $linkedTo->merge($linkedFrom);
+}
+
+/**
+ * Vérifier si un dossier est lié à un autre
+ */
+public function isLinkedTo($dossierId)
+{
+    return $this->dossiersLies()
+        ->where('dossier_lie_id', $dossierId)
+        ->exists();
+}
+
+/**
+ * Vérifier si un dossier est lié depuis un autre
+ */
+public function isLinkedFrom($dossierId)
+{
+    return DB::table('dossier_dossier')
+        ->where('dossier_id', $dossierId)
+        ->where('dossier_lie_id', $this->id)
+        ->exists();
+}
+
+// Ajoutez cette relation inverse dans votre modèle Dossier
+public function dossiersLieDe()
+{
+    return $this->belongsToMany(Dossier::class, 'dossier_dossier', 
+                'dossier_lie_id', 'dossier_id')
+                ->withPivot('relation')
+                ->withTimestamps();
+}
 }

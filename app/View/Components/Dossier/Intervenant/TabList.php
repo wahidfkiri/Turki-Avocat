@@ -11,10 +11,11 @@ class TabList extends Component
      *
      * @return void
      */
-    public $dossier;
-    public function __construct($dossier)
+    public $dossier, $intervenants;
+    public function __construct($dossier, $intervenants)
     {
         $this->dossier = $dossier;
+        $this->intervenants = $intervenants;
     }
 
     /**

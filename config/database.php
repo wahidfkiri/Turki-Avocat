@@ -43,6 +43,23 @@ return [
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
+        'roundcube' => [
+        'driver' => 'mysql',
+        'host' => env('ROUNDCUBE_DB_HOST', '127.0.0.1'),
+        'port' => env('ROUNDCUBE_DB_PORT', '3306'),
+        'database' => env('ROUNDCUBE_DB_DATABASE', 'roundcube'),
+        'username' => env('ROUNDCUBE_DB_USERNAME', 'root'),
+        'password' => env('ROUNDCUBE_DB_PASSWORD', ''),
+        'charset' => 'utf8mb4',
+        'collation' => 'utf8mb4_unicode_ci',
+        'prefix' => '',
+        'strict' => false,
+        'engine' => 'InnoDB',
+        'options' => [
+            PDO::ATTR_EMULATE_PREPARES => true,
+        ],
+    ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),

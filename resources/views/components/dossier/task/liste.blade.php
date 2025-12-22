@@ -96,7 +96,7 @@
 
 <!-- Modal pour l'édition des tâches -->
 <div class="modal fade" id="editTaskModal" tabindex="-1" role="dialog" aria-labelledby="editTaskModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-warning">
                 <h5 class="modal-title" id="editTaskModalLabel">
@@ -136,7 +136,7 @@
 .btn-group-sm .btn {
     padding: 0.25rem 0.5rem;
 }
-.modal-lg {
+.modal-xl {
     max-width: 800px;
 }
 </style>

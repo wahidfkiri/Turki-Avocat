@@ -267,3 +267,9 @@ Route::get('/file/{filename}', function ($filename) {
 Route::post('/onlyoffice/save', [OnlyOfficeController::class, 'save'])->name('onlyoffice.save');
 Route::post('/dossier/create-file-backend', [DossierController::class, 'createFileBackend'])->name('dossier.create.file.backend');
 Route::post('/intervenant/create-file-backend', [IntervenantController::class, 'createFileBackend'])->name('intervenant.create.file.backend');
+
+
+Route::get('/mail', function () {
+    header('X-Authenticated-User: contact@turkiavocats.com');
+    return redirect()->away('http://localhost:8082/dashboard/');
+})->middleware('auth');

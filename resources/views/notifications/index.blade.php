@@ -29,7 +29,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-info">
                                 <div class="inner">
-                                    <h3>{{ $totalNotifications }}</h3>
+                                    <h3 id="totalCount">{{ $totalNotifications }}</h3>
                                     <p>Total des notifications</p>
                                 </div>
                                 <div class="icon">
@@ -40,7 +40,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-warning">
                                 <div class="inner">
-                                    <h3>{{ $unreadNotifications }}</h3>
+                                    <h3 id="unreadCount">{{ $unreadNotifications }}</h3>
                                     <p>Non lues</p>
                                 </div>
                                 <div class="icon">
@@ -51,7 +51,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-success">
                                 <div class="inner">
-                                    <h3>{{ $readNotifications }}</h3>
+                                    <h3 id="readCount">{{ $readNotifications }}</h3>
                                     <p>Lues</p>
                                 </div>
                                 <div class="icon">
@@ -62,7 +62,7 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-secondary">
                                 <div class="inner">
-                                    <h3>{{ $todayNotifications }}</h3>
+                                    <h3 id="todayCount">{{ $todayNotifications }}</h3>
                                     <p>Aujourd'hui</p>
                                 </div>
                                 <div class="icon">
@@ -72,122 +72,49 @@
                         </div>
                     </div>
 
-                    <!-- Notifications Filters -->
-                    <div class="card card-primary card-outline">
-                        <div class="card-header">
-                            <h3 class="card-title">Filtres et Actions</h3>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <div class="btn-group mb-3">
-                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                                            Actions groupées
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="#" id="markAllRead">
-                                                <i class="fas fa-envelope-open mr-2"></i>Marquer toutes comme lues
-                                            </a>
-                                            <a class="dropdown-item" href="#" id="markSelectedRead">
-                                                <i class="fas fa-check-circle mr-2"></i>Marquer la sélection comme lue
-                                            </a>
-                                            <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item text-danger" href="#" id="deleteSelected">
-                                                <i class="fas fa-trash mr-2"></i>Supprimer la sélection
-                                            </a>
-                                            <a class="dropdown-item text-danger" href="#" id="deleteAllRead">
-                                                <i class="fas fa-trash-alt mr-2"></i>Supprimer toutes les lues
-                                            </a>
-                                        </div>
-                                    </div>
 
-                                    <div class="btn-group mb-3 ml-2">
-                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                                            Filtrer par statut
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['status' => 'all']) }}">
-                                                Toutes ({{ $totalNotifications }})
-                                            </a>
-                                            <a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['status' => 'unread']) }}">
-                                                Non lues ({{ $unreadNotifications }})
-                                            </a>
-                                            <a class="dropdown-item" href="{{ request()->fullUrlWithQuery(['status' => 'read']) }}">
-                                                Lues ({{ $readNotifications }})
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <form method="GET" action="{{ route('notifications.index') }}">
-                                        <div class="input-group">
-                                            <input type="text" name="search" class="form-control" placeholder="Rechercher..." value="{{ request('search') }}">
-                                            <div class="input-group-append">
-                                                <button type="submit" class="btn btn-default">
-                                                    <i class="fas fa-search"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notifications List -->
+                    <!-- Notifications List avec DataTables -->
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Liste des notifications</h3>
-                            <div class="card-tools">
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="selectAllCheckbox">
-                                    <label class="form-check-label" for="selectAllCheckbox">Tout sélectionner</label>
-                                </div>
-                            </div>
                         </div>
                         <div class="card-body p-0">
-                            @if($notifications->count() > 0)
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th width="30">
-                                                    <input type="checkbox" id="selectAllHeader">
-                                                </th>
-                                                <th width="40">Statut</th>
-                                                <th>Message</th>
-                                                <th width="150">Date</th>
-                                                <th width="100">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($notifications as $notification)
-                                                <tr class="{{ $notification->is_read ? '' : 'bg-light' }}" data-notification-id="{{ $notification->id }}">
-                                                    <td>
-                                                        <input type="checkbox" class="notification-checkbox" value="{{ $notification->id }}">
-                                                    </td>
-                                                    <td>
-                                                        @if($notification->is_read)
-                                                            <span class="badge badge-success" title="Lu">
-                                                                <i class="fas fa-envelope-open"></i>
-                                                            </span>
-                                                        @else
-                                                            <span class="badge badge-warning" title="Non lu">
-                                                                <i class="fas fa-envelope"></i>
-                                                            </span>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        <div class="notification-message"><a href="{{ route('notification.show', ['notificationId' => $notification->id]) }}">
+                            <div class="table-responsive">
+                                <table id="notificationsTable" class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="display:none;" width="30">
+                                                <input type="checkbox" id="selectAllHeader">
+                                            </th>
+                                            <th width="40">Statut</th>
+                                            <th>Message</th>
+                                            <th width="150">Date</th>
+                                            <th width="100">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($notifications as $notification)
+                                            <tr class="{{ $notification->is_read ? '' : 'bg-light' }}" data-notification-id="{{ $notification->id }}">
+                                                <td style="display:none;" >
+                                                    <input type="checkbox" class="notification-checkbox" value="{{ $notification->id }}">
+                                                </td>
+                                                <td>
+                                                    @if($notification->is_read)
+                                                        <span class="badge badge-success" title="Lu">
+                                                            <i class="fas fa-envelope-open"></i>
+                                                        </span>
+                                                    @else
+                                                        <span class="badge badge-warning" title="Non lu">
+                                                            <i class="fas fa-envelope"></i>
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <div class="notification-message">
+                                                        <a href="{{ route('notification.show', ['notificationId' => $notification->id]) }}">
                                                             <strong>{{ $notification->message }}</strong>
                                                             @if($notification->data)
                                                                 <br>
-                                                                
                                                                 <small class="text-muted">
                                                                     @php
                                                                         $data = json_decode($notification->data, true);
@@ -197,62 +124,45 @@
                                                                     @endphp
                                                                 </small>
                                                             @endif
-                                                                    </a>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <small class="text-muted">
-                                                            <i class="far fa-clock mr-1"></i>
-                                                            {{ $notification->created_at->diffForHumans() }}
-                                                        </small>
-                                                        <br>
-                                                        <small>
-                                                            {{ $notification->created_at->format('d/m/Y H:i') }}
-                                                        </small>
-                                                    </td>
-                                                    <td>
-                                                        <div class="btn-group">
-                                                            @if(!$notification->is_read)
-                                                                <button class="btn btn-sm btn-outline-success mark-read-btn" 
-                                                                        data-id="{{ $notification->id }}"
-                                                                        title="Marquer comme lu">
-                                                                    <i class="fas fa-check"></i>
-                                                                </button>
-                                                            @else
-                                                                <button class="btn btn-sm btn-outline-warning mark-unread-btn" 
-                                                                        data-id="{{ $notification->id }}"
-                                                                        title="Marquer comme non lu">
-                                                                    <i class="fas fa-envelope"></i>
-                                                                </button>
-                                                            @endif
-                                                            <button class="btn btn-sm btn-outline-danger delete-btn" 
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        <i class="far fa-clock mr-1"></i>
+                                                        {{ $notification->created_at->diffForHumans() }}
+                                                    </small>
+                                                    <br>
+                                                    <small data-order="{{ $notification->created_at->format('Y-m-d H:i:s') }}">
+                                                        {{ $notification->created_at->format('d/m/Y H:i') }}
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        @if(!$notification->is_read)
+                                                            <button class="btn btn-sm btn-outline-success mark-read-btn" 
                                                                     data-id="{{ $notification->id }}"
-                                                                    title="Supprimer">
-                                                                <i class="fas fa-trash"></i>
+                                                                    title="Marquer comme lu">
+                                                                <i class="fas fa-check"></i>
                                                             </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @else
-                                <div class="text-center py-5">
-                                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-                                    <h4 class="text-muted">Aucune notification</h4>
-                                    <p class="text-muted">Vous n'avez aucune notification pour le moment.</p>
-                                </div>
-                            @endif
-                        </div>
-                        <div class="card-footer clearfix">
-                            <div class="float-left">
-                                <div class="dataTables_info">
-                                    Affichage de {{ $notifications->firstItem() }} à {{ $notifications->lastItem() }} sur {{ $notifications->total() }} notifications
-                                </div>
-                            </div>
-                            <div class="float-right">
-                                {{ $notifications->links() }}
+                                                        @else
+                                                            <button class="btn btn-sm btn-outline-warning mark-unread-btn" 
+                                                                    data-id="{{ $notification->id }}"
+                                                                    title="Marquer comme non lu">
+                                                                <i class="fas fa-envelope"></i>
+                                                            </button>
+                                                        @endif
+                                                        <button class="btn btn-sm btn-outline-danger delete-btn" 
+                                                                data-id="{{ $notification->id }}"
+                                                                title="Supprimer">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -284,294 +194,13 @@
         </div>
     </div>
 </div>
+
+<!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
-<script>
-$(document).ready(function() {
-    let currentNotificationId = null;
+<!-- CDN DataTables -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
 
-    // Select all functionality
-    $('#selectAllHeader').change(function() {
-        $('.notification-checkbox').prop('checked', this.checked);
-    });
-
-    $('.notification-checkbox').change(function() {
-        if (!this.checked) {
-            $('#selectAllHeader').prop('checked', false);
-        } else {
-            const allChecked = $('.notification-checkbox:checked').length === $('.notification-checkbox').length;
-            $('#selectAllHeader').prop('checked', allChecked);
-        }
-    });
-
-    // Mark as read
-    $('.mark-read-btn').click(function() {
-        const notificationId = $(this).data('id');
-        markAsRead(notificationId, $(this).closest('tr'));
-    });
-
-    // Mark as unread
-    $('.mark-unread-btn').click(function() {
-        const notificationId = $(this).data('id');
-        markAsUnread(notificationId, $(this).closest('tr'));
-    });
-
-    // Delete single notification
-    $('.delete-btn').click(function() {
-        currentNotificationId = $(this).data('id');
-        $('#deleteModal').modal('show');
-    });
-
-    // Confirm delete
-    $('#confirmDelete').click(function() {
-        if (currentNotificationId) {
-            deleteNotification(currentNotificationId);
-        }
-    });
-
-    // Bulk actions
-    $('#markAllRead').click(function(e) {
-        e.preventDefault();
-        if (confirm('Marquer toutes les notifications comme lues ?')) {
-            markAllAsRead();
-        }
-    });
-
-    $('#markSelectedRead').click(function(e) {
-        e.preventDefault();
-        const selectedIds = getSelectedNotificationIds();
-        if (selectedIds.length > 0) {
-            markMultipleAsRead(selectedIds);
-        } else {
-            alert('Veuillez sélectionner au moins une notification.');
-        }
-    });
-
-    $('#deleteSelected').click(function(e) {
-        e.preventDefault();
-        const selectedIds = getSelectedNotificationIds();
-        if (selectedIds.length > 0) {
-            if (confirm(`Supprimer ${selectedIds.length} notification(s) sélectionnée(s) ?`)) {
-                deleteMultipleNotifications(selectedIds);
-            }
-        } else {
-            alert('Veuillez sélectionner au moins une notification.');
-        }
-    });
-
-    $('#deleteAllRead').click(function(e) {
-        e.preventDefault();
-        if (confirm('Supprimer toutes les notifications lues ? Cette action est irréversible.')) {
-            deleteAllReadNotifications();
-        }
-    });
-
-    // Helper functions
-    function getSelectedNotificationIds() {
-        return $('.notification-checkbox:checked').map(function() {
-            return $(this).val();
-        }).get();
-    }
-
-    function markAsRead(notificationId, row) {
-        $.ajax({
-            url: `/notifications/${notificationId}/read`,
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    row.removeClass('bg-light');
-                    row.find('.badge').removeClass('badge-warning').addClass('badge-success')
-                        .html('<i class="fas fa-envelope-open"></i>');
-                    row.find('.mark-read-btn').removeClass('btn-outline-success mark-read-btn')
-                        .addClass('btn-outline-warning mark-unread-btn')
-                        .html('<i class="fas fa-envelope"></i>')
-                        .off('click').click(function() {
-                            markAsUnread(notificationId, row);
-                        });
-                    updateCounters();
-                    showToast('Notification marquée comme lue', 'success');
-                }
-            },
-            error: function() {
-                showToast('Erreur lors du marquage comme lu', 'error');
-            }
-        });
-    }
-
-    function markAsUnread(notificationId, row) {
-        $.ajax({
-            url: `/notifications/${notificationId}/unread`,
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    row.addClass('bg-light');
-                    row.find('.badge').removeClass('badge-success').addClass('badge-warning')
-                        .html('<i class="fas fa-envelope"></i>');
-                    row.find('.mark-unread-btn').removeClass('btn-outline-warning mark-unread-btn')
-                        .addClass('btn-outline-success mark-read-btn')
-                        .html('<i class="fas fa-check"></i>')
-                        .off('click').click(function() {
-                            markAsRead(notificationId, row);
-                        });
-                    updateCounters();
-                    showToast('Notification marquée comme non lue', 'success');
-                }
-            },
-            error: function() {
-                showToast('Erreur lors du marquage comme non lu', 'error');
-            }
-        });
-    }
-
-    function deleteNotification(notificationId) {
-        $.ajax({
-            url: `/notifications/${notificationId}`,
-            method: 'DELETE',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    $(`[data-notification-id="${notificationId}"]`).fadeOut(300, function() {
-                        $(this).remove();
-                        updateCounters();
-                        checkEmptyState();
-                    });
-                    $('#deleteModal').modal('hide');
-                    showToast('Notification supprimée avec succès', 'success');
-                }
-            },
-            error: function() {
-                showToast('Erreur lors de la suppression', 'error');
-                $('#deleteModal').modal('hide');
-            }
-        });
-    }
-
-    function markAllAsRead() {
-        $.ajax({
-            url: '{{ route("notifications.markAllRead") }}',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                }
-            },
-            error: function() {
-                showToast('Erreur lors du marquage de toutes les notifications', 'error');
-            }
-        });
-    }
-
-    function markMultipleAsRead(ids) {
-        $.ajax({
-            url: '{{ route("notifications.markMultipleRead") }}',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                ids: ids
-            },
-            success: function(response) {
-                if (response.success) {
-                    ids.forEach(id => {
-                        const row = $(`[data-notification-id="${id}"]`);
-                        markAsRead(id, row);
-                    });
-                }
-            },
-            error: function() {
-                showToast('Erreur lors du marquage des notifications', 'error');
-            }
-        });
-    }
-
-    function deleteMultipleNotifications(ids) {
-        $.ajax({
-            url: '{{ route("notifications.deleteMultiple") }}',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                ids: ids,
-                _method: 'DELETE'
-            },
-            success: function(response) {
-                if (response.success) {
-                    ids.forEach(id => {
-                        $(`[data-notification-id="${id}"]`).fadeOut(300, function() {
-                            $(this).remove();
-                        });
-                    });
-                    setTimeout(() => {
-                        updateCounters();
-                        checkEmptyState();
-                    }, 300);
-                    showToast('Notifications supprimées avec succès', 'success');
-                }
-            },
-            error: function() {
-                showToast('Erreur lors de la suppression des notifications', 'error');
-            }
-        });
-    }
-
-    function deleteAllReadNotifications() {
-        $.ajax({
-            url: '{{ route("notifications.deleteAllRead") }}',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                _method: 'DELETE'
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                }
-            },
-            error: function() {
-                showToast('Erreur lors de la suppression des notifications lues', 'error');
-            }
-        });
-    }
-
-    function updateCounters() {
-        // You can implement AJAX counter updates here if needed
-        // For now, we'll reload the page to get updated counters
-        // location.reload();
-    }
-
-    function checkEmptyState() {
-        if ($('.notification-checkbox').length === 0) {
-            $('.card-body').html(`
-                <div class="text-center py-5">
-                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-                    <h4 class="text-muted">Aucune notification</h4>
-                    <p class="text-muted">Vous n'avez aucune notification pour le moment.</p>
-                </div>
-            `);
-        }
-    }
-
-    function showToast(message, type = 'info') {
-        // Simple toast implementation
-        const toast = $(`<div class="alert alert-${type} alert-dismissible fade show" style="position: fixed; top: 20px; right: 20px; z-index: 10000;">
-            ${message}
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>`);
-        $('body').append(toast);
-        setTimeout(() => toast.alert('close'), 3000);
-    }
-});
-</script>
 <style>
 .notification-message {
     max-width: 400px;
@@ -593,5 +222,451 @@ $(document).ready(function() {
 .small-box .icon {
     font-size: 70px;
 }
+
+/* Toast style */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 250px;
+}
 </style>
+
+<script>
+$(document).ready(function() {
+    let currentNotificationId = null;
+    let dataTable;
+
+    // Initialiser DataTables
+    function initializeDataTable() {
+        dataTable = $('#notificationsTable').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
+            },
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]],
+            order: [[3, 'desc']], // Trier par date décroissante
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: [0, 4] // Colonnes checkbox et actions non triables
+                },
+                {
+                    type: 'date',
+                    targets: 3 // Colonne date pour tri correct
+                }
+            ],
+            initComplete: function() {
+                // Réattacher les événements après l'initialisation
+                reattachEvents();
+            },
+            drawCallback: function() {
+                // Réattacher les événements après chaque redessin
+                reattachEvents();
+                updateSelectAllCheckbox();
+                updateCountersDisplay();
+            }
+        });
+    }
+
+    // Réattacher les événements aux boutons
+    function reattachEvents() {
+        // Mark as read
+        $('.mark-read-btn').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const notificationId = $(this).data('id');
+            const row = $(this).closest('tr');
+            markAsRead(notificationId, row);
+        });
+
+        // Mark as unread
+        $('.mark-unread-btn').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const notificationId = $(this).data('id');
+            const row = $(this).closest('tr');
+            markAsUnread(notificationId, row);
+        });
+
+        // Delete single notification
+        $('.delete-btn').off('click').on('click', function(e) {
+            e.stopPropagation();
+            currentNotificationId = $(this).data('id');
+            $('#deleteModal').modal('show');
+        });
+
+        // Gestion des checkbox
+        $('.notification-checkbox').off('change').on('change', function() {
+            updateSelectAllCheckbox();
+        });
+    }
+
+    // Initialiser DataTables
+    initializeDataTable();
+
+    // Recherche globale
+    $('#globalSearch').on('keyup', function() {
+        dataTable.search(this.value).draw();
+    });
+
+    // Effacer la recherche
+    $('#clearSearch').on('click', function() {
+        $('#globalSearch').val('');
+        dataTable.search('').draw();
+    });
+
+    // Filtre par statut
+    $('.filter-status').on('click', function(e) {
+        e.preventDefault();
+        const status = $(this).data('status');
+        
+        // Filtrer la colonne Statut (colonne 1)
+        dataTable.column(1).search(status === '' ? '' : (status === '1' ? 'Lu' : 'Non lu')).draw();
+        
+        // Mettre à jour le texte du bouton
+        const buttonText = $(this).text();
+        $(this).closest('.btn-group').find('.dropdown-toggle').html(buttonText);
+    });
+
+    // Sélection multiple
+    $('#selectAllHeader').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        $('.notification-checkbox').prop('checked', isChecked).trigger('change');
+    });
+
+    $('#selectAllCheckbox').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        $('#selectAllHeader').prop('checked', isChecked);
+        $('.notification-checkbox').prop('checked', isChecked).trigger('change');
+    });
+
+    function updateSelectAllCheckbox() {
+        const totalCheckboxes = $('.notification-checkbox').length;
+        const checkedCheckboxes = $('.notification-checkbox:checked').length;
+        
+        const allChecked = totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes;
+        $('#selectAllHeader').prop('checked', allChecked);
+        $('#selectAllCheckbox').prop('checked', allChecked);
+    }
+
+    // Mettre à jour l'affichage des compteurs
+    function updateCountersDisplay() {
+        const visibleRows = dataTable.rows({ filter: 'applied' }).count();
+        const unreadCount = dataTable.rows({ filter: 'applied' }).nodes().to$().filter('.bg-light').length;
+        const readCount = visibleRows - unreadCount;
+        
+        // Mettre à jour les compteurs affichés (optionnel)
+        $('#visibleCount').text(visibleRows);
+    }
+
+    // ========== FONCTIONS AJAX EXISTANTES ==========
+
+    // Mark as read
+    function markAsRead(notificationId, row) {
+        $.ajax({
+            url: '/notifications/' + notificationId + '/read',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if(response.success) {
+                    // Mettre à jour l'interface
+                    row.removeClass('bg-light');
+                    row.find('.badge').removeClass('badge-warning').addClass('badge-success')
+                        .html('<i class="fas fa-envelope-open"></i>');
+                    
+                    // Changer le bouton
+                    row.find('.mark-read-btn')
+                        .removeClass('btn-outline-success mark-read-btn')
+                        .addClass('btn-outline-warning mark-unread-btn')
+                        .html('<i class="fas fa-envelope"></i>')
+                        .attr('title', 'Marquer comme non lu');
+                    
+                    // Mettre à jour les compteurs côté client
+                    updateLocalCounters(-1); // -1 non lue, +1 lue
+                    showToast('Notification marquée comme lue', 'success');
+                    
+                    // Réattacher les événements
+                    reattachEvents();
+                }
+            },
+            error: function() {
+                showToast('Erreur lors du marquage comme lu', 'error');
+            }
+        });
+    }
+
+    // Mark as unread
+    function markAsUnread(notificationId, row) {
+        $.ajax({
+            url: '/notifications/' + notificationId + '/unread',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if(response.success) {
+                    // Mettre à jour l'interface
+                    row.addClass('bg-light');
+                    row.find('.badge').removeClass('badge-success').addClass('badge-warning')
+                        .html('<i class="fas fa-envelope"></i>');
+                    
+                    // Changer le bouton
+                    row.find('.mark-unread-btn')
+                        .removeClass('btn-outline-warning mark-unread-btn')
+                        .addClass('btn-outline-success mark-read-btn')
+                        .html('<i class="fas fa-check"></i>')
+                        .attr('title', 'Marquer comme lu');
+                    
+                    // Mettre à jour les compteurs côté client
+                    updateLocalCounters(1); // +1 non lue, -1 lue
+                    showToast('Notification marquée comme non lue', 'success');
+                    
+                    // Réattacher les événements
+                    reattachEvents();
+                }
+            },
+            error: function() {
+                showToast('Erreur lors du marquage comme non lu', 'error');
+            }
+        });
+    }
+
+    // Delete single notification
+    function deleteNotification(notificationId) {
+        $.ajax({
+            url: '/notifications/' + notificationId,
+            method: 'DELETE',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if(response.success) {
+                    // Supprimer la ligne du DataTable
+                    const row = dataTable.row($('tr[data-notification-id="' + notificationId + '"]'));
+                    const wasUnread = row.node().classList.contains('bg-light');
+                    
+                    row.remove().draw();
+                    
+                    // Mettre à jour les compteurs
+                    if(wasUnread) {
+                        updateLocalCounters(0, -1); // -1 non lue
+                    } else {
+                        updateLocalCounters(0, 0, -1); // -1 lue
+                    }
+                    
+                    showToast('Notification supprimée avec succès', 'success');
+                }
+            },
+            error: function() {
+                showToast('Erreur lors de la suppression', 'error');
+            }
+        });
+    }
+
+    // Bulk actions
+    $('#markAllRead').click(function(e) {
+        e.preventDefault();
+        if(confirm('Marquer toutes les notifications comme lues ?')) {
+            markAllAsRead();
+        }
+    });
+
+    $('#markSelectedRead').click(function(e) {
+        e.preventDefault();
+        const selectedIds = getSelectedNotificationIds();
+        if(selectedIds.length > 0) {
+            markMultipleAsRead(selectedIds);
+        } else {
+            alert('Veuillez sélectionner au moins une notification.');
+        }
+    });
+
+    $('#deleteSelected').click(function(e) {
+        e.preventDefault();
+        const selectedIds = getSelectedNotificationIds();
+        if(selectedIds.length > 0) {
+            if(confirm(`Supprimer ${selectedIds.length} notification(s) sélectionnée(s) ?`)) {
+                deleteMultipleNotifications(selectedIds);
+            }
+        } else {
+            alert('Veuillez sélectionner au moins une notification.');
+        }
+    });
+
+    $('#deleteAllRead').click(function(e) {
+        e.preventDefault();
+        if(confirm('Supprimer toutes les notifications lues ? Cette action est irréversible.')) {
+            deleteAllReadNotifications();
+        }
+    });
+
+    // Helper functions
+    function getSelectedNotificationIds() {
+        return $('.notification-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+    }
+
+    function markAllAsRead() {
+        $.ajax({
+            url: '/notifications/mark-all-read',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if(response.success) {
+                    location.reload();
+                }
+            },
+            error: function() {
+                showToast('Erreur lors du marquage de toutes les notifications', 'error');
+            }
+        });
+    }
+
+    function markMultipleAsRead(ids) {
+        $.ajax({
+            url: '/notifications/mark-multiple-read',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                ids: ids
+            },
+            success: function(response) {
+                if(response.success) {
+                    // Mettre à jour chaque notification sélectionnée
+                    ids.forEach(id => {
+                        const row = $('tr[data-notification-id="' + id + '"]');
+                        if(row.length) {
+                            markAsRead(id, row);
+                        }
+                    });
+                }
+            },
+            error: function() {
+                showToast('Erreur lors du marquage des notifications', 'error');
+            }
+        });
+    }
+
+    function deleteMultipleNotifications(ids) {
+        $.ajax({
+            url: '/notifications/delete-multiple',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                ids: ids,
+                _method: 'DELETE'
+            },
+            success: function(response) {
+                if(response.success) {
+                    // Supprimer chaque ligne
+                    ids.forEach(id => {
+                        const row = dataTable.row($('tr[data-notification-id="' + id + '"]'));
+                        if(row.any()) {
+                            const wasUnread = row.node().classList.contains('bg-light');
+                            row.remove();
+                            
+                            // Mettre à jour les compteurs
+                            if(wasUnread) {
+                                updateLocalCounters(0, -1);
+                            } else {
+                                updateLocalCounters(0, 0, -1);
+                            }
+                        }
+                    });
+                    dataTable.draw();
+                    
+                    showToast('Notifications supprimées avec succès', 'success');
+                }
+            },
+            error: function() {
+                showToast('Erreur lors de la suppression des notifications', 'error');
+            }
+        });
+    }
+
+    function deleteAllReadNotifications() {
+        $.ajax({
+            url: '/notifications/delete-all-read',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                _method: 'DELETE'
+            },
+            success: function(response) {
+                if(response.success) {
+                    location.reload();
+                }
+            },
+            error: function() {
+                showToast('Erreur lors de la suppression des notifications lues', 'error');
+            }
+        });
+    }
+
+    // Mettre à jour les compteurs localement
+    function updateLocalCounters(unreadChange = 0, totalChange = 0, readChange = 0) {
+        const total = parseInt($('#totalCount').text()) + totalChange;
+        const unread = parseInt($('#unreadCount').text()) + unreadChange;
+        const read = parseInt($('#readCount').text()) + readChange;
+        
+        $('#totalCount').text(total);
+        $('#unreadCount').text(unread);
+        $('#readCount').text(read);
+    }
+
+    // Confirm delete
+    $('#confirmDelete').click(function() {
+        if(currentNotificationId) {
+            deleteNotification(currentNotificationId);
+            $('#deleteModal').modal('hide');
+            currentNotificationId = null;
+        }
+    });
+
+    // Toast notification
+    function showToast(message, type = 'info') {
+        const toastClass = type === 'error' ? 'danger' : type;
+        const icon = type === 'success' ? 'check-circle' : 
+                    type === 'error' ? 'exclamation-triangle' : 'info-circle';
+        
+        const toastId = 'toast-' + Date.now();
+        const toast = $(`
+            <div id="${toastId}" class="toast bg-${toastClass} text-white" role="alert">
+                <div class="toast-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-${icon} mr-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="close text-white ml-3" data-dismiss="toast">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            </div>
+        `);
+        
+        // Créer le conteneur si nécessaire
+        if($('#toastContainer').length === 0) {
+            $('body').append('<div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>');
+        }
+        
+        $('#toastContainer').append(toast);
+        
+        // Afficher et auto-supprimer
+        toast.fadeIn();
+        setTimeout(() => {
+            toast.fadeOut(() => toast.remove());
+        }, 3000);
+        
+        // Bouton de fermeture manuel
+        toast.find('.close').on('click', function() {
+            toast.fadeOut(() => toast.remove());
+        });
+    }
+});
+</script>
 @endsection

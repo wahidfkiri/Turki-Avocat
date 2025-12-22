@@ -364,171 +364,128 @@
                                                 </div>
                                             </div>
 
-                                         <x-dossier.tab-edit :dossier="$dossier" :dossiers="$dossiers"/>
+                                        <!-- Onglet Dossiers -->
+                                        <x-dossier.tab-list :dossier="$dossier" :dossiers="$dossiers"/>
 
-<!-- Onglet Intervenants -->
+                                         <!-- Onglet Intervenants -->
 <div class="tab-pane fade" id="intervenants" role="tabpanel" aria-labelledby="intervenants-tab">
     <div class="p-3">
         <h5 class="text-primary mb-3"><i class="fas fa-handshake"></i> Gestion des intervenants</h5>
         
-        <!-- Client principal -->
-        <div class="row d-none">
-            <div class="col-md-12">
-                <div class="form-group">
-                    <label for="client_id">Client principal</label>
-                    <select class="form-control @error('client_id') is-invalid @enderror" 
-                            id="client_id" name="client_id">
-                        <option value="">Sélectionnez le client</option>
-                        @foreach($intervenants as $intervenant)
-                            @if($intervenant->categorie == 'client')
-                                <option value="{{ $intervenant->id }}" {{ old('client_id', $dossier->intervenants()->wherePivot('role', 'client')->first()?->id) == $intervenant->id ? 'selected' : '' }}>
-                                    {{ $intervenant->identite_fr }}
-                                </option>
-                            @endif
-                        @endforeach
-                    </select>
-                    @error('client_id')
-                        <span class="invalid-feedback" role="alert">
-                            <strong>{{ $message }}</strong>
-                        </span>
-                    @enderror
-                </div>
-            </div>
-        </div>
+        <!-- Alert container -->
+        <div id="intervenantAlertContainer" class="mb-3" style="display: none;"></div>
 
         <!-- Autres intervenants -->
         <div class="row">
             <div class="col-md-12">
-                
-                                                    <div class="d-flex justify-content-end align-items-center mb-3">
-                                                        <h5 class="text-primary mb-0 d-none"><i class="fas fa-users"></i> Intervenants Liés</h5>
-                                                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#linkIntervenantModal" style="float:right;">
-                                                            <i class="fas fa-link"></i> Lier un intervenant
-                                                        </button>
-                                                    </div>
-                                                     <!-- Tableau des intervenants liés -->
-                                                    <div class="card">
-                                                        <div class="card-header bg-light">
-                                                            <h6 class="mb-0"><i class="fas fa-table"></i> Liste des intervenants liés</h6>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <div class="table-responsive">
-                                                                <table class="table table-bordered table-striped" id="linkedIntervenantsTable">
-                                                                    <thead class="thead-dark">
-                                                                        <tr>
-                                                                            <th width="30%">Intervenant Lié</th>
-                                                                            <th width="30%">Role (de cet intervenant)</th>
-                                                                            <th width="10%">Actions</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody id="linked-intervenants-container">
-                                                                        @php
-    $existingLinkedIntervenants = [];
-    if ($dossier->intervenants->count() > 0) {
-        foreach ($dossier->intervenants as $index => $linkedIntervenant) {
-            $pivot = $linkedIntervenant->pivot;
-            $existingLinkedIntervenants[] = [
-                'intervenant_id' => $linkedIntervenant->id,
-                'intervenant_name' => $linkedIntervenant->identite_fr,
-                'role' => $pivot->role,
-            ];
-        }
-    }
-@endphp
-
-                                                                        @if(old('linked_intervenants'))
-                                                                            <!-- Afficher les intervenants depuis la validation -->
-                                                                            @foreach(old('linked_intervenants') as $index => $linkedIntervenant)
-                                                                            <tr class="linked-intervenant-item">
-                                                                                <td>
-                                                                                    <strong>{{ $linkedIntervenant['intervenant_name'] ?? 'Intervenant' }}</strong>
-                                                                                    <input type="hidden" name="linked_intervenants[{{ $index }}][intervenant_id]" 
-                                                                                           value="{{ $linkedIntervenant['intervenant_id'] }}">
-                                                                                    <input type="hidden" name="linked_intervenants[{{ $index }}][intervenant_name]" 
-                                                                                           value="{{ $linkedIntervenant['intervenant_name'] }}">
-                                                                                </td>
-                                                                                <td>
-                                                                                    <input type="text" class="form-control" 
-                                                                                           name="linked_intervenants[{{ $index }}][role]" 
-                                                                                           value="{{ $linkedIntervenant['intervenant_id'] ?? '' }}"
-                                                                                           placeholder="Ex: Client, Partenaire, Associé..."
-                                                                                           required>
-                                                                                </td>
-                                                                                <td class="text-center">
-                                                                                    <button type="button" class="btn btn-danger btn-sm remove-linked-intervenant">
-                                                                                        <i class="fas fa-trash"></i>
-                                                                                    </button>
-                                                                                </td>
-                                                                            </tr>
-                                                                            @endforeach
-                                                                        @elseif(count($existingLinkedIntervenants) > 0)
-                                                                            <!-- Afficher les intervenants existants depuis la base de données -->
-                                                                            @foreach($existingLinkedIntervenants as $index => $linkedIntervenant)
-                                                                            <tr class="linked-intervenant-item">
-                                                                                <td>
-                                                                                    <strong>{{ $linkedIntervenant['intervenant_name'] }}</strong>
-                                                                                    <input type="hidden" name="linked_intervenants[{{ $index }}][intervenant_id]" 
-                                                                                           value="{{ $linkedIntervenant['intervenant_id'] }}">
-                                                                                    <input type="hidden" name="linked_intervenants[{{ $index }}][intervenant_name]" 
-                                                                                           value="{{ $linkedIntervenant['intervenant_name'] }}">
-                                                                                </td>
-                                                                                <td>
-                                                                                    <input type="text" class="form-control" 
-                                                                                           name="linked_intervenants[{{ $index }}][role]" 
-                                                                                           value="{{ $linkedIntervenant['role'] }}"
-                                                                                           placeholder="Ex: Client, Partenaire, Associé..."
-                                                                                           required>
-                                                                                </td>
-                                                                                <td class="text-center">
-                                                                                    <button type="button" class="btn btn-danger btn-sm remove-linked-intervenant" data-dossier-id="{{ $dossier->id }}">
-                                                                                        <i class="fas fa-trash"></i>
-                                                                                    </button>
-                                                                                </td>
-                                                                            </tr>
-                                                                            @endforeach
-                                                                        @endif
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
-
-                                                            <!-- Message quand aucun intervenant n'est lié -->
-                                                            <div id="no-linked-intervenants" class="text-center py-4" 
-                                                                 style="{{ (old('linked_intervenants') || count($existingLinkedIntervenants) > 0) ? 'display: none;' : '' }}">
-                                                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                                                                <p class="text-muted">Aucun intervenant lié pour le moment</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                <div class="form-group d-none">
-                    <label>Autres intervenants</label>
-                    <select class="form-control" id="autres_intervenants" name="autres_intervenants[]" multiple>
-                        @foreach($intervenants as $intervenant)
-                          
-                                @php
-                                    $isSelected = $dossier->intervenants()
-                                        ->where('intervenants.id', $intervenant->id)
-                                        ->exists();
-                                @endphp
-                                <option value="{{ $intervenant->id }}" {{ $isSelected ? 'selected' : '' }}>
-                                    {{ $intervenant->identite_fr }} ({{ $intervenant->categorie }})
-                                </option>
-                         
-                        @endforeach
-                    </select>
+                <div class="card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-users"></i> Intervenants liés</h6>
+                        <button type="button" class="btn btn-primary btn-sm" id="addIntervenantBtn">
+                            <i class="fas fa-plus"></i> Ajouter un intervenant
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <!-- Intervenants table -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover w-100" id="intervenantsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Intervenant</th>
+                                        <th>Rôle (Catégorie)</th>
+                                        <th>Type</th>
+                                        <th>Email</th>
+                                        <th>Téléphone</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Les données seront chargées par DataTable via AJAX -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Rôles des intervenants -->
-        <div class="row mt-3">
-            <div class="col-md-12">
-                <div class="alert alert-info">
-                    <h6><i class="icon fas fa-info"></i> Information</h6>
-                    <p class="mb-0">
-                        Sélectionnez le client principal et éventuellement d'autres intervenants (avocats adverses, experts, etc.).
-                    </p>
+<!-- Modal pour ajouter un intervenant -->
+<div class="modal fade" id="addIntervenantModal" tabindex="-1" role="dialog" aria-labelledby="addIntervenantModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addIntervenantModalLabel">
+                    <i class="fas fa-user-plus"></i> Ajouter un intervenant au dossier
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Intervenants list -->
+                <div class="form-group">
+                    <label for="intervenantSelect">Sélectionnez un intervenant</label>
+                    <select class="form-control" id="intervenantSelect">
+                        <option value="">-- Sélectionnez un intervenant --</option>
+                        @foreach($intervenants as $intervenant)
+                            @php
+                                $isAlreadyLinked = $dossier->intervenants->contains($intervenant->id);
+                            @endphp
+                            
+                            @if(!$isAlreadyLinked)
+                                <option value="{{ $intervenant->id }}" 
+                                        data-name="{{ $intervenant->identite_fr }}"
+                                        data-email="{{ $intervenant->mail1 ?? '' }}"
+                                        data-phone="{{ $intervenant->portable1 ?? '' }}"
+                                        data-category="{{ $intervenant->categorie ?? '' }}"
+                                        data-type="{{ $intervenant->type ?? '' }}">
+                                    {{ $intervenant->identite_fr }} 
+                                    @if($intervenant->mail1)
+                                        - {{ $intervenant->mail1 }}
+                                    @endif
+                                    @if($intervenant->categorie)
+                                        ({{ $intervenant->categorie }})
+                                    @endif
+                                </option>
+                            @endif
+                        @endforeach
+                    </select>
                 </div>
+
+                <!-- Info sur l'intervenant sélectionné -->
+                <div id="intervenantInfo" class="card mt-3" style="display: none;">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informations</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nom :</strong> <span id="infoName"></span></p>
+                                <p><strong>Email :</strong> <span id="infoEmail"></span></p>
+                                <p><strong>Téléphone :</strong> <span id="infoPhone"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Catégorie :</strong> <span id="infoCategory"></span></p>
+                                <p><strong>Type :</strong> <span id="infoType"></span></p>
+                                <p><strong>Rôle attribué :</strong> <span id="infoRole" class="badge badge-info"></span></p>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-2">
+                            <small>
+                                <i class="fas fa-info-circle"></i> 
+                                Le rôle sera automatiquement défini sur la catégorie de l'intervenant.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveIntervenantBtn">
+                    <i class="fas fa-link"></i> Lier cet intervenant
+                </button>
             </div>
         </div>
     </div>
@@ -573,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
                                             <!-- Onglet Équipe -->
-                                            <x-dossier.equipe.tab-edit :users="$users" :dossier="$dossier"/>
+                                             @include('dossier_component::users')
 
                                             <!-- Onglet Facturation -->
                                             <div class="tab-pane fade d-none" id="facturation" role="tabpanel" aria-labelledby="facturation-tab">
@@ -637,22 +594,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             </div>
 
                                             <!-- Onglet Notes -->
-                                            <div class="tab-pane fade" id="notes" role="tabpanel" aria-labelledby="notes-tab">
-                                                <div class="p-3">
-                                                    <!-- Notes générales -->
-                                                    <div class="form-group">
-                                                        <label for="notes">Notes et observations</label>
-                                                        <textarea class="form-control @error('note') is-invalid @enderror" 
-                                                                  id="notes" name="note" 
-                                                                  rows="12" placeholder="Notes supplémentaires, observations, informations importantes...">{{ old('note', $dossier->note) }}</textarea>{{ old('note', $dossier->note) }}
-                                                        @error('note')
-                                                            <span class="invalid-feedback" role="alert">
-                                                                <strong>{{ $message }}</strong>
-                                                            </span>
-                                                        @enderror
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            @include('dossier_component::notes')
                                         </div>
                                     </div>
                                 </div>
@@ -891,16 +833,18 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <!-- Champ caché pour les fichiers à supprimer -->
 <input type="hidden" name="fichiers_supprimes" id="fichiers_supprimes" value="">
-
 <!-- jQuery -->
 <script src="{{ asset('assets/plugins/jquery/jquery.min.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.sumoselect/3.0.2/jquery.sumoselect.min.js"></script>
 
-<script>
-        $('.search_test2').SumoSelect({search: true, searchText: 'Sélectionner un intervenant...'});
+<!-- Inclure DataTables CSS et JS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
 
+<script>
 $(document).ready(function() {
-    // Initialisation de
+    // Initialiser Select2
     $('.select2').select2({
         theme: 'bootstrap4'
     });
@@ -1005,168 +949,204 @@ $(document).ready(function() {
         let fileName = $(this).val().split('\\').pop();
         $(this).next('.custom-file-label').addClass("selected").html(fileName);
     });
-});
 
-
-// Gestion des intervenants liés
-let linkedIntervenantsCount = {{ max(
-    old('linked_intervenants') ? count(old('linked_intervenants')) : 0,
-    count($existingLinkedIntervenants)
-) }};
-
-// Filtrage des intervenants
-$('#intervenantFilter').on('input', function() {
-    const filterText = $(this).val().toLowerCase();
-    const options = $('.intervenant-option');
-    let visibleCount = 0;
+    // ==================== GESTION DES INTERVENANTS ====================
     
-    options.each(function() {
-        const optionText = $(this).text().toLowerCase();
-        if (optionText.includes(filterText)) {
-            $(this).show();
-            visibleCount++;
+    // Variables pour les intervenants
+    const dossierId = {{ $dossier->id }};
+    const csrfToken = $('meta[name="csrf-token"]').attr('content');
+    
+    // Initialiser DataTable pour les intervenants
+    let intervenantsTable = $('#intervenantsTable').DataTable({
+        processing: true,
+        serverSide: false,
+        searching: true,
+        ordering: true,
+        paging: true,
+        pageLength: 10,
+        language: {
+            url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json"
+        },
+        ajax: {
+            url: `/dossiers/${dossierId}/intervenants-data`,
+            type: 'GET',
+            dataSrc: 'data'
+        },
+        columns: [
+            { 
+                data: null,
+                render: function(data, type, row) {
+                    return `
+                        <div class="d-flex align-items-center">
+                            <div class="mr-3">
+                                <i class="fas fa-user-circle fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <strong>${row.identite_fr}</strong>
+                                ${row.identite_ar ? '<br><small class="text-muted">' + row.identite_ar + '</small>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            { 
+                data: null,
+                render: function(data, type, row) {
+                    const role = row.pivot_role || row.categorie || 'Non défini';
+                    return `<span class="badge badge-info">${role}</span>`;
+                }
+            },
+            { 
+                data: 'type',
+                render: function(data, type, row) {
+                    return data ? `<span class="badge badge-secondary">${data}</span>` : 'Non défini';
+                }
+            },
+            { 
+                data: 'mail1',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: 'portable1',
+                render: function(data) {
+                    return data || '-';
+                }
+            },
+            { 
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    return `
+                        <div class="btn-group btn-group-sm">
+                            <a href="/intervenants/${row.id}" 
+                               class="btn btn-info" title="Voir" target="_blank">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button type="button" class="btn btn-danger detach-intervenant-btn" 
+                                    data-intervenant-id="${row.id}"
+                                    data-intervenant-name="${row.identite_fr}">
+                                <i class="fas fa-unlink"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        drawCallback: function(settings) {
+            // Réattacher les événements après chaque redessin de la table
+            attachDetachEvents();
+        },
+        initComplete: function() {
+            // Attacher les événements initialement
+            attachDetachEvents();
+        }
+    });
+
+    // Ouvrir le modal d'ajout d'intervenant
+    $('#addIntervenantBtn').click(function() {
+        $('#intervenantSelect').val('');
+        $('#intervenantInfo').hide();
+        $('#addIntervenantModal').modal('show');
+    });
+
+    // Afficher les informations quand un intervenant est sélectionné
+    $('#intervenantSelect').change(function() {
+        const selectedOption = $(this).find('option:selected');
+        
+        if ($(this).val()) {
+            $('#infoName').text(selectedOption.data('name'));
+            $('#infoEmail').text(selectedOption.data('email') || '-');
+            $('#infoPhone').text(selectedOption.data('phone') || '-');
+            $('#infoCategory').text(selectedOption.data('category') || '-');
+            $('#infoType').text(selectedOption.data('type') || '-');
+            $('#infoRole').text(selectedOption.data('category') || '-');
+            $('#intervenantInfo').show();
         } else {
-            $(this).hide();
+            $('#intervenantInfo').hide();
         }
     });
-    
-    // Afficher/masquer le message "aucun résultat"
-    if (visibleCount === 0 && filterText !== '') {
-        $('#noResults').show();
-    } else {
-        $('#noResults').hide();
-    }
-    
-    // Réinitialiser la sélection si l'option sélectionnée est masquée
-    const selectedOption = $('#intervenantList option:selected');
-    if (selectedOption.length > 0 && selectedOption.is(':hidden')) {
-        $('#intervenantList').val('');
-        $('#intervenantPreview').hide();
-    }
-});
 
-// Effacer le filtre
-$('#clearFilter').click(function() {
-    $('#intervenantFilter').val('');
-    $('.intervenant-option').show();
-    $('#noResults').hide();
-});
+    // Lier un intervenant
+    $('#saveIntervenantBtn').click(function() {
+        const intervenantId = $('#intervenantSelect').val();
+        const intervenantName = $('#intervenantSelect option:selected').data('name');
+        const intervenantCategory = $('#intervenantSelect option:selected').data('category') || 'Non défini';
 
-// Sélection d'un intervenant dans la liste
-$('#intervenantList').change(function() {
-    const selectedOption = $(this).find('option:selected');
-    const intervenantId = selectedOption.val();
-    
-    if (!intervenantId) {
-        $('#intervenantPreview').hide();
-        return;
-    }
-
-    // Afficher l'aperçu
-    $('#previewName').text(selectedOption.data('name'));
-    $('#previewEmail').text(selectedOption.data('email'));
-    $('#previewPhone').text(selectedOption.data('phone'));
-    $('#previewCategory').text(selectedOption.data('category'));
-    
-    $('#intervenantPreview').show();
-});
-
-// Confirmation du lien
-$('#confirmLinkIntervenant').click(function() {
-    const selectedOption = $('#intervenantList option:selected');
-    const intervenantId = selectedOption.val();
-    const intervenantName = selectedOption.data('name');
-    const intervenatRole = selectedOption.data('category');
-
-    if (!intervenantId) {
-        alert('Veuillez sélectionner un intervenant.');
-        return;
-    }
-
-    // Vérifier si l'intervenant n'est pas déjà lié
-    const existingLink = $(`input[value="${intervenantId}"]`).closest('.linked-intervenant-item');
-    if (existingLink.length > 0) {
-        alert('Cet intervenant est déjà lié.');
-        return;
-    }
-
-    addLinkedIntervenant(intervenantId, intervenantName, intervenatRole);
-    
-    // Reset la modal
-    $('#intervenantList').val('');
-    $('#intervenantFilter').val('');
-    $('.intervenant-option').show();
-    $('#noResults').hide();
-    $('#intervenantPreview').hide();
-    $('#linkIntervenantModal').modal('hide');
-});
-
-function addLinkedIntervenant(intervenantId, intervenantName, intervenatRole) {
-    const newIndex = linkedIntervenantsCount++;
-    
-    const linkedItem = `
-        <tr class="linked-intervenant-item">
-            <td>
-                <strong>${intervenantName}</strong>
-                <input type="hidden" name="linked_intervenants[${newIndex}][intervenant_id]" value="${intervenantId}">
-                <input type="hidden" name="linked_intervenants[${newIndex}][intervenant_name]" value="${intervenantName}">
-            </td>
-            <td>
-                <input type="text" class="form-control" 
-                       name="linked_intervenants[${newIndex}][role]" 
-                       value="${intervenatRole}"
-                       required>
-            </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm remove-linked-intervenant">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `;
-
-    $('#linked-intervenants-container').append(linkedItem);
-    $('#no-linked-intervenants').hide();
-
-    // Ajouter l'événement de suppression
-    $('.remove-linked-intervenant').off('click').on('click', function() {
-        $(this).closest('.linked-intervenant-item').remove();
-        linkedIntervenantsCount--;
-        
-        // Réindexer les éléments restants
-        reindexLinkedIntervenants();
-        
-        // Afficher le message si plus d'intervenants liés
-        if ($('#linked-intervenants-container').children().length === 0) {
-            $('#no-linked-intervenants').show();
+        if (!intervenantId) {
+            showAlert('danger', 'Veuillez sélectionner un intervenant', '#intervenantAlertContainer');
+            return;
         }
-    });
-}
 
-function reindexLinkedIntervenants() {
-    $('#linked-intervenants-container .linked-intervenant-item').each(function(index) {
-        $(this).find('input').each(function() {
-            const name = $(this).attr('name').replace(/\[\d+\]/, `[${index}]`);
-            $(this).attr('name', name);
+        $.ajax({
+            url: `/dossiers/${dossierId}/attach-intervenant`,
+            type: 'POST',
+            data: {
+                _token: csrfToken,
+                intervenant_id: intervenantId,
+                role: intervenantCategory
+            },
+            beforeSend: function() {
+                $('#saveIntervenantBtn').prop('disabled', true)
+                    .html('<i class="fas fa-spinner fa-spin"></i> En cours...');
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Fermer le modal
+                    $('#addIntervenantModal').modal('hide');
+                    
+                    // Réinitialiser le modal
+                    $('#intervenantSelect').val('');
+                    $('#intervenantInfo').hide();
+                    
+                    // Rafraîchir la DataTable
+                    intervenantsTable.ajax.reload(null, false);
+                    
+                    // Mettre à jour la liste des intervenants disponibles dans le select
+                    updateAvailableIntervenants(intervenantId);
+                    
+                    showAlert('success', response.message || `Intervenant "${intervenantName}" lié avec succès`, '#intervenantAlertContainer');
+                } else {
+                    showAlert('danger', response.message || 'Une erreur est survenue', '#intervenantAlertContainer');
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = 'Une erreur est survenue';
+                
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    errorMsg = Object.values(errors).flat().join(', ');
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                
+                showAlert('danger', errorMsg, '#intervenantAlertContainer');
+            },
+            complete: function() {
+                $('#saveIntervenantBtn').prop('disabled', false)
+                    .html('<i class="fas fa-link"></i> Lier cet intervenant');
+            }
         });
     });
-}
 
-</script>
-<script>
-// Remove linked intervenant
-$(document).on('click', '.remove-linked-intervenant', function() {
-    const row = $(this).closest('.linked-intervenant-item');
-    const intervenantId = row.find('input[name*="[intervenant_id]"]').val();
-    const intervenantName = row.find('input[name*="[intervenant_name]"]').val();
-    const dossierId = '{{ $dossier->id }}'; // Make sure $dossier is available in your view
-    
-    // Show confirmation dialog
-    if (confirm(`Êtes-vous sûr de vouloir détacher "${intervenantName}" ?`)) {
-        // Get CSRF token
-        const csrfToken = $('meta[name="csrf-token"]').attr('content');
-        
-        // Send AJAX request to detach intervenant
+    // ==================== FONCTIONS UTILITAIRES INTERVENANTS ====================
+
+    // Fonction pour attacher les événements de détachement
+    function attachDetachEvents() {
+        $('.detach-intervenant-btn').off('click').on('click', function() {
+            const intervenantId = $(this).data('intervenant-id');
+            const intervenantName = $(this).data('intervenant-name');
+
+            if (confirm(`Êtes-vous sûr de vouloir détacher "${intervenantName}" de ce dossier ?`)) {
+                detachIntervenant(intervenantId, intervenantName);
+            }
+        });
+    }
+
+    // Fonction pour détacher un intervenant
+    function detachIntervenant(intervenantId, intervenantName) {
         $.ajax({
             url: `/dossiers/${dossierId}/detach-intervenant`,
             type: 'POST',
@@ -1175,86 +1155,92 @@ $(document).on('click', '.remove-linked-intervenant', function() {
                 intervenant_id: intervenantId
             },
             beforeSend: function() {
-                // Show loading indicator
-                row.css('opacity', '0.5');
-                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+                $(`.detach-intervenant-btn[data-intervenant-id="${intervenantId}"]`)
+                    .prop('disabled', true)
+                    .html('<i class="fas fa-spinner fa-spin"></i>');
             },
             success: function(response) {
                 if (response.success) {
-                    // Remove row from table
-                    row.fadeOut(300, function() {
-                        $(this).remove();
-                        updateIntervenantCounter();
-                        showSuccessMessage(response.message);
-                        
-                        // Check if no intervenants left
-                        if ($('.linked-intervenant-item').length === 0) {
-                            $('#linked-intervenants-container').html(
-                                '<tr><td colspan="3" class="text-center text-muted">Aucun intervenant lié</td></tr>'
-                            );
-                        }
-                    });
-                } else {
-                    showErrorMessage(response.message);
-                    row.css('opacity', '1');
-                    $(this).prop('disabled', false).html('<i class="fas fa-trash"></i>');
+                    // Rafraîchir la DataTable
+                    intervenantsTable.ajax.reload(null, false);
+                    
+                    // Ajouter l'intervenant à la liste des disponibles
+                    if (response.data && response.data.intervenant) {
+                        addIntervenantToSelect(response.data.intervenant);
+                    }
+                    
+                    showAlert('success', response.message || `Intervenant "${intervenantName}" détaché avec succès`, '#intervenantAlertContainer');
                 }
             },
             error: function(xhr) {
-                console.error(xhr);
-                let errorMessage = 'Une erreur est survenue lors du détachement.';
-                
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                
-                showErrorMessage(errorMessage);
-                row.css('opacity', '1');
-                $(this).prop('disabled', false).html('<i class="fas fa-trash"></i>');
+                const errorMsg = xhr.responseJSON?.message || 'Une erreur est survenue';
+                showAlert('danger', errorMsg, '#intervenantAlertContainer');
+                $(`.detach-intervenant-btn[data-intervenant-id="${intervenantId}"]`)
+                    .prop('disabled', false)
+                    .html('<i class="fas fa-unlink"></i>');
             }
         });
     }
-});
 
-// Update counter after removal
-function updateIntervenantCounter() {
-    const count = $('.linked-intervenant-item').length;
-    $('#intervenant-count').text(count);
-}
-
-// Show success message
-function showSuccessMessage(message) {
-    // Using Toastr
-    if (typeof toastr !== 'undefined') {
-        toastr.success(message);
-    } else {
-        // Fallback to Bootstrap alert
-        $('#alert-container').html(`
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `);
+    // Mettre à jour la liste des intervenants disponibles
+    function updateAvailableIntervenants(removedIntervenantId) {
+        $(`#intervenantSelect option[value="${removedIntervenantId}"]`).remove();
+        
+        if ($('#intervenantSelect option').length === 1) {
+            $('#intervenantSelect').append(
+                '<option value="" disabled>Aucun intervenant disponible</option>'
+            );
+        }
     }
-}
 
-function showErrorMessage(message) {
-    if (typeof toastr !== 'undefined') {
-        toastr.error(message);
-    } else {
-        $('#alert-container').html(`
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `);
+    // Ajouter un intervenant au select quand il est détaché
+    function addIntervenantToSelect(intervenantData) {
+        if ($(`#intervenantSelect option[value="${intervenantData.id}"]`).length === 0) {
+            const newOption = `
+                <option value="${intervenantData.id}" 
+                        data-name="${intervenantData.identite_fr}"
+                        data-email="${intervenantData.mail1 || ''}"
+                        data-phone="${intervenantData.portable1 || ''}"
+                        data-category="${intervenantData.categorie || ''}"
+                        data-type="${intervenantData.type || ''}">
+                    ${intervenantData.identite_fr} 
+                    ${intervenantData.mail1 ? ' - ' + intervenantData.mail1 : ''}
+                    ${intervenantData.categorie ? ' (' + intervenantData.categorie + ')' : ''}
+                </option>
+            `;
+            
+            $('#intervenantSelect option[value=""][disabled]').remove();
+            $('#intervenantSelect').append(newOption);
+        }
     }
-}
-</script>
-<script>
-$(document).ready(function() {
+
+    // Fonction pour afficher une alerte
+    function showAlert(type, message, container) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        `;
+        
+        $(container).html(alertHtml).show();
+        
+        setTimeout(() => {
+            $(container + ' .alert').alert('close');
+        }, 5000);
+    }
+
+    // Réinitialiser le modal quand il se ferme
+    $('#addIntervenantModal').on('hidden.bs.modal', function() {
+        $('#intervenantSelect').val('');
+        $('#intervenantInfo').hide();
+    });
+
+    // ==================== GESTION DES DOMAINES/SOUS-DOMAINES ====================
+
     // Fonction pour charger les sous-domaines
     function loadSousDomaines(domaineId, selectedId = null) {
         if (domaineId) {
@@ -1302,19 +1288,14 @@ $(document).ready(function() {
             type: "POST",
             data: $(this).serialize(),
             success: function(response) {
-                // Ajouter l'option au select
                 var newOption = new Option(response.nom, response.id, false, true);
                 $('#domaine_id').append(newOption).trigger('change');
                 $('#domaine_modal_id').append(new Option(response.nom, response.id));
                 
-                // Fermer le modal
                 $('#addDomaineModal').modal('hide');
-                
-                // Réinitialiser le formulaire
                 $('#addDomaineForm')[0].reset();
                 $('#domaine-error').text('');
                 
-                // Charger les sous-domaines pour le nouveau domaine
                 loadSousDomaines(response.id);
                 
                 toastr.success('Domaine ajouté avec succès!');
@@ -1342,16 +1323,12 @@ $(document).ready(function() {
             type: "POST",
             data: $(this).serialize(),
             success: function(response) {
-                // Si le domaine sélectionné correspond, ajouter l'option
                 if ($('#domaine_id').val() == response.domaine_id) {
                     var newOption = new Option(response.nom, response.id, false, true);
                     $('#sous_domaine_id').append(newOption).trigger('change');
                 }
                 
-                // Fermer le modal
                 $('#addSousDomaineModal').modal('hide');
-                
-                // Réinitialiser le formulaire
                 $('#addSousDomaineForm')[0].reset();
                 $('#sous-domaine-error').text('');
                 
@@ -1381,7 +1358,6 @@ $(document).ready(function() {
         $('#nom_sous_domaine').removeClass('is-invalid');
         $('#sous-domaine-error').text('');
         
-        // Pré-sélectionner le domaine actuel dans le modal
         var currentDomaineId = $('#domaine_id').val();
         if (currentDomaineId) {
             $('#domaine_modal_id').val(currentDomaineId);
@@ -1389,4 +1365,46 @@ $(document).ready(function() {
     });
 });
 </script>
+
+<style>
+/* Styles supplémentaires */
+.intervenant-role {
+    transition: all 0.3s ease;
+}
+
+#intervenantsTable th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+#intervenantsTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+
+#intervenantInfo .card-body p {
+    margin-bottom: 0.5rem;
+}
+
+#intervenantInfo .alert {
+    margin-bottom: 0;
+}
+
+/* Style pour DataTables */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    margin-bottom: 1rem;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    margin-left: 0.5em;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+}
+</style>
 @endsection

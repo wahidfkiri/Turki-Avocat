@@ -31,4 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'roundcube' => [
+    'url' => env('ROUNDCUBE_URL', 'http://localhost:8082'),
+    'secret_key' => env('ROUNDCUBE_SECRET_KEY', 'M3d#kF9@zT2qY8!pL5sX7vR$wN1cB4jG'),
+    'db_connection' => env('ROUNDCUBE_DB_CONNECTION', 'roundcube'),
+    'imap_host' => env('ROUNDCUBE_IMAP_HOST', 'localhost'),
+    'imap_port' => env('ROUNDCUBE_IMAP_PORT', 143),
+],
+
 ];

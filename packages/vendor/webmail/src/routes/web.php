@@ -7,21 +7,30 @@ use Vendor\Webmail\Controllers\RoundcubeController;
 Auth::routes();
 Route::middleware(['web','auth','active'])
     ->group(function () {
-
-
-           Route::get('/webmail', [RoundcubeController::class, 'showIframe'])
-         ->name('webmail.index');
-
-   Route::get('/webmails', [RoundcubeController::class, 'embedWebmail'])
-         ->name('webmail.embedded');
+    // Accès au webmail
+    Route::get('/webmail', [RoundcubeController::class, 'redirectToWebmail'])
+        ->name('webmail.redirect');
     
-    // Proxy for AJAX requests (NO PARAMETER!)
-    Route::match(['GET', 'POST'], '/webmails/proxy', [RoundcubeController::class, 'proxyRequest'])
-         ->name('webmail.proxy');
+    // Tests
+    Route::get('/webmail/test', [RoundcubeController::class, 'testConnection'])
+        ->name('webmail.test');
     
-    // Simple page
-    Route::get('/webmail/simple', [RoundcubeController::class, 'simple'])
-         ->name('webmail.simple');
+    // Logs
+    Route::get('/webmail/logs', [RoundcubeController::class, 'showLogs'])
+        ->name('webmail.logs');
     
+    // Callbacks
+    Route::get('/webmail/callback', [RoundcubeController::class, 'callback'])
+        ->name('webmail.callback');
+    
+    // Actions AJAX
+    Route::post('/webmail/test/imap', [RoundcubeController::class, 'testImapManual'])
+        ->name('webmail.test.imap');
+    
+    Route::post('/webmail/generate/url', [RoundcubeController::class, 'generateTestUrl'])
+        ->name('webmail.generate.url');
+    
+    Route::post('/webmail/clear/logs', [RoundcubeController::class, 'clearLogs'])
+        ->name('webmail.clear.logs');
 });
 

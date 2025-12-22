@@ -41,7 +41,9 @@
             "Vendor\\Task\\": "packages/vendor/task/src",
             "Vendor\\Dossier\\": "packages/vendor/dossier/src",
             "Vendor\\Agenda\\": "packages/vendor/agenda/src",
-            "Vendor\\Webmail\\": "packages/vendor/webmail/src"
+            "Vendor\\Webmail\\": "packages/vendor/webmail/src",
+            "Vendor\\TimesheetFolder\\": "packages/vendor/timesheet_folder/src",
+            "Vendor\\DossierComponent\\": "packages/vendor/dossier_component/src"
         }
     },
     "autoload-dev": {

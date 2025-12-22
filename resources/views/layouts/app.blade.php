@@ -541,6 +541,52 @@ visibility:hidden
   text-decoration:underline
 }
 
+.form-control-plaintext {
+    min-height: 38px;
+    border: 1px solid #ced4da;
+}
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+.alert-info {
+    background-color: #e8f4fd;
+    border-color: #b6e0fe;
+}
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table-bordered {
+    border: 1px solid #dee2e6;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border: 1px solid #dee2e6;
+    padding: 0.75rem;
+    vertical-align: top;
+}
+.modal-xl {
+    max-width: 1140px !important;
+}
+.btn-group-sm .btn {
+  border-radius: 50% !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  box-sizing: border-box;
+}
+.btn-group-sm i {
+  font-size:12px;
+}
 </style>
 </head>
 <body class="hold-transition sidebar-mini">

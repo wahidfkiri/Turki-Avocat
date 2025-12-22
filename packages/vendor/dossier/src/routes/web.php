@@ -11,7 +11,9 @@ Route::resource('dossiers', DossierController::class);
 Route::get('get/dossiers/data', [DossierController::class, 'getDossiersData'])->name('dossiers.data');
 Route::post('dossiers/{dossier}/attach-user', [DossierController::class, 'attachUser']);
 Route::post('dossiers/{dossier}/attach-intervenant', [DossierController::class, 'attachIntervenant']);
+Route::get('/dossiers/{dossier}/intervenants-data', [DossierController::class, 'getIntervenantsData'])->name('dossiers.intervenants.data');
 Route::post('dossiers/{dossier}/detach-intervenant', [DossierController::class, 'detachIntervenant']);
+Route::post('dossiers/{dossier}/detach-dossier', [DossierController::class, 'detachDossier']);
 Route::post('dossiers/{dossier}/link-dossier', [DossierController::class, 'linkDossier']);
 Route::get('/sous-domaines/by-domaine', [DossierController::class, 'getSousDomainesByDomaine'])->name('sous-domaines.by-domaine');
 Route::get('/get-sous-domaines', [DossierController::class, 'getSousDomaines'])->name('get.sous-domaines');
@@ -52,4 +54,27 @@ Route::get('/dossier/{dossier}/tasks/data', [DossierController::class, 'getTasks
 Route::get('/task/edit-form', function() {
     return view('components.dossier.task.modal-edit');
 })->name('tasks.edit-form');
+
+ // Routes pour la gestion des dossiers liés
+    Route::prefix('dossiers/{dossier}')->name('dossiers.')->group(function () {
+        // Données pour DataTable
+        Route::get('linked-dossiers-data', [DossierController::class, 'getLinkedDossiersData'])
+            ->name('linked-dossiers-data');
+        
+        // Attacher un dossier
+        Route::post('attach-dossier', [DossierController::class, 'attachDossier'])
+            ->name('attach-dossier');
+        
+        
+        
+        // Dossiers disponibles
+        Route::get('available-dossiers', [DossierController::class, 'getAvailableDossiers'])
+            ->name('available-dossiers');
+        
+        // Statistiques
+        Route::get('linked-stats', [DossierController::class, 'getLinkedDossiersStats'])
+            ->name('linked-stats');
+    });
 });
+
+   
