@@ -172,7 +172,7 @@
 <div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-danger">
                 <h5 class="modal-title" id="deleteTaskModalLabel">Confirmation de suppression</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -193,7 +193,7 @@
 <div class="modal fade" id="taskDetailsModal" tabindex="-1" role="dialog" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-primary">
+            <div class="modal-header bg-info">
                 <h5 class="modal-title" id="taskDetailsModalLabel">
                     <i class="fas fa-tasks"></i> Détails de la tâche
                 </h5>

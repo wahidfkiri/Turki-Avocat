@@ -2,7 +2,7 @@
 <div class="modal fade" id="editTimesheetModal" tabindex="-1" role="dialog" aria-labelledby="editTimesheetModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-warning">
                 <h5 class="modal-title" id="editTimesheetModalLabel">
                     <i class="fas fa-edit"></i> Modifier la Feuille de Temps
                 </h5>

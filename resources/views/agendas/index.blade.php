@@ -26,7 +26,7 @@
             <div class="row mb-3">
                 <div class="col-md-12">
                     <div class="d-flex justify-content-end">
-                        <div class="btn-group">
+                        <div class="btn-groups">
                             <button type="button" id="btn_today" class="btn btn-info btn-sm">
                                 Aujourd'hui
                             </button>

@@ -23,13 +23,15 @@ class Agenda extends Model
         'intervenant_id',
         'utilisateur_id',
         'categorie',
-        'couleur'
+        'couleur',
+        'is_admin'
     ];
 
     protected $casts = [
         'date_debut' => 'date',
         'date_fin' => 'date',
         'all_day' => 'boolean',
+        'is_admin' => 'boolean',
     ];
 
     public function dossier()

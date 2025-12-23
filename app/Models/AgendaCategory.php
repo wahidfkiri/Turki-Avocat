@@ -16,7 +16,8 @@ class AgendaCategory extends Model
         'couleur',
         'description',
         'actif',
-        'ordre'
+        'ordre',
+        'is_admin'
     ];
 
     protected $casts = [

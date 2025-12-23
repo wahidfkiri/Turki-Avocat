@@ -9,7 +9,7 @@
                 <div class="row mb-3">
                     <div class="col-md-12">
                         <div class="d-flex justify-content-end">
-                            <div class="btn-group">
+                            <div class="btn-groups">
                                 <button type="button" id="btn_today" class="btn btn-info btn-sm">
                                     Aujourd'hui
                                 </button>
@@ -21,7 +21,7 @@
                                         <i class="fas fa-plus"></i> Créer un événement
                                     </button>
                                 @endif
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="toggleFiltersBtn" data-toggle="modal" data-target="#filtersModal">
+                                <button type="button" class="btn btn-success btn-sm" id="toggleFiltersBtn" data-toggle="modal" data-target="#filtersModal">
                                     <i class="fas fa-filter"></i> Filtres
                                 </button>
                             </div>
@@ -341,6 +341,14 @@
                         <label for="file">Pièce Jointe</label>
                         <input type="file" class="form-control" id="file" name="file">
                     </div>
+
+                    
+                        @if(auth()->user()->hasRole('admin'))
+                    <div class="form-group">
+                        <label for="intervenant_id">Evenement Admin</label>
+                        <input type="checkbox" name="is_admin" id="is_admin" value="1">
+                    </div>
+                        @endif
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>

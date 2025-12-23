@@ -26,14 +26,14 @@ class AgendaController extends Controller
     $this->authorize('view_agendas', Agenda::class);
 
     $query = Agenda::with([
-        'dossier:id,numero_dossier,nom_dossier',
-        'intervenant:id,identite_fr',
-        'user:id,name'
+        'dossier:id,id,numero_dossier,nom_dossier',
+        'intervenant:id,id,identite_fr',
+        'user:id,id,name'
     ]);
 
-    // if(!auth()->user()->hasRole('admin')){
-    //     $query->where('utilisateur_id', auth()->user()->id);
-    // }
+    if(!auth()->user()->hasRole('admin')){
+        $query->where('is_admin', 0);
+    }
 
     // Filtre par catégories
     if ($request->has('categories') && !empty($request->categories)) {
@@ -123,6 +123,10 @@ class AgendaController extends Controller
             'intervenant:id,identite_fr',
             'user:id,name'
         ])->where('dossier_id', $dossierId);
+
+        if(!auth()->user()->hasRole('admin')){
+        $query->where('is_admin', 0);
+    }
 
         // if(!auth()->user()->hasRole('admin')){
         //     $query->where('utilisateur_id', auth()->user()->id);
@@ -334,7 +338,12 @@ class AgendaController extends Controller
             $validated['file_name'] = $file->getClientOriginalName();
         }
 
-        Agenda::create($validated);
+        $agendas = Agenda::create($validated);
+
+        if($request->has('is_admin')){
+        $agendas->is_admin = 1;
+        $agendas->save();
+    }
 
         return redirect()->route('agendas.index')
             ->with('success', 'Événement créé avec succès.');
@@ -460,10 +469,13 @@ public function edit(Agenda $agenda)
 
     $category = \App\Models\AgendaCategory::create($request->all());
 
+    
+
     return response()->json([
         'success' => true,
         'message' => 'Catégorie créée avec succès',
-        'category' => $category
+        'category' => $category,
+        'isAdmin' => $isAdmin
     ]);
     }
 

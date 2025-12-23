@@ -197,7 +197,7 @@
 <div class="modal fade" id="deleteFactureModal" tabindex="-1" aria-labelledby="deleteFactureModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-danger">
                 <h5 class="modal-title" id="deleteFactureModalLabel">Confirmation de suppression</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -218,7 +218,7 @@
 <div class="modal fade" id="factureDetailsModal" tabindex="-1" role="dialog" aria-labelledby="factureDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-primary">
+            <div class="modal-header bg-info">
                 <h5 class="modal-title" id="factureDetailsModalLabel">
                     <i class="fas fa-file-invoice"></i> Détails de la facture
                 </h5>
@@ -242,7 +242,7 @@
 <div class="modal fade" id="editFactureModal" tabindex="-1" role="dialog" aria-labelledby="editFactureModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-primary">
+            <div class="modal-header bg-warning">
                 <h5 class="modal-title" id="editFactureModalLabel">
                     <i class="fas fa-edit"></i> Modifier la facture
                 </h5>

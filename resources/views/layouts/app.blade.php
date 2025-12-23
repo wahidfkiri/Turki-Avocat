@@ -574,7 +574,7 @@ visibility:hidden
 .modal-xl {
     max-width: 1140px !important;
 }
-.btn-group-sm .btn {
+.btn-group-sm .btn, .btn-group .btn {
   border-radius: 50% !important;
   display: inline-flex;
   align-items: center;
@@ -584,7 +584,7 @@ visibility:hidden
   padding: 0;
   box-sizing: border-box;
 }
-.btn-group-sm i {
+.btn-group-sm i, .btn-group i {
   font-size:12px;
 }
 </style>

@@ -2,7 +2,7 @@
 <div class="modal fade" id="showTimesheetModal" tabindex="-1" role="dialog" aria-labelledby="showTimesheetModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <div class="modal-header bg-primary">
+            <div class="modal-header bg-info">
                 <h5 class="modal-title text-white" id="showTimesheetModalLabel">
                     <i class="fas fa-eye"></i> Détails de la Feuille de Temps
                 </h5>
