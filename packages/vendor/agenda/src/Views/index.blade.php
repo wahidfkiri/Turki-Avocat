@@ -2,22 +2,6 @@
 
 @section('content')
 <div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Agenda</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('home') }}">Accueil</a></li>
-                        <li class="breadcrumb-item active">Agenda</li>
-                    </ol>
-                </div>
-            </div>
-        </div><!-- /.container-fluid -->
-    </section>
 
     <!-- Main content -->
     <section class="content">
@@ -26,10 +10,10 @@
             <div class="row mb-3">
                 <div class="col-md-12">
                     <div class="d-flex justify-content-end">
-                        <div class="btn-groups">
-                            <button type="button" id="btn_today" class="btn btn-info btn-sm">
-                                Aujourd'hui
-                            </button>
+                        <div class="btn-groups customClass">
+                            <!-- <button type="button" id="Weekend" class="btn btn-info btn-sm">
+                                Weekend
+                            </button> -->
                             <button type="button" id="btn_reset_filters" class="btn btn-secondary btn-sm">
                                 Réinitialiser
                             </button>
@@ -590,6 +574,22 @@
     border-radius: 3px;
     vertical-align: middle;
 }
+.fc-header-toolbar .fc-toolbar-chunk {
+    padding-left: 12px !important; /* adjust value */
+}
+.fc-header-toolbar {
+    justify-content: flex-start !important;
+}
+@media (min-width: 1024px) {
+    .customClass {
+        position: absolute;
+        z-index: 99;
+        margin-top: 40px;
+        margin-right: 20px;
+    }
+}
+
+
 </style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -598,7 +598,7 @@
     var currentEventTitle = null;
     var calendar;
     var isUserNavigating = false; // Flag pour savoir si l'utilisateur navigue
-
+    
     // Set today's date as default for new events
     $('#date_debut').val(new Date().toISOString().split('T')[0]);
 
@@ -634,8 +634,74 @@
         return filters;
     }
 
+    // Toggle weekends function
+    function toggleWeekends() {
+        if (!calendar) {
+            console.error('Calendar not initialized');
+            return;
+        }
+        
+        try {
+            const currentOption = calendar.getOption('weekends');
+            console.log('Current weekends option:', currentOption);
+            
+            const newValue = !currentOption;
+            console.log('Setting weekends to:', newValue);
+            
+            // Update calendar option
+            calendar.setOption('weekends', newValue);
+            
+            // Update button text
+            updateToggleButton(newValue);
+            
+            // Force calendar to rerender
+            calendar.updateSize();
+            
+            // Save preference to localStorage
+            localStorage.setItem('fc-weekends-enabled', newValue);
+            
+            console.log('Weekends toggled successfully to:', newValue);
+        } catch (error) {
+            console.error('Error toggling weekends:', error);
+        }
+    }
+
+    // Update button appearance
+    function updateToggleButton(isEnabled) {
+        const toggleBtn = document.getElementById('weekend');
+        if (!toggleBtn) {
+            console.warn('Toggle button not found during update');
+            return;
+        }
+        
+        console.log('Updating button to:', isEnabled ? 'Cacher Weekends' : 'Afficher Weekends');
+        
+        // Update button text
+        toggleBtn.textContent = isEnabled ? 'Cacher Weekends' : 'Afficher Weekends';
+        
+        // Optional: Change button color
+        if (isEnabled) {
+            toggleBtn.classList.remove('btn-primary');
+            toggleBtn.classList.add('btn-success');
+        } else {
+            toggleBtn.classList.remove('btn-success');
+            toggleBtn.classList.add('btn-primary');
+        }
+    }
+
     // Initialize Calendar
     function initializeCalendar() {
+        // Check localStorage for saved preference
+        const savedWeekendPref = localStorage.getItem('fc-weekends-enabled');
+        let initialWeekends = false; // default to false
+        
+        if (savedWeekendPref !== null) {
+            initialWeekends = (savedWeekendPref === 'true');
+            console.log('Loaded weekends preference from localStorage:', initialWeekends);
+        } else {
+            console.log('No weekends preference found in localStorage, using default:', initialWeekends);
+        }
+
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridDay',
             scrollTime: '08:00:00',
@@ -644,6 +710,7 @@
             locale: 'fr',
             timeZone: 'local',
             initialView: 'dayGridMonth',
+            weekends: initialWeekends, // Use saved preference or default false
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
@@ -773,6 +840,12 @@
 
         calendar.render();
         
+        // Setup weekend toggle button
+        setupWeekendToggle();
+        
+        // Log initial state
+        console.log('Calendar initialized with weekends:', calendar.getOption('weekends'));
+        
         // Détecter quand l'utilisateur clique sur prev/next
         setTimeout(function() {
             $('.fc-prev-button, .fc-next-button').on('click', function() {
@@ -780,6 +853,64 @@
                 console.log('Bouton de navigation cliqué');
             });
         }, 1000);
+    }
+
+    // Setup weekend toggle button
+    function setupWeekendToggle() {
+        const toggleBtn = document.getElementById('weekend');
+        
+        if (!toggleBtn) {
+            console.error('❌ Toggle button with ID "weekend" not found in DOM!');
+            console.log('Looking for button with ID "weekend"...');
+            
+            // Try to create the button if it doesn't exist
+            createWeekendToggleButton();
+            return;
+        }
+        
+        console.log('✅ Weekend toggle button found:', toggleBtn);
+        
+        // Update button with initial state
+        const initialWeekends = calendar.getOption('weekends');
+        updateToggleButton(initialWeekends);
+        
+        // Add click event
+        toggleBtn.addEventListener('click', function(e) {
+            console.log('Weekend button clicked');
+            toggleWeekends();
+        });
+        
+        console.log('✅ Weekend toggle button setup complete');
+    }
+    
+    // Create weekend toggle button if it doesn't exist
+    function createWeekendToggleButton() {
+        console.log('Creating weekend toggle button...');
+        
+        // Create button element
+        const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'weekend';
+        toggleBtn.className = 'btn btn-primary';
+        toggleBtn.textContent = 'Afficher Weekends';
+        toggleBtn.style.margin = '5px';
+        
+        // Try to find a good place to insert the button
+        const header = document.querySelector('.content-header, .header-toolbar, .fc-header-toolbar');
+        const calendarContainer = document.getElementById('calendar').parentElement;
+        
+        if (header) {
+            header.appendChild(toggleBtn);
+            console.log('✅ Weekend toggle button created in header');
+        } else if (calendarContainer) {
+            calendarContainer.insertBefore(toggleBtn, calendarEl);
+            console.log('✅ Weekend toggle button created above calendar');
+        } else {
+            document.body.appendChild(toggleBtn);
+            console.log('⚠️ Weekend toggle button created in body (fallback)');
+        }
+        
+        // Setup the newly created button
+        setupWeekendToggle();
     }
 
     // Initialiser le calendrier
@@ -1249,4 +1380,6 @@ $(document).ready(function() {
     }
 });
 </script>
+
+
 @endsection

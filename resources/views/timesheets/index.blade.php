@@ -167,26 +167,32 @@
                                         <th>ID</th>
                                         <th>Date</th>
                                         <th>Description</th>
-                                        <th>Utilisateur</th>
+                                        @if(auth()->user()->hasRole('admin'))
+                                            <th>Utilisateur</th>
+                                        @endif
                                         <th>Dossier</th>
                                         <th>Catégorie</th>
                                         <th>Type</th>
-                                        <th>Quantité</th>
-                                        <th>Prix</th>
-                                        <th>Total</th>
+                                        @if(auth()->user()->hasRole('admin'))
+                                            <th>Quantité</th>
+                                            <th>Prix</th>
+                                            <th>Total</th>
+                                        @endif
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <!-- Data will be loaded via AJAX -->
                                 </tbody>
+                                @if(auth()->user()->hasRole('admin'))
                                 <tfoot>
                                     <tr>
-                                        <th colspan="9" style="text-align:right">Total:</th>
+                                        <th colspan="{{ auth()->user()->hasRole('admin') ? 9 : 6 }}" style="text-align:right">Total:</th>
                                         <th id="total-summary"></th>
                                         <th></th>
                                     </tr>
                                 </tfoot>
+                                @endif
                             </table>
                         </div>
                         <!-- /.card-body -->
@@ -239,10 +245,116 @@ $(document).ready(function() {
     let timesheetToDelete = null;
     let timesheetRowToDelete = null;
 
-    // Initialize Select2
-    // $('.select2').select2({
-    //     theme: 'bootstrap4'
-    // });
+    // Définir les colonnes en fonction du rôle
+    var columns = [
+        { data: 'id', name: 'id' , visible: false,  searchable: false},
+        { 
+            data: 'date_timesheet', 
+            name: 'date_timesheet',
+            render: function(data, type, row) {
+                if (type === 'sort' || type === 'type') {
+                    return data;
+                }
+                return data || '-';
+            }
+        },
+        { 
+            data: 'description', 
+            name: 'description',
+            render: function(data) {
+                return data ? (data.length > 50 ? data.substr(0, 50) + '...' : data) : '-';
+            }
+        }
+    ];
+
+    // Ajouter colonne Utilisateur uniquement pour admin
+    @if(auth()->user()->hasRole('admin'))
+    columns.push({ 
+        data: 'user', 
+        name: 'user.name',
+        render: function(data) {
+            return data ? data.name : '-';
+        }
+    });
+    @endif
+
+    // Ajouter les colonnes communes
+    columns.push(
+        { 
+            data: 'dossier', 
+            name: 'dossier.numero_dossier',
+            render: function(data) {
+                return data ? data.numero_dossier + ' - ' + (data.client ? data.client.name : '') : '';
+            }
+        },
+        { 
+            data: 'categorie_relation', 
+            name: 'categorie_relation.nom',
+            render: function(data) {
+                return data ? data.nom : '-';
+            }
+        },
+        { 
+            data: 'type_relation', 
+            name: 'type_relation.nom',
+            render: function(data) {
+                return data ? data.nom : '-';
+            }
+        }
+    );
+
+    // Ajouter colonnes Quantité, Prix, Total uniquement pour admin
+    @if(auth()->user()->hasRole('admin'))
+    columns.push(
+        { 
+            data: 'quantite', 
+            name: 'quantite',
+            render: function(data) {
+                return data ? parseInt(data) : '0.00';
+            }
+        },
+        { 
+            data: 'prix', 
+            name: 'prix',
+            render: function(data) {
+                return data || '0,00 DT';
+            }
+        },
+        { 
+            data: 'total', 
+            name: 'total',
+            render: function(data) {
+                return data || '0,00 DT';
+            }
+        }
+    );
+    @endif
+
+    // Ajouter colonne Actions
+    columns.push({
+        data: 'action',
+        name: 'action',
+        orderable: false,
+        searchable: false,
+        render: function(data, type, row) {
+            var actions = '<div class="btn-group">';
+            
+            @if(auth()->user()->hasPermission('view_timesheets'))
+                actions += '<button type="button" class="btn btn-info btn-sm view-timesheet-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
+            @endif
+            
+            @if(auth()->user()->hasPermission('edit_timesheets'))
+                actions += '<button type="button" class="btn btn-warning btn-sm edit-timesheet-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
+            @endif
+
+            @if(auth()->user()->hasPermission('delete_timesheets'))
+                actions += '<button type="button" class="btn btn-danger btn-sm delete-timesheet-btn" data-id="' + row.id + '" data-date="' + (row.date_timesheet || '') + '" data-user="' + (row.user ? row.user.name : '') + '" data-dossier="' + (row.dossier ? row.dossier.numero_dossier : '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
+            @endif
+            
+            actions += '</div>';
+            return actions;
+        }
+    });
 
     // DataTable initialization
     var table = $('#timesheets-table').DataTable({
@@ -263,108 +375,19 @@ $(document).ready(function() {
                 d.max_total = $('#filter_max_total').val();
             }
         },
-        columns: [
-            { data: 'id', name: 'id' , visible: false,  searchable: false},
-            { 
-                data: 'date_timesheet', 
-                name: 'date_timesheet',
-                render: function(data, type, row) {
-                    if (type === 'sort' || type === 'type') {
-                        return data;
-                    }
-                    return data || '-';
-                }
-            },
-            { 
-                data: 'description', 
-                name: 'description',
-                render: function(data) {
-                    return data ? (data.length > 50 ? data.substr(0, 50) + '...' : data) : '-';
-                }
-            },
-            { 
-                data: 'user', 
-                name: 'user.name',
-                render: function(data) {
-                    return data ? data.name : '-';
-                }
-            },
-            { 
-                data: 'dossier', 
-                name: 'dossier.numero_dossier',
-                render: function(data) {
-                    return data ? data.numero_dossier + ' - ' + (data.client ? data.client.name : '') : '';
-                }
-            },
-            { 
-                data: 'categorie_relation', 
-                name: 'categorie_relation.nom',
-                render: function(data) {
-                    return data ? data.nom : '-';
-                }
-            },
-            { 
-                data: 'type_relation', 
-                name: 'type_relation.nom',
-                render: function(data) {
-                    return data ? data.nom : '-';
-                }
-            },
-            { 
-                data: 'quantite', 
-                name: 'quantite',
-                render: function(data) {
-                    return data ? parseInt(data) : '0.00';
-                }
-            },
-            { 
-                data: 'prix', 
-                name: 'prix',
-                render: function(data) {
-                    return data || '0,00 DT';
-                }
-            },
-            { 
-                data: 'total', 
-                name: 'total',
-                render: function(data) {
-                    return data || '0,00 DT';
-                }
-            },
-            {
-    data: 'action',
-    name: 'action',
-    orderable: false,
-    searchable: false,
-    render: function(data, type, row) {
-        var actions = '<div class="btn-group">';
-        
-        @if(auth()->user()->hasPermission('view_timesheets'))
-            actions += '<button type="button" class="btn btn-info btn-sm view-timesheet-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
-        @endif
-        
-        @if(auth()->user()->hasPermission('edit_timesheets'))
-            actions += '<button type="button" class="btn btn-warning btn-sm edit-timesheet-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
-        @endif
-
-        @if(auth()->user()->hasPermission('delete_timesheets'))
-            actions += '<button type="button" class="btn btn-danger btn-sm delete-timesheet-btn" data-id="' + row.id + '" data-date="' + (row.date_timesheet || '') + '" data-user="' + (row.user ? row.user.name : '') + '" data-dossier="' + (row.dossier ? row.dossier.numero_dossier : '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
-        @endif
-        
-        actions += '</div>';
-        return actions;
-    }
-}
-        ],
+        columns: columns,
         order: [[0, 'desc']],
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
         },
         
         drawCallback: function(settings) {
-            // Calculate total
+            // Calculate total only for admin
+            @if(auth()->user()->hasRole('admin'))
             var api = this.api();
-            var total = api.column(9, {search: 'applied'}).data().reduce(function(a, b) {
+            // Adjust column index based on admin status
+            var totalColumnIndex = {{ auth()->user()->hasRole('admin') ? 9 : 6 }};
+            var total = api.column(totalColumnIndex, {search: 'applied'}).data().reduce(function(a, b) {
                 var numericValue = parseFloat(
                     b.replace(/[^\d,]/g, '')
                      .replace(',', '.')
@@ -379,6 +402,7 @@ $(document).ready(function() {
                 .replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
             
             $('#total-summary').text(formattedTotal + ' DT');
+            @endif
         }
     });
 
@@ -573,7 +597,7 @@ function loadTimesheetDetails(timesheetId) {
 function generateShowDetails(data) {
     const timesheet = data.timesheet;
     
-    const detailsHtml = `
+    let detailsHtml = `
         <div class="container-fluid">
             <div class="row">
                 <!-- Informations principales -->
@@ -610,7 +634,11 @@ function generateShowDetails(data) {
                         </div>
                     </div>
                 </div>
-
+    `;
+    
+    // Ajouter les détails financiers seulement pour admin
+    @if(auth()->user()->hasRole('admin'))
+    detailsHtml += `
                 <!-- Détails financiers -->
                 <div class="col-md-6">
                     <div class="card">
@@ -638,7 +666,18 @@ function generateShowDetails(data) {
                     </div>
                 </div>
             </div>
-
+    `;
+    @else
+    detailsHtml += `
+                <!-- Placeholder pour garder la structure -->
+                <div class="col-md-6">
+                    <!-- Colonne vide pour non-admin -->
+                </div>
+            </div>
+    `;
+    @endif
+    
+    detailsHtml += `
             <div class="row mt-3">
                 <!-- Catégorie et Type -->
                 <div class="col-md-6">

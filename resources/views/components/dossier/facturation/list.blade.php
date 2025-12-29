@@ -3,112 +3,11 @@
     <div class="p-3">
         <div style="display: flow-root;">
             <h5 class="text-primary mb-3"><i class="fas fa-money-bill-wave"></i> Informations de facturation</h5>
+            @if(auth()->user()->hasPermission('create_factures'))
             <a href="#" data-toggle="modal" data-target="#factureModal" class="btn btn-primary mb-3" style="float: right;">
                 <i class="fas fa-plus"></i> Ajouter une facture 
             </a>
-        </div>
-
-        @if($dossier->factures && $dossier->factures->count() > 0)
-            <div class="table-responsive">
-                <table id="facturesTable" class="table table-bordered table-hover w-100">
-                    <thead>
-                        <tr>
-                            <th>Numéro</th>
-                            <th>Date émission</th>
-                            <th>Montant HT</th>
-                            <th>Montant TVA</th>
-                            <th>Montant</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                       
-                    </tbody>
-                    <tfoot>
-                        <tr class="bg-light font-weight-bold">
-                            <td colspan="2" class="text-right">TOTAUX :</td>
-                            <td id="totalHT" class="text-success">0.00 DT</td>
-                            <td id="totalTVA" class="text-success">0.00 DT</td>
-                            <td id="totalMontant" class="text-success">0.00 DT</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        @else
-            <div class="alert alert-info" style="color:black;">
-                <h6><i class="icon fas fa-info"></i> Information</h6>
-                <p class="mb-0">
-                    Aucune facture n'a été ajoutée à ce dossier.
-                </p>
-            </div>
-        @endif
-    </div>
-</div>
-
-<!-- Modal pour visualiser une facture -->
-<div class="modal fade" id="viewFactureModal" tabindex="-1" role="dialog" aria-labelledby="viewFactureModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-info">
-                <h5 class="modal-title" id="viewFactureModalLabel">
-                    <i class="fas fa-eye"></i> Détails de la facture
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="viewFactureModalBody">
-                <div class="text-center py-4">
-                    <div class="spinner-border text-info" role="status">
-                        <span class="sr-only">Chargement...</span>
-                    </div>
-                    <p class="mt-2">Chargement des détails...</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Fermer
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal pour éditer une facture -->
-<div class="modal fade" id="editFactureModal" tabindex="-1" role="dialog" aria-labelledby="editFactureModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title" id="editFactureModalLabel">
-                    <i class="fas fa-edit"></i> Modifier la facture
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="editFactureModalBody">
-                <div class="text-center py-4">
-                    <div class="spinner-border text-warning" role="status">
-                        <span class="sr-only">Chargement...</span>
-                    </div>
-                    <p class="mt-2">Chargement du formulaire...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Inclure le modal de facture -->
-<!-- Onglet Facturation -->
-<div class="tab-pane fade" id="facturation" role="tabpanel" aria-labelledby="facturation-tab">
-    <div class="p-3">
-        <div style="display: flow-root;">
-            <h5 class="text-primary mb-3"><i class="fas fa-money-bill-wave"></i> Informations de facturation</h5>
-            <a href="#" data-toggle="modal" data-target="#factureModal" class="btn btn-primary mb-3" style="float: right;">
-                <i class="fas fa-plus"></i> Ajouter une facture 
-            </a>
+            @endif
         </div>
 
         <!-- Table DataTable -->
@@ -118,9 +17,11 @@
                     <tr>
                         <th>Numéro</th>
                         <th>Date émission</th>
-                        <th>Montant HT</th>
-                        <th>Montant TVA</th>
-                        <th>Montant</th>
+                        @if(auth()->user()->hasRole('admin'))
+                            <th>Montant HT</th>
+                            <th>Montant TVA</th>
+                            <th>Montant</th>
+                        @endif
                         <th>Statut</th>
                         <th>Actions</th>
                     </tr>
@@ -128,15 +29,19 @@
                 <tbody>
                     <!-- Les données seront chargées via AJAX -->
                 </tbody>
+                @if(auth()->user()->hasRole('admin'))
                 <tfoot>
                     <tr class="bg-light font-weight-bold">
-                        <td colspan="2" class="text-right">TOTAUX :</td>
-                        <td id="totalHT" class="text-success">0.00 DT</td>
-                        <td id="totalTVA" class="text-success">0.00 DT</td>
-                        <td id="totalMontant" class="text-success">0.00 DT</td>
-                        <td colspan="2"></td>
+                        <td colspan="{{ auth()->user()->hasRole('admin') ? 2 : 2 }}" class="text-right">TOTAUX :</td>
+                        @if(auth()->user()->hasRole('admin'))
+                            <td id="totalHT" class="text-success">0.00 DT</td>
+                            <td id="totalTVA" class="text-success">0.00 DT</td>
+                            <td id="totalMontant" class="text-success">0.00 DT</td>
+                        @endif
+                        <td colspan="{{ auth()->user()->hasRole('admin') ? 2 : 1 }}"></td>
                     </tr>
                 </tfoot>
+                @endif
             </table>
         </div>
     </div>
@@ -515,7 +420,6 @@ $(document).ready(function() {
         $('#ajaxAlert').hide().empty();
         
         // Réinitialiser le numéro
-       
         
         // Réinitialiser Select2
         if ($.fn.select2) {
@@ -545,6 +449,88 @@ $(document).ready(function() {
     // ============================
     
     if ($('#facturesTable').length) {
+        // Définir les colonnes en fonction du rôle
+        var columns = [
+            { 
+                data: 'numero',
+                name: 'numero',
+                render: function(data, type, row) {
+                    return data || 'N/A';
+                }
+            },
+            { 
+                data: 'date_emission',
+                name: 'date_emission',
+                render: function(data) {
+                    return data || '';
+                }
+            }
+        ];
+
+        // Ajouter colonnes financières uniquement pour admin
+        @if(auth()->user()->hasRole('admin'))
+        columns.push(
+            { 
+                data: 'montant_ht',
+                name: 'montant_ht',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        return data;
+                    }
+                    // Pour le tri, retourner la valeur numérique
+                    return parseFloat(data.match(/data-value="([^"]+)"/)?.[1] || 0);
+                }
+            },
+            { 
+                data: 'montant_tva',
+                name: 'montant_tva',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        return data;
+                    }
+                    return parseFloat(data.match(/data-value="([^"]+)"/)?.[1] || 0);
+                }
+            },
+            { 
+                data: 'montant',
+                name: 'montant',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        return data;
+                    }
+                    return parseFloat(data.match(/data-value="([^"]+)"/)?.[1] || 0);
+                }
+            }
+        );
+        @endif
+
+        // Ajouter colonne Statut
+        columns.push({ 
+            data: 'statut',
+            name: 'statut',
+            render: function(data, type, row) {
+                if (type === 'display') {
+                    return data;
+                }
+                return data;
+            }
+        });
+
+        // Ajouter colonne Actions
+        columns.push({ 
+            data: 'actions',
+            name: 'actions',
+            orderable: false,
+            searchable: false,
+            className: 'text-center'
+        });
+
         facturesTable = $('#facturesTable').DataTable({
             processing: true,
             serverSide: true,
@@ -562,76 +548,7 @@ $(document).ready(function() {
                     }
                 }
             },
-            columns: [
-                { 
-                    data: 'numero',
-                    name: 'numero',
-                    render: function(data, type, row) {
-                        return data || 'N/A';
-                    }
-                },
-                { 
-                    data: 'date_emission',
-                    name: 'date_emission',
-                    render: function(data) {
-                        return data || '';
-                    }
-                },
-                { 
-                    data: 'montant_ht',
-                    name: 'montant_ht',
-                    orderable: false,
-                    searchable: false,
-                    render: function(data, type, row) {
-                        if (type === 'display') {
-                            return data;
-                        }
-                        // Pour le tri, retourner la valeur numérique
-                        return parseFloat(data.match(/data-value="([^"]+)"/)?.[1] || 0);
-                    }
-                },
-                { 
-                    data: 'montant_tva',
-                    name: 'montant_tva',
-                    orderable: false,
-                    searchable: false,
-                    render: function(data, type, row) {
-                        if (type === 'display') {
-                            return data;
-                        }
-                        return parseFloat(data.match(/data-value="([^"]+)"/)?.[1] || 0);
-                    }
-                },
-                { 
-                    data: 'montant',
-                    name: 'montant',
-                    orderable: false,
-                    searchable: false,
-                    render: function(data, type, row) {
-                        if (type === 'display') {
-                            return data;
-                        }
-                        return parseFloat(data.match(/data-value="([^"]+)"/)?.[1] || 0);
-                }
-                },
-                { 
-                    data: 'statut',
-                    name: 'statut',
-                    render: function(data, type, row) {
-                        if (type === 'display') {
-                            return data;
-                        }
-                        return data;
-                    }
-                },
-                { 
-                    data: 'actions',
-                    name: 'actions',
-                    orderable: false,
-                    searchable: false,
-                    className: 'text-center'
-                }
-            ],
+            columns: columns,
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json'
             },
@@ -689,6 +606,7 @@ $(document).ready(function() {
         // ============================
         
         function calculateTotals() {
+            @if(auth()->user()->hasRole('admin'))
             var totalHT = 0;
             var totalTVA = 0;
             var totalMontant = 0;
@@ -711,6 +629,10 @@ $(document).ready(function() {
             $('#totalHT').text(totalHT.toFixed(2) + ' DT');
             $('#totalTVA').text(totalTVA.toFixed(2) + ' DT');
             $('#totalMontant').text(totalMontant.toFixed(2) + ' DT');
+            @else
+            // Masquer ou vider les totaux pour les non-admins
+            $('#totalHT, #totalTVA, #totalMontant').text('N/A');
+            @endif
         }
 
         // Recalculer les totaux lors de la recherche
@@ -793,6 +715,7 @@ $(document).ready(function() {
                     <div class="col-md-6">
                         <h5 class="border-bottom pb-2">Montants</h5>
                         <table class="table table-sm">
+                            @if(auth()->user()->hasRole('admin'))
                             <tr>
                                 <th width="40%">Montant HT:</th>
                                 <td class="text-success font-weight-bold">${formatCurrency(facture.montant_ht || 0)} DT</td>
@@ -805,6 +728,14 @@ $(document).ready(function() {
                                 <th>Montant Total:</th>
                                 <td class="text-success font-weight-bold">${formatCurrency(facture.montant || 0)} DT</td>
                             </tr>
+                            @else
+                            <tr>
+                                <td colspan="2" class="text-center text-muted">
+                                    <i class="fas fa-lock fa-2x mb-2"></i><br>
+                                    Informations financières réservées aux administrateurs
+                                </td>
+                            </tr>
+                            @endif
                         </table>
                     </div>
                 </div>

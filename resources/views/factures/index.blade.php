@@ -158,9 +158,11 @@
                                         <th>Date Émission</th>
                                         <th>Dossier</th>
                                         <th>Client</th>
-                                        <th>Montant HT</th>
-                                        <th>TVA</th>
-                                        <th>Montant TTC</th>
+                                        @if(auth()->user()->hasRole('admin'))
+                                            <th>Montant HT</th>
+                                            <th>TVA</th>
+                                            <th>Montant TTC</th>
+                                        @endif
                                         <th>Statut</th>
                                         <th>Actions</th>
                                     </tr>
@@ -168,9 +170,10 @@
                                 <tbody>
                                     <!-- Data will be loaded via AJAX -->
                                 </tbody>
+                                @if(auth()->user()->hasRole('admin'))
                                 <tfoot>
                                     <tr>
-                                        <th colspan="6" style="text-align:right">Totaux:</th>
+                                        <th colspan="{{ auth()->user()->hasRole('admin') ? 6 : 6 }}" style="text-align:right">Totaux:</th>
                                         <th id="total-ht"></th>
                                         <th id="total-tva"></th>
                                         <th id="total-ttc"></th>
@@ -178,6 +181,7 @@
                                         <th></th>
                                     </tr>
                                 </tfoot>
+                                @endif
                             </table>
                         </div>
                         <!-- /.card-body -->
@@ -286,6 +290,146 @@ $(document).ready(function() {
     // ============================
     // DATATABLE INITIALISATION
     // ============================
+    
+    // Définir les colonnes en fonction du rôle
+    var columns = [
+        {
+            data: null,
+            orderable: false,
+            searchable: false,
+            visible: false,
+            render: function(data, type, row, meta) {
+                return meta.settings._iDisplayStart + meta.row + 1;
+            }
+        },
+        { 
+            data: 'numero', 
+            name: 'numero',
+            render: function(data) {
+                return data || '-';
+            }
+        },
+        { 
+            data: 'type_piece', 
+            name: 'type_piece',
+            render: function(data) {
+                var badges = {
+                    'facture': 'primary',
+                    'note_frais': 'info',
+                    'note_provision': 'warning',
+                    'avoir': 'success'
+                };
+                var labels = {
+                    'facture': 'Facture',
+                    'note_frais': 'Note de frais',
+                    'note_provision': 'Note de provision',
+                    'avoir': 'Avoir'
+                };
+                return data ? '<span class="badge badge-' + badges[data] + '">' + labels[data] + '</span>' : '-';
+            }
+        },
+        
+        { 
+            data: 'date_emission', 
+            name: 'date_emission',
+            render: function(data, type, row) {
+                if (type === 'sort' || type === 'type') {
+                    return data;
+                }
+                return data || '-';
+            }
+        },
+        { 
+            data: 'dossier', 
+            name: 'dossier.numero_dossier',
+            render: function(data) {
+                return data ? data.numero_dossier : '-';
+            }
+        },
+        { 
+            data: 'client', 
+            name: 'client.identite_fr',
+            render: function(data) {
+                return data ? (data.identite_fr || data.identite_ar) : '-';
+            }
+        }
+    ];
+
+    // Ajouter colonnes financières uniquement pour admin
+    @if(auth()->user()->hasRole('admin'))
+    columns.push(
+        { 
+            data: 'montant_ht', 
+            name: 'montant_ht',
+            render: function(data) {
+                return data || '0,00 DT';
+            }
+        },
+        { 
+            data: 'montant_tva', 
+            name: 'montant_tva',
+            render: function(data) {
+                return data || '0,00 DT';
+            }
+        },
+        { 
+            data: 'montant', 
+            name: 'montant',
+            render: function(data) {
+                return data || '0,00 DT';
+            }
+        }
+    );
+    @endif
+
+    // Ajouter colonne Statut
+    columns.push({ 
+        data: 'statut', 
+        name: 'statut',
+        render: function(data) {
+            var badges = {
+                'payé': 'success',
+                'non_payé': 'danger'
+            };
+            var labels = {
+                'payé': 'Payé',
+                'non_payé': 'Non payé'
+            };
+            return data ? '<span class="badge badge-' + badges[data] + '">' + labels[data] + '</span>' : '-';
+        }
+    });
+
+    // Ajouter colonne Actions
+    columns.push({
+        data: 'action',
+        name: 'action',
+        orderable: false,
+        searchable: false,
+        render: function(data, type, row) {
+            var actions = '<div class="btn-group">';
+            
+            @if(auth()->user()->hasPermission('view_factures'))
+                actions += '<button type="button" class="btn btn-info btn-sm view-facture-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
+            @endif
+
+            @if(auth()->user()->hasPermission('edit_factures'))
+                actions += '<button type="button" class="btn btn-warning btn-sm edit-facture-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
+            @endif
+            
+            @if(auth()->user()->hasPermission('delete_factures'))
+                actions += '<button type="button" class="btn btn-danger btn-sm delete-facture-btn" data-id="' + row.id + '" data-numero="' + (row.numero || '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
+            @endif
+
+            @if(auth()->user()->hasPermission('export_data'))
+                actions += '<a href="/factures/display/' + row.id + '" class="btn btn-secondary btn-sm" title="PDF" target="_blank"><i class="fas fa-file-pdf"></i></a>';
+            @endif
+            
+            actions += '</div>';
+            return actions;
+        }
+    });
+
+    // Initialisation de DataTable
     table = $('#factures-table').DataTable({
         processing: true,
         serverSide: true,
@@ -305,132 +449,7 @@ $(document).ready(function() {
                 d.max_montant = $('#filter_max_montant').val();
             }
         },
-        columns: [
-            {
-                data: null,
-                orderable: false,
-                searchable: false,
-                visible: false,
-                render: function(data, type, row, meta) {
-                    return meta.settings._iDisplayStart + meta.row + 1;
-                }
-            },
-            { 
-                data: 'numero', 
-                name: 'numero',
-                render: function(data) {
-                    return data || '-';
-                }
-            },
-            { 
-                data: 'type_piece', 
-                name: 'type_piece',
-                render: function(data) {
-                    var badges = {
-                        'facture': 'primary',
-                        'note_frais': 'info',
-                        'note_provision': 'warning',
-                        'avoir': 'success'
-                    };
-                    var labels = {
-                        'facture': 'Facture',
-                        'note_frais': 'Note de frais',
-                        'note_provision': 'Note de provision',
-                        'avoir': 'Avoir'
-                    };
-                    return data ? '<span class="badge badge-' + badges[data] + '">' + labels[data] + '</span>' : '-';
-                }
-            },
-            
-            { 
-                data: 'date_emission', 
-                name: 'date_emission',
-                render: function(data, type, row) {
-                    if (type === 'sort' || type === 'type') {
-                        return data;
-                    }
-                    return data || '-';
-                }
-            },
-            { 
-                data: 'dossier', 
-                name: 'dossier.numero_dossier',
-                render: function(data) {
-                    return data ? data.numero_dossier : '-';
-                }
-            },
-            { 
-                data: 'client', 
-                name: 'client.identite_fr',
-                render: function(data) {
-                    return data ? (data.identite_fr || data.identite_ar) : '-';
-                }
-            },
-            { 
-                data: 'montant_ht', 
-                name: 'montant_ht',
-                render: function(data) {
-                    return data || '0,00 DT';
-                }
-            },
-            { 
-                data: 'montant_tva', 
-                name: 'montant_tva',
-                render: function(data) {
-                    return data || '0,00 DT';
-                }
-            },
-            { 
-                data: 'montant', 
-                name: 'montant',
-                render: function(data) {
-                    return data || '0,00 DT';
-                }
-            },
-            { 
-                data: 'statut', 
-                name: 'statut',
-                render: function(data) {
-                    var badges = {
-                        'payé': 'success',
-                        'non_payé': 'danger'
-                    };
-                    var labels = {
-                        'payé': 'Payé',
-                        'non_payé': 'Non payé'
-                    };
-                    return data ? '<span class="badge badge-' + badges[data] + '">' + labels[data] + '</span>' : '-';
-                }
-            },
-            {
-                data: 'action',
-                name: 'action',
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    var actions = '<div class="btn-group">';
-                    
-                    @if(auth()->user()->hasPermission('view_factures'))
-    actions += '<button type="button" class="btn btn-info btn-sm view-facture-btn" data-id="' + row.id + '" title="Voir"><i class="fas fa-eye"></i></button>';
-@endif
-
-                   @if(auth()->user()->hasPermission('edit_factures'))
-    actions += '<button type="button" class="btn btn-warning btn-sm edit-facture-btn" data-id="' + row.id + '" title="Modifier"><i class="fas fa-edit"></i></button>';
-@endif
-                    
-                    @if(auth()->user()->hasPermission('delete_factures'))
-                        actions += '<button type="button" class="btn btn-danger btn-sm delete-facture-btn" data-id="' + row.id + '" data-numero="' + (row.numero || '') + '" title="Supprimer"><i class="fas fa-trash"></i></button>';
-                    @endif
-
-                    @if(auth()->user()->hasPermission('export_data'))
-                        actions += '<a href="/factures/display/' + row.id + '" class="btn btn-secondary btn-sm" title="PDF" target="_blank"><i class="fas fa-file-pdf"></i></a>';
-                    @endif
-                    
-                    actions += '</div>';
-                    return actions;
-                }
-            }
-        ],
+        columns: columns,
         order: [[0, 'desc']],
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
@@ -440,35 +459,51 @@ $(document).ready(function() {
             $(row).attr('id', 'facture-row-' + data.id);
         },
         drawCallback: function(settings) {
-            // Calculate totals
+            // Calculate totals only for admin
+            @if(auth()->user()->hasRole('admin'))
             var api = this.api();
             
-            var totalHt = api.column(6, {search: 'applied'}).data().reduce(function(a, b) {
-                var numericValue = parseFloat(
-                    b.replace(/[^\d,]/g, '')
-                     .replace(',', '.')
-                     .replace(/\s/g, '')
-                );
-                return a + (numericValue || 0);
-            }, 0);
+            // Ajuster les indices de colonnes en fonction du rôle
+            var htColumnIndex = {{ auth()->user()->hasRole('admin') ? 6 : -1 }};
+            var tvaColumnIndex = {{ auth()->user()->hasRole('admin') ? 7 : -1 }};
+            var ttcColumnIndex = {{ auth()->user()->hasRole('admin') ? 8 : -1 }};
             
-            var totalTva = api.column(7, {search: 'applied'}).data().reduce(function(a, b) {
-                var numericValue = parseFloat(
-                    b.replace(/[^\d,]/g, '')
-                     .replace(',', '.')
-                     .replace(/\s/g, '')
-                );
-                return a + (numericValue || 0);
-            }, 0);
+            var totalHt = 0;
+            var totalTva = 0;
+            var totalTtc = 0;
             
-            var totalTtc = api.column(8, {search: 'applied'}).data().reduce(function(a, b) {
-                var numericValue = parseFloat(
-                    b.replace(/[^\d,]/g, '')
-                     .replace(',', '.')
-                     .replace(/\s/g, '')
-                );
-                return a + (numericValue || 0);
-            }, 0);
+            if (htColumnIndex !== -1) {
+                totalHt = api.column(htColumnIndex, {search: 'applied'}).data().reduce(function(a, b) {
+                    var numericValue = parseFloat(
+                        b.replace(/[^\d,]/g, '')
+                         .replace(',', '.')
+                         .replace(/\s/g, '')
+                    );
+                    return a + (numericValue || 0);
+                }, 0);
+            }
+            
+            if (tvaColumnIndex !== -1) {
+                totalTva = api.column(tvaColumnIndex, {search: 'applied'}).data().reduce(function(a, b) {
+                    var numericValue = parseFloat(
+                        b.replace(/[^\d,]/g, '')
+                         .replace(',', '.')
+                         .replace(/\s/g, '')
+                    );
+                    return a + (numericValue || 0);
+                }, 0);
+            }
+            
+            if (ttcColumnIndex !== -1) {
+                totalTtc = api.column(ttcColumnIndex, {search: 'applied'}).data().reduce(function(a, b) {
+                    var numericValue = parseFloat(
+                        b.replace(/[^\d,]/g, '')
+                         .replace(',', '.')
+                         .replace(/\s/g, '')
+                    );
+                    return a + (numericValue || 0);
+                }, 0);
+            }
             
             // Formater les totaux avec le même format
             var formattedHt = totalHt.toFixed(2)
@@ -486,6 +521,10 @@ $(document).ready(function() {
             $('#total-ht').text(formattedHt + ' DT');
             $('#total-tva').text(formattedTva + ' DT');
             $('#total-ttc').text(formattedTtc + ' DT');
+            @else
+            // Masquer les totaux pour non-admin
+            $('#total-ht, #total-tva, #total-ttc').text('N/A');
+            @endif
         }
     });
 
@@ -736,12 +775,30 @@ $(document).ready(function() {
                         `;
                     } 
                     else if (sectionHTML.includes('Détails financiers')) {
+                        // Afficher les détails financiers seulement pour admin
+                        @if(auth()->user()->hasRole('admin'))
                         modalContent += `
                                 <div class="col-md-6">
                                     ${sectionHTML}
                                 </div>
                             </div>
                         `;
+                        @else
+                        modalContent += `
+                                <div class="col-md-6">
+                                    <!-- Détails financiers masqués pour les non-admins -->
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 section-title">Détails financiers</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted"><i class="fas fa-lock"></i> Informations réservées aux administrateurs</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        @endif
                     }
                     else if (sectionHTML.includes('Relations')) {
                         modalContent += `

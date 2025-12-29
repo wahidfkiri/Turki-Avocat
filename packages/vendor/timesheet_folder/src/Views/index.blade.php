@@ -71,7 +71,9 @@
                     </div>
                    </div>
                     <input type="hidden" name="dossier_id" value="{{$dossier->id}}">  
-                    <!-- Quantité et Prix -->
+                    
+                    <!-- Quantité et Prix - Conditionnel pour admin -->
+                  
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -98,6 +100,7 @@
                     </div>
                         </div>
                     </div>
+                
 
                     
                     <!-- Fichier (Optionnel) -->
@@ -257,24 +260,28 @@
                         <th>Utilisateur</th>
                         <th>Catégorie</th>
                         <th>Type</th>
-                        <th>Quantité</th>
-                        <th>Prix</th>
-                        <th>Total</th>
+                        @if(auth()->user()->hasRole('admin'))
+                            <th>Quantité</th>
+                            <th>Prix</th>
+                            <th>Total</th>
+                        @endif
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Chargé via AJAX -->
                 </tbody>
+                @if(auth()->user()->hasRole('admin'))
                 <tfoot>
                     <tr class="bg-light font-weight-bold">
-                        <td colspan="5" class="text-right">Totaux :</td>
+                        <td colspan="{{ auth()->user()->hasRole('admin') ? 5 : 5 }}" class="text-right">Totaux :</td>
                         <td id="totalQuantity">0</td>
                         <td id="totalPrice">0,00 DT</td>
                         <td id="totalAmount">0,00 DT</td>
                         <td></td>
                     </tr>
                 </tfoot>
+                @endif
             </table>
         </div>
     </div>
@@ -415,17 +422,22 @@ $(document).ready(function() {
     // ==================== GESTION DU FORMULAIRE DE CRÉATION ====================
     
     function calculateTotal() {
+        @if(auth()->user()->hasRole('admin'))
         const quantite = parseFloat($('#quantite').val()) || 0;
         const prix = parseFloat($('#prix').val()) || 0;
         const total = quantite * prix;
         $('#total_calcule').val(formatCurrency(total));
+        @endif
     }
     
     $('#categorie_id').change(function() {
         loadTypes($(this).val());
     });
     
+    // Activer le calcul total uniquement pour les admins
+    @if(auth()->user()->hasRole('admin'))
     $('#quantite, #prix').on('input', calculateTotal);
+    @endif
     
     // Gestion du nom du fichier dans l'input file
     $('.custom-file-input').on('change', function() {
@@ -448,6 +460,15 @@ $(document).ready(function() {
         // Ajouter le token CSRF
         formData.append('_token', '{{ csrf_token() }}');
         
+        // Si l'utilisateur n'est pas admin, retirer les champs financiers
+        @if(!auth()->user()->hasRole('admin'))
+        formData.delete('quantite');
+        formData.delete('prix');
+        // Ajouter des valeurs par défaut
+        formData.append('quantite', '1');
+        formData.append('prix', '0');
+        @endif
+        
         // Utiliser l'URL correcte
         $.ajax({
             url: urls.store, // Cette URL est maintenant correcte
@@ -462,7 +483,9 @@ $(document).ready(function() {
                     // Réinitialiser le formulaire
                     $form[0].reset();
                     $('.custom-file-label').html('Choisir un fichier...');
+                    @if(auth()->user()->hasRole('admin'))
                     $('#total_calcule').val('0,00 DT');
+                    @endif
                     $('#type_id').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>');
                     
                     // Fermer le modal
@@ -492,6 +515,7 @@ $(document).ready(function() {
     // ==================== DATATABLE ====================
     
     function calculateTotals() {
+        @if(auth()->user()->hasRole('admin'))
         let totalQuantite = 0;
         let totalPrix = 0;
         let totalMontant = 0;
@@ -509,9 +533,70 @@ $(document).ready(function() {
         $('#totalQuantity').text(formatNumber(totalQuantite, 0));
         $('#totalPrice').text(formatCurrency(totalPrix));
         $('#totalAmount').text(formatCurrency(totalMontant));
+        @else
+        // Masquer ou vider les totaux pour les non-admins
+        $('#totalQuantity, #totalPrice, #totalAmount').text('N/A');
+        @endif
     }
     
     function initDataTable() {
+        // Définir les colonnes en fonction du rôle
+        const columns = [
+            { data: 'date_timesheet', name: 'date_timesheet' },
+            { data: 'description', name: 'description' },
+            { data: 'user.name', name: 'user.name' },
+            { 
+                data: 'categorieRelation.nom', 
+                name: 'categorieRelation.nom',
+                render: function(data) {
+                    return data ? data : 'N/A';
+                }
+            },
+            { 
+                data: 'typeRelation.nom', 
+                name: 'typeRelation.nom',
+                render: function(data) {
+                    return data ? data : 'N/A';
+                }
+            }
+        ];
+
+        // Ajouter colonnes financières uniquement pour admin
+        @if(auth()->user()->hasRole('admin'))
+        columns.push(
+            { 
+                data: 'quantite', 
+                name: 'quantite',
+                render: function(data) {
+                    return formatNumber(parseFloat(data));
+                }
+            },
+            { 
+                data: 'prix', 
+                name: 'prix',
+                render: function(data) {
+                    return formatCurrency(parseFloat(data));
+                }
+            },
+            { 
+                data: 'total', 
+                name: 'total',
+                render: function(data) {
+                    return formatCurrency(parseFloat(data));
+                }
+            }
+        );
+        @endif
+
+        // Ajouter colonne Actions
+        columns.push({ 
+            data: 'actions', 
+            name: 'actions',
+            orderable: false,
+            searchable: false,
+            className: 'text-center'
+        });
+        
         timesheetTable = $('#timesheetsTable').DataTable({
             processing: true,
             serverSide: true,
@@ -519,53 +604,7 @@ $(document).ready(function() {
                 url: urls.dataTable,
                 type: 'GET'
             },
-            columns: [
-                { data: 'date_timesheet', name: 'date_timesheet' },
-                { data: 'description', name: 'description' },
-                { data: 'user.name', name: 'user.name' },
-                { 
-                    data: 'categorieRelation.nom', 
-                    name: 'categorieRelation.nom',
-                    render: function(data) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                { 
-                    data: 'typeRelation.nom', 
-                    name: 'typeRelation.nom',
-                    render: function(data) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                { 
-                    data: 'quantite', 
-                    name: 'quantite',
-                    render: function(data) {
-                        return formatNumber(parseFloat(data));
-                    }
-                },
-                { 
-                    data: 'prix', 
-                    name: 'prix',
-                    render: function(data) {
-                        return formatCurrency(parseFloat(data));
-                    }
-                },
-                { 
-                    data: 'total', 
-                    name: 'total',
-                    render: function(data) {
-                        return formatCurrency(parseFloat(data));
-                    }
-                },
-                { 
-                    data: 'actions', 
-                    name: 'actions',
-                    orderable: false,
-                    searchable: false,
-                    className: 'text-center'
-                }
-            ],
+            columns: columns,
             language: {
                 url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/French.json"
             },
@@ -628,87 +667,49 @@ $(document).ready(function() {
         
         // Utiliser l'URL correcte
         $.ajax({
-    url: urls.details(timesheetId),
-    type: 'GET',
-    beforeSend: function() {
-        // Cacher la section des détails, montrer le chargement
-        $('#show-details-section').hide();
-        $('#show-loading-section').show();
-    },
-    success: function(response) {
-        if (response.success) {
-            const data = response.data;
-            
-            // Construction du HTML pour la section des détails
-            let fileHtml = '';
-            if (data.file_path) {
-                fileHtml = `
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0 section-title">Pièce jointe</h6>
-                                </div>
-                                <div class="card-body">
-                                    <a href="${data.file_path}" target="_blank" class="btn btn-outline-secondary">
-                                        <i class="fas fa-download"></i> ${data.file_name}
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // Déterminer la classe du badge selon le statut
-            let statusBadgeClass = 'badge-secondary';
-            if (data.statut === 'Actif') {
-                statusBadgeClass = 'badge-success';
-            } else if (data.statut === 'Inactif') {
-                statusBadgeClass = 'badge-danger';
-            }
-            
-            const html = `
-                <div class="container-fluid">
-                    <div class="row">
-                        <!-- Informations principales -->
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0 section-title">Informations principales</h6>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-bordered mb-0">
-                                        <tbody>
-                                            <tr>
-                                                <th>Date</th>
-                                                <td>${data.date}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Utilisateur</th>
-                                                <td>
-                                                    <strong>${data.user_name || data.user}</strong>
-                                                    <br><small class="text-muted">${data.user_role || ''}</small>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Dossier</th>
-                                                <td>
-                                                    ${data.dossier_link ? `
-                                                        <a href="${data.dossier_link}" target="_blank" class="text-primary">
-                                                            <i class="fas fa-eye"></i> ${data.dossier_number || 'Voir dossier'}
-                                                        </a>
-                                                        <br><small class="text-muted">${data.dossier_name || ''}</small>
-                                                    ` : data.dossier || 'Non spécifié'}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+            url: urls.details(timesheetId),
+            type: 'GET',
+            beforeSend: function() {
+                // Cacher la section des détails, montrer le chargement
+                $('#show-details-section').hide();
+                $('#show-loading-section').show();
+            },
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    
+                    let fileHtml = '';
+                    if (data.file_path) {
+                        fileHtml = `
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 section-title">Pièce jointe</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <a href="${data.file_path}" target="_blank" class="btn btn-outline-secondary">
+                                                <i class="fas fa-download"></i> ${data.file_name}
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Détails financiers -->
+                        `;
+                    }
+                    
+                    // Déterminer la classe du badge selon le statut
+                    let statusBadgeClass = 'badge-secondary';
+                    if (data.statut === 'Actif') {
+                        statusBadgeClass = 'badge-success';
+                    } else if (data.statut === 'Inactif') {
+                        statusBadgeClass = 'badge-danger';
+                    }
+                    
+                    // Générer la section des détails financiers conditionnellement
+                    let financialDetailsHtml = '';
+                    @if(auth()->user()->hasRole('admin'))
+                    financialDetailsHtml = `
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
@@ -736,111 +737,171 @@ $(document).ready(function() {
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <!-- Catégorie et Type -->
+                    `;
+                    @else
+                    financialDetailsHtml = `
                         <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
-                                    <h6 class="mb-0 section-title">Classification</h6>
+                                    <h6 class="mb-0 section-title">Détails financiers</h6>
                                 </div>
                                 <div class="card-body">
-                                    <table class="table table-bordered mb-0">
-                                        <tbody>
-                                            <tr>
-                                                <th>Catégorie</th>
-                                                <td>${data.categorie}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Type</th>
-                                                <td>${data.type}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-lock fa-2x mb-2"></i>
+                                        <p class="mb-0">Informations réservées aux administrateurs</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Métadonnées -->
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0 section-title">Métadonnées</h6>
+                    `;
+                    @endif
+                    
+                    const html = `
+                        <div class="container-fluid">
+                            <div class="row">
+                                <!-- Informations principales -->
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 section-title">Informations principales</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-bordered mb-0">
+                                                <tbody>
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <td>${data.date}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Utilisateur</th>
+                                                        <td>
+                                                            <strong>${data.user_name || data.user}</strong>
+                                                            <br><small class="text-muted">${data.user_role || ''}</small>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Dossier</th>
+                                                        <td>
+                                                            ${data.dossier_link ? `
+                                                                <a href="${data.dossier_link}" target="_blank" class="text-primary">
+                                                                    <i class="fas fa-eye"></i> ${data.dossier_number || 'Voir dossier'}
+                                                                </a>
+                                                                <br><small class="text-muted">${data.dossier_name || ''}</small>
+                                                            ` : data.dossier || 'Non spécifié'}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <table class="table table-bordered mb-0">
-                                        <tbody>
-                                            <tr>
-                                                <th>Créé le</th>
-                                                <td>${data.created_at}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Modifié le</th>
-                                                <td>${data.updated_at}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Statut</th>
-                                                <td>
-                                                    <span class="badge ${statusBadgeClass}">${data.statut || 'Actif'}</span>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+
+                                ${financialDetailsHtml}
+                            </div>
+
+                            <div class="row mt-3">
+                                <!-- Catégorie et Type -->
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 section-title">Classification</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-bordered mb-0">
+                                                <tbody>
+                                                    <tr>
+                                                        <th>Catégorie</th>
+                                                        <td>${data.categorie}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        <td>${data.type}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Métadonnées -->
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 section-title">Métadonnées</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table table-bordered mb-0">
+                                                <tbody>
+                                                    <tr>
+                                                        <th>Créé le</th>
+                                                        <td>${data.created_at}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Modifié le</th>
+                                                        <td>${data.updated_at}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Statut</th>
+                                                        <td>
+                                                            <span class="badge ${statusBadgeClass}">${data.statut || 'Actif'}</span>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Description -->
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0 section-title">Description de l'activité</h6>
-                                </div>
-                                <div class="card-body bg-light">
-                                    <p class="mb-0" style="white-space: pre-wrap;">${data.description || 'Aucune description'}</p>
+                            <!-- Description -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0 section-title">Description de l'activité</h6>
+                                        </div>
+                                        <div class="card-body bg-light">
+                                            <p class="mb-0" style="white-space: pre-wrap;">${data.description || 'Aucune description'}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Pièce jointe -->
+                            ${fileHtml}
+                        </div>
+                    `;
+                    
+                    // Injection du HTML et changement d'affichage
+                    $('#show-details-section').html(html);
+                    $('#show-loading-section').hide();
+                    $('#show-details-section').show();
+                } else {
+                    // Gérer le cas où success est false
+                    $('#show-details-section').html(`
+                        <div class="container-fluid">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> ${response.message || 'Données non disponibles'}
+                            </div>
+                        </div>
+                    `);
+                    $('#show-loading-section').hide();
+                    $('#show-details-section').show();
+                }
+            },
+            error: function(xhr) {
+                const errorMsg = xhr.responseJSON?.message || 'Erreur lors du chargement des détails';
+                $('#show-details-section').html(`
+                    <div class="container-fluid">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> ${errorMsg}
                         </div>
                     </div>
-
-                    <!-- Pièce jointe -->
-                    ${fileHtml}
-                </div>
-            `;
-            
-            // Injection du HTML et changement d'affichage
-            $('#show-details-section').html(html);
-            $('#show-loading-section').hide();
-            $('#show-details-section').show();
-        } else {
-            // Gérer le cas où success est false
-            $('#show-details-section').html(`
-                <div class="container-fluid">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> ${response.message || 'Données non disponibles'}
-                    </div>
-                </div>
-            `);
-            $('#show-loading-section').hide();
-            $('#show-details-section').show();
-        }
-    },
-    error: function(xhr) {
-        const errorMsg = xhr.responseJSON?.message || 'Erreur lors du chargement des détails';
-        $('#show-details-section').html(`
-            <div class="container-fluid">
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle"></i> ${errorMsg}
-                </div>
-            </div>
-        `);
-        $('#show-loading-section').hide();
-        $('#show-details-section').show();
-    }
-});
+                `);
+                $('#show-loading-section').hide();
+                $('#show-details-section').show();
+            }
+        });
     }
     
     function editTimesheet(timesheetId) {
@@ -857,7 +918,7 @@ $(document).ready(function() {
         
         $('#editTimesheetModal').modal('show');
         
-        // Utiliser l'URL correcte - je vois que vous avez une route 'getTimesheetEditData'
+        // Utiliser l'URL correcte
         $.ajax({
             url: urls.editData(timesheetId),
             type: 'GET',
@@ -871,6 +932,49 @@ $(document).ready(function() {
                             `<option value="${type.id}" ${type.id == data.type_id ? 'selected' : ''}>${type.nom}</option>`
                         ).join('');
                     }
+                    
+                    // Générer les champs financiers conditionnellement
+                    let financialFieldsHtml = '';
+                    @if(auth()->user()->hasRole('admin'))
+                    financialFieldsHtml = `
+                        <div class="row">
+                            <!-- Quantité -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="edit_quantite">Quantité *</label>
+                                    <input type="number" step="0.01" min="0.01" class="form-control" 
+                                           id="edit_quantite" name="quantite" value="${data.quantite}" required>
+                                    <div class="invalid-feedback" id="error_edit_quantite"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Prix -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="edit_prix">Prix unitaire (DT) *</label>
+                                    <input type="number" step="0.01" min="0.01" class="form-control" 
+                                           id="edit_prix" name="prix" value="${data.prix}" required>
+                                    <div class="invalid-feedback" id="error_edit_prix"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Total -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Total calculé</label>
+                                    <input type="text" class="form-control-plaintext bg-light p-2 rounded" 
+                                           id="edit_total_calcule" value="${formatCurrency(data.quantite * data.prix)}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    @else
+                    // Pour les non-admins, ajouter des champs cachés avec valeurs par défaut
+                    financialFieldsHtml = `
+                        <input type="hidden" name="quantite" value="${data.quantite}">
+                        <input type="hidden" name="prix" value="${data.prix}">
+                    `;
+                    @endif
                     
                     const html = `
                         <div id="editAlertContainer"></div>
@@ -937,36 +1041,7 @@ $(document).ready(function() {
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <!-- Quantité -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="edit_quantite">Quantité *</label>
-                                    <input type="number" step="0.01" min="0.01" class="form-control" 
-                                           id="edit_quantite" name="quantite" value="${data.quantite}" required>
-                                    <div class="invalid-feedback" id="error_edit_quantite"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Prix -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="edit_prix">Prix unitaire (DT) *</label>
-                                    <input type="number" step="0.01" min="0.01" class="form-control" 
-                                           id="edit_prix" name="prix" value="${data.prix}" required>
-                                    <div class="invalid-feedback" id="error_edit_prix"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Total -->
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Total calculé</label>
-                                    <input type="text" class="form-control-plaintext bg-light p-2 rounded" 
-                                           id="edit_total_calcule" value="${formatCurrency(data.quantite * data.prix)}" readonly>
-                                </div>
-                            </div>
-                        </div>
+                        ${financialFieldsHtml}
                         
                         <!-- Fichier -->
                         <div class="form-group">
@@ -1008,12 +1083,14 @@ $(document).ready(function() {
     }
     
     function initEditFormEvents() {
-        // Calcul du total
+        @if(auth()->user()->hasRole('admin'))
+        // Calcul du total - uniquement pour admin
         $('#edit_quantite, #edit_prix').on('input', function() {
             const quantite = parseFloat($('#edit_quantite').val()) || 0;
             const prix = parseFloat($('#edit_prix').val()) || 0;
             $('#edit_total_calcule').val(formatCurrency(quantite * prix));
         });
+        @endif
         
         // Charger les types quand la catégorie change
         $('#edit_categorie_id').change(function() {
@@ -1148,8 +1225,10 @@ $(document).ready(function() {
         // Charger les catégories
         loadCategories();
         
-        // Initialiser le calcul du total
+        // Initialiser le calcul du total (seulement pour admin)
+        @if(auth()->user()->hasRole('admin'))
         calculateTotal();
+        @endif
         
         // Initialiser DataTable
         initDataTable();
@@ -1161,7 +1240,9 @@ $(document).ready(function() {
             clearFormErrors();
             $('#timesheetAlertContainer').empty();
             $('#type_id').empty().append('<option value="">Sélectionnez d\'abord une catégorie</option>');
+            @if(auth()->user()->hasRole('admin'))
             calculateTotal();
+            @endif
         });
         
         // Réinitialiser le modal d'édition
