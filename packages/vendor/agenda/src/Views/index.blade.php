@@ -2,18 +2,14 @@
 
 @section('content')
 <div class="content-wrapper">
-
     <!-- Main content -->
     <section class="content">
         <div class="container-fluid">
             <!-- Boutons d'action en haut à droite -->
             <div class="row mb-3">
                 <div class="col-md-12">
-                    <div class="d-flex justify-content-end">
-                        <div class="btn-groups customClass">
-                            <!-- <button type="button" id="Weekend" class="btn btn-info btn-sm">
-                                Weekend
-                            </button> -->
+                    <div class="d-none">
+                        <div class="btn-groups">
                             <button type="button" id="btn_reset_filters" class="btn btn-secondary btn-sm">
                                 Réinitialiser
                             </button>
@@ -101,35 +97,34 @@
                     </select>
                 </div>
                 <!-- Ajoutez cette section dans la modal des filtres, après les autres filtres -->
-<div class="row">
-    <div class="col-md-6">
-        <div class="form-group">
-            <label for="filter_year">Année</label>
-            
-            <input type="text" class="form-control" id="filter_year">
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="form-group">
-            <label for="filter_month">Mois</label>
-            <select class="form-control" id="filter_month">
-                <option value="">Tous les mois</option>
-                <option value="1">Janvier</option>
-                <option value="2">Février</option>
-                <option value="3">Mars</option>
-                <option value="4">Avril</option>
-                <option value="5">Mai</option>
-                <option value="6">Juin</option>
-                <option value="7">Juillet</option>
-                <option value="8">Août</option>
-                <option value="9">Septembre</option>
-                <option value="10">Octobre</option>
-                <option value="11">Novembre</option>
-                <option value="12">Décembre</option>
-            </select>
-        </div>
-    </div>
-</div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="filter_year">Année</label>
+                            <input type="text" class="form-control" id="filter_year">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="filter_month">Mois</label>
+                            <select class="form-control" id="filter_month">
+                                <option value="">Tous les mois</option>
+                                <option value="1">Janvier</option>
+                                <option value="2">Février</option>
+                                <option value="3">Mars</option>
+                                <option value="4">Avril</option>
+                                <option value="5">Mai</option>
+                                <option value="6">Juin</option>
+                                <option value="7">Juillet</option>
+                                <option value="8">Août</option>
+                                <option value="9">Septembre</option>
+                                <option value="10">Octobre</option>
+                                <option value="11">Novembre</option>
+                                <option value="12">Décembre</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
@@ -392,6 +387,7 @@
         </div>
     </div>
 </div>
+
 <!-- Modal pour modifier un événement -->
 <div class="modal fade" id="editEventModal" tabindex="-1" role="dialog" aria-labelledby="editEventModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
@@ -574,812 +570,1015 @@
     border-radius: 3px;
     vertical-align: middle;
 }
-.fc-header-toolbar .fc-toolbar-chunk {
-    padding-left: 12px !important; /* adjust value */
-}
-.fc-header-toolbar {
-    justify-content: flex-start !important;
-}
-@media (min-width: 1024px) {
-    .customClass {
-        position: absolute;
-        z-index: 99;
-        margin-top: 40px;
-        margin-right: 20px;
+
+/* Responsive styles for calendar header */
+@media (max-width: 768px) {
+    .fc-header-toolbar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    .fc-toolbar-chunk {
+        margin-bottom: 10px !important;
+        width: 100% !important;
+        justify-content: center !important;
+    }
+    .fc-custom-buttons {
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+    .fc-custom-buttons button {
+        margin: 2px !important;
+        font-size: 12px !important;
+        padding: 3px 8px !important;
     }
 }
-
-
 </style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
-    var currentEventId = null;
-    var currentEventTitle = null;
-    var calendar;
-    var isUserNavigating = false; // Flag pour savoir si l'utilisateur navigue
-    
-    // Set today's date as default for new events
-    $('#date_debut').val(new Date().toISOString().split('T')[0]);
+        var calendarEl = document.getElementById('calendar');
+        var currentEventId = null;
+        var currentEventTitle = null;
+        var calendar;
+        var isUserNavigating = false;
+        
+        // Set today's date as default for new events
+        $('#date_debut').val(new Date().toISOString().split('T')[0]);
 
-    // Fonction pour générer les options d'année
-    function populateYearFilter() {
-        const yearSelect = $('#filter_year');
-        const currentYear = new Date().getFullYear();
-        
-        // Clear existing options except the first one
-        yearSelect.find('option:not(:first)').remove();
-        
-        // Ajouter les années
-        for (let year = currentYear - 5; year <= currentYear + 5; year++) {
-            yearSelect.append(`<option value="${year}">${year}</option>`);
-        }
-        
-        // Définir l'option vide par défaut
-        yearSelect.val('');
-    }
-
-    // Fonction pour obtenir tous les filtres
-    function getCalendarFilters() {
-        const filters = {
-            categories: getSelectedCategories(),
-            utilisateur_id: $('#filter_utilisateur').val(),
-            dossier_id: $('#filter_dossier').val(),
-            year: $('#filter_year').val(),
-            month: $('#filter_month').val()
-        };
-        
-        console.log('Filters envoyés au serveur:', filters);
-        
-        return filters;
-    }
-
-    // Toggle weekends function
-    function toggleWeekends() {
-        if (!calendar) {
-            console.error('Calendar not initialized');
-            return;
-        }
-        
-        try {
-            const currentOption = calendar.getOption('weekends');
-            console.log('Current weekends option:', currentOption);
+        // ========== MOVE ALL BUTTONS TO CALENDAR HEADER ==========
+        function moveAllButtonsToCalendarHeader() {
+            console.log('Moving buttons to calendar header...');
             
-            const newValue = !currentOption;
-            console.log('Setting weekends to:', newValue);
-            
-            // Update calendar option
-            calendar.setOption('weekends', newValue);
-            
-            // Update button text
-            updateToggleButton(newValue);
-            
-            // Force calendar to rerender
-            calendar.updateSize();
-            
-            // Save preference to localStorage
-            localStorage.setItem('fc-weekends-enabled', newValue);
-            
-            console.log('Weekends toggled successfully to:', newValue);
-        } catch (error) {
-            console.error('Error toggling weekends:', error);
-        }
-    }
-
-    // Update button appearance
-    function updateToggleButton(isEnabled) {
-        const toggleBtn = document.getElementById('weekend');
-        if (!toggleBtn) {
-            console.warn('Toggle button not found during update');
-            return;
-        }
-        
-        console.log('Updating button to:', isEnabled ? 'Cacher Weekends' : 'Afficher Weekends');
-        
-        // Update button text
-        toggleBtn.textContent = isEnabled ? 'Cacher Weekends' : 'Afficher Weekends';
-        
-        // Optional: Change button color
-        if (isEnabled) {
-            toggleBtn.classList.remove('btn-primary');
-            toggleBtn.classList.add('btn-success');
-        } else {
-            toggleBtn.classList.remove('btn-success');
-            toggleBtn.classList.add('btn-primary');
-        }
-    }
-
-    // Initialize Calendar
-    function initializeCalendar() {
-        // Check localStorage for saved preference
-        const savedWeekendPref = localStorage.getItem('fc-weekends-enabled');
-        let initialWeekends = false; // default to false
-        
-        if (savedWeekendPref !== null) {
-            initialWeekends = (savedWeekendPref === 'true');
-            console.log('Loaded weekends preference from localStorage:', initialWeekends);
-        } else {
-            console.log('No weekends preference found in localStorage, using default:', initialWeekends);
-        }
-
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridDay',
-            scrollTime: '08:00:00',
-            slotMinTime: '06:00:00',
-            defaultTimedEventDuration: '01:00:00',
-            locale: 'fr',
-            timeZone: 'local',
-            initialView: 'dayGridMonth',
-            weekends: initialWeekends, // Use saved preference or default false
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-            },
-            views: {
-                dayGridMonth: { 
-                    buttonText: 'Mois',
-                    dayMaxEventRows: 3,
-                    dayMaxEvents: true
-                },
-                timeGridWeek: { buttonText: 'Semaine' },
-                timeGridDay: { buttonText: 'Jour' },
-                listWeek: { 
-                    buttonText: 'Liste',
-                    listDayFormat: { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric',
-                        weekday: 'short'
-                    },
-                },
-            },
-            buttonText: {
-                today: 'Aujourd\'hui',
-                month: 'Mois',
-                week: 'Semaine',
-                day: 'Jour',
-                list: 'Liste',
-            },
-            navLinks: true,
-            editable: false,
-            selectable: true,
-            nowIndicator: true,
-            dayMaxEvents: true,
-            height: 'auto',
-            contentHeight: 'auto',
-            events: {
-                url: '{{ route("agendas.data") }}',
-                method: 'GET',
-                extraParams: function() {
-                    return getCalendarFilters();
-                },
-                failure: function(error) {
-                    console.error('Erreur FullCalendar:', error);
-                    showAlert('Erreur', 'Erreur lors du chargement des événements', 'error');
-                }
-            },
-            eventClick: function(info) {
-                currentEventId = info.event.id;
-                currentEventTitle = info.event.title;
-                showEventDetails(info.event);
-            },
-            dateClick: function(info) {
-                @if(auth()->user()->hasPermission('create_agendas'))
-                    $('#date_debut').val(info.dateStr);
-                    $('#createEventModal').modal('show');
-                @endif
-            },
-            datesSet: function(info) {
-                // Quand l'utilisateur navigue avec "<" ou ">", réinitialiser les filtres année/mois
-                if (isUserNavigating) {
-                    console.log('Navigation détectée - réinitialisation des filtres année/mois');
-                    $('#filter_year').val('');
-                    $('#filter_month').val('');
-                    isUserNavigating = false;
-                    
-                    // Recharger les événements sans filtres
-                    setTimeout(function() {
-                        calendar.refetchEvents();
-                    }, 100);
-                }
-            },
-            eventDidMount: function(info) {
-                // Apply custom colors and tooltips
-                var event = info.event;
-                
-                // Tooltip avec les détails de l'événement
-                var tooltipContent = event.title;
-                if (event.extendedProps.description) {
-                    tooltipContent += '<br>' + event.extendedProps.description;
-                }
-                if (event.extendedProps.dossier) {
-                    tooltipContent += '<br>Dossier: ' + event.extendedProps.dossier;
-                }
-                if (event.extendedProps.intervenant) {
-                    tooltipContent += '<br>Intervenant: ' + event.extendedProps.intervenant;
+            // Wait for calendar to be rendered
+            setTimeout(function() {
+                // Get the header toolbar
+                const headerToolbar = document.querySelector('.fc-header-toolbar');
+                if (!headerToolbar) {
+                    console.log('Header toolbar not found, retrying...');
+                    setTimeout(moveAllButtonsToCalendarHeader, 500);
+                    return;
                 }
                 
-                $(info.el).tooltip({
-                    title: tooltipContent,
-                    html: true,
-                    placement: 'top'
+                console.log('✅ Found header toolbar:', headerToolbar);
+                
+                // Get ALL buttons from the original position
+                const originalButtonsContainer = document.querySelector('.btn-groups');
+                if (!originalButtonsContainer) {
+                    console.error('❌ Original buttons container not found');
+                    return;
+                }
+                
+                // Create a new toolbar chunk for our buttons
+                const customToolbarChunk = document.createElement('div');
+                customToolbarChunk.className = 'fc-toolbar-chunk fc-custom-buttons';
+                customToolbarChunk.style.cssText = `
+                    display: flex;
+                    gap: 8px;
+                    margin: 0 10px;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    order: 1;
+                `;
+                
+                // Clone ALL buttons from original container
+                const buttons = originalButtonsContainer.querySelectorAll('button');
+                buttons.forEach(button => {
+                    const clonedButton = button.cloneNode(true);
+                    clonedButton.style.cssText = `
+                        padding: 4px 12px !important;
+                        font-size: 13px !important;
+                        height: 32px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        white-space: nowrap !important;
+                        margin: 2px !important;
+                    `;
+                    customToolbarChunk.appendChild(clonedButton);
                 });
                 
-                // Ensure colors are applied correctly
-                if (event.backgroundColor) {
-                    info.el.style.backgroundColor = event.backgroundColor;
-                }
-                if (event.textColor) {
-                    info.el.style.color = event.textColor;
-                }
-            },
-            windowResize: function(view) {
-                calendar.updateSize();
-            },
-            eventContent: function(arg) {
-                // Custom event content to ensure colors display properly
-                var title = arg.event.title;
-                var timeText = '';
+                // Add Weekend toggle button
+                const weekendToggleBtn = document.createElement('button');
+                weekendToggleBtn.id = 'fc-weekend-toggle';
+                weekendToggleBtn.className = 'btn btn-outline-primary btn-sm';
+                weekendToggleBtn.innerHTML = '<i class="fas fa-calendar-week"></i> Afficher Weekends';
+                weekendToggleBtn.style.cssText = `
+                    padding: 4px 12px !important;
+                    font-size: 13px !important;
+                    height: 32px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    white-space: nowrap !important;
+                    margin: 2px !important;
+                `;
+                customToolbarChunk.appendChild(weekendToggleBtn);
                 
-                if (!arg.event.allDay && arg.event.start) {
-                    var startTime = arg.event.start.toLocaleTimeString('fr-FR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-                    timeText = startTime + ' ';
-                }
+              
+               
                 
-                return {
-                    html: `<div class="fc-event-main-frame">
-                             <div class="fc-event-title">${title}</div>
-                           </div>`
-                };
+                // Insert at the beginning (left side) of header toolbar
+                headerToolbar.insertBefore(customToolbarChunk, headerToolbar.firstChild);
+                
+                // Hide the original buttons container
+                originalButtonsContainer.style.display = 'none';
+                
+                console.log('✅ All buttons moved to calendar header successfully');
+                
+                // Setup event listeners for the moved buttons
+                setupMovedButtonEventListeners();
+                
+            }, 1000); // Give time for calendar to render
+        }
+        
+        // ========== SETUP EVENT LISTENERS FOR MOVED BUTTONS ==========
+        function setupMovedButtonEventListeners() {
+            console.log('Setting up event listeners for moved buttons...');
+            
+            // Réinitialiser button
+            const resetBtn = document.querySelector('#btn_reset_filters');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    resetAllFiltersAndViews();
+                });
+                console.log('✅ Reset button listener added');
             }
-        });
-
-        calendar.render();
-        
-        // Setup weekend toggle button
-        setupWeekendToggle();
-        
-        // Log initial state
-        console.log('Calendar initialized with weekends:', calendar.getOption('weekends'));
-        
-        // Détecter quand l'utilisateur clique sur prev/next
-        setTimeout(function() {
-            $('.fc-prev-button, .fc-next-button').on('click', function() {
-                isUserNavigating = true;
-                console.log('Bouton de navigation cliqué');
-            });
-        }, 1000);
-    }
-
-    // Setup weekend toggle button
-    function setupWeekendToggle() {
-        const toggleBtn = document.getElementById('weekend');
-        
-        if (!toggleBtn) {
-            console.error('❌ Toggle button with ID "weekend" not found in DOM!');
-            console.log('Looking for button with ID "weekend"...');
             
-            // Try to create the button if it doesn't exist
-            createWeekendToggleButton();
-            return;
+            // Créer un événement button
+            const createEventBtn = document.querySelector('[data-target="#createEventModal"]');
+            if (createEventBtn) {
+                createEventBtn.addEventListener('click', function() {
+                    // Ensure date is set to today
+                    const today = new Date().toISOString().split('T')[0];
+                    $('#date_debut').val(today);
+                });
+                console.log('✅ Create event button listener added');
+            }
+            
+            // Filtres button
+            const filterBtn = document.querySelector('#toggleFiltersBtn');
+            if (filterBtn) {
+                console.log('✅ Filter button found (uses data-target)');
+            }
+            
+            // Weekend toggle button
+            const weekendToggleBtn = document.querySelector('#fc-weekend-toggle');
+            if (weekendToggleBtn) {
+                weekendToggleBtn.addEventListener('click', function() {
+                    toggleWeekends();
+                });
+                console.log('✅ Weekend toggle button listener added');
+            }
+            
+            // Today button
+            const todayBtn = document.querySelector('#fc-today-btn');
+            if (todayBtn) {
+                todayBtn.addEventListener('click', function() {
+                    goToToday();
+                });
+                console.log('✅ Today button listener added');
+            }
+            
+            // Print button
+            const printBtn = document.querySelector('#fc-print-btn');
+            if (printBtn) {
+                printBtn.addEventListener('click', function() {
+                    window.print();
+                });
+                console.log('✅ Print button listener added');
+            }
         }
         
-        console.log('✅ Weekend toggle button found:', toggleBtn);
-        
-        // Update button with initial state
-        const initialWeekends = calendar.getOption('weekends');
-        updateToggleButton(initialWeekends);
-        
-        // Add click event
-        toggleBtn.addEventListener('click', function(e) {
-            console.log('Weekend button clicked');
-            toggleWeekends();
-        });
-        
-        console.log('✅ Weekend toggle button setup complete');
-    }
-    
-    // Create weekend toggle button if it doesn't exist
-    function createWeekendToggleButton() {
-        console.log('Creating weekend toggle button...');
-        
-        // Create button element
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'weekend';
-        toggleBtn.className = 'btn btn-primary';
-        toggleBtn.textContent = 'Afficher Weekends';
-        toggleBtn.style.margin = '5px';
-        
-        // Try to find a good place to insert the button
-        const header = document.querySelector('.content-header, .header-toolbar, .fc-header-toolbar');
-        const calendarContainer = document.getElementById('calendar').parentElement;
-        
-        if (header) {
-            header.appendChild(toggleBtn);
-            console.log('✅ Weekend toggle button created in header');
-        } else if (calendarContainer) {
-            calendarContainer.insertBefore(toggleBtn, calendarEl);
-            console.log('✅ Weekend toggle button created above calendar');
-        } else {
-            document.body.appendChild(toggleBtn);
-            console.log('⚠️ Weekend toggle button created in body (fallback)');
+        // ========== TOGGLE WEEKENDS FUNCTION ==========
+        function toggleWeekends() {
+            if (!calendar) {
+                console.error('Calendar not initialized');
+                return;
+            }
+            
+            try {
+                const currentOption = calendar.getOption('weekends');
+                const newValue = !currentOption;
+                
+                // Update calendar option
+                calendar.setOption('weekends', newValue);
+                
+                // Update button
+                updateWeekendToggleButton(newValue);
+                
+                // Force calendar to rerender
+                calendar.updateSize();
+                
+                // Save preference
+                localStorage.setItem('fc-weekends-enabled', newValue);
+                
+                console.log('Weekends toggled to:', newValue);
+                showToast(newValue ? 'Weekends affichés' : 'Weekends cachés', 'info');
+                
+            } catch (error) {
+                console.error('Error toggling weekends:', error);
+            }
         }
         
-        // Setup the newly created button
-        setupWeekendToggle();
-    }
-
-    // Initialiser le calendrier
-    initializeCalendar();
-    
-    // Peupler le filtre d'années
-    populateYearFilter();
-    
-    // Charger les événements initialement
-    calendar.refetchEvents();
-
-    // Fonction pour afficher les alertes
-    function showAlert(title, message, type = 'info') {
-        if (type === 'error') {
-            alert('❌ ' + title + ': ' + message);
-        } else if (type === 'success') {
-            alert('✅ ' + message);
-        } else {
-            alert('ℹ️ ' + message);
+        function updateWeekendToggleButton(isEnabled) {
+            const btn = document.querySelector('#fc-weekend-toggle');
+            if (!btn) return;
+            
+            if (isEnabled) {
+                btn.innerHTML = '<i class="fas fa-calendar-times"></i> Cacher Weekends';
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-outline-danger');
+                btn.title = 'Cacher les weekends';
+            } else {
+                btn.innerHTML = '<i class="fas fa-calendar-check"></i> Afficher Weekends';
+                btn.classList.remove('btn-outline-danger');
+                btn.classList.add('btn-outline-primary');
+                btn.title = 'Afficher les weekends';
+            }
         }
-    }
-
-    // Fonction pour obtenir les catégories sélectionnées
-    function getSelectedCategories() {
-        var categories = [];
-        $('input[data-category]:checked').each(function() {
-            categories.push($(this).data('category'));
-        });
-        return categories.join(',');
-    }
-
-    // Fonction pour afficher les détails de l'événement
-    function showEventDetails(event) {
-        var details = `
-            <div class="event-details">
-                <h4>${event.title}</h4>
-                <p><strong>Catégorie:</strong> ${getCategoryLabel(event.extendedProps.categorie)}</p>
-                ${event.extendedProps.description ? `<p><strong>Description:</strong> ${event.extendedProps.description}</p>` : ''}
-                <p><strong>Date:</strong> ${formatEventDate(event)}</p>
-                ${event.extendedProps.dossier ? `<p><strong>Dossier:</strong> ${event.extendedProps.dossier}</p>` : ''}
-                ${event.extendedProps.intervenant ? `<p><strong>Intervenant:</strong> ${event.extendedProps.intervenant}</p>` : ''}
-                ${event.extendedProps.utilisateur ? `<p><strong>Assigné à:</strong> ${event.extendedProps.utilisateur}</p>` : ''}
-                ${event.extendedProps.file_name ? `<p><strong><a href="{{url('agendas/download')}}/${event.id}"><i class="fa fa-download"></i> Télécharger</a></strong> ${event.extendedProps.file_name}</p>` : ''}
-            </div>
+        
+        // ========== GO TO TODAY FUNCTION ==========
+        function goToToday() {
+            if (!calendar) return;
+            
+            // Reset year/month filters
+            $('#filter_year').val('');
+            $('#filter_month').val('');
+            
+            // Go to today
+            calendar.today();
+            
+            showToast('Retour à aujourd\'hui', 'info');
+        }
+        
+        // ========== RESET ALL FILTERS AND VIEWS ==========
+        function resetAllFiltersAndViews() {
+            console.log('Resetting all filters and views...');
+            
+            // Reset category checkboxes
+            document.querySelectorAll('input[data-category]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            // Reset dropdowns
+            $('#filter_utilisateur').val('').trigger('change');
+            $('#filter_dossier').val('').trigger('change');
+            $('#filter_month').val('').trigger('change');
+            $('#filter_year').val('').trigger('change');
+            
+            // Reset weekends
+            if (calendar) {
+                calendar.setOption('weekends', false);
+                updateWeekendToggleButton(false);
+            }
+            
+            // Go to today
+            goToToday();
+            
+            // Refresh events
+            if (calendar) {
+                calendar.refetchEvents();
+            }
+            
+            // Close filters modal if open
+            $('#filtersModal').modal('hide');
+            
+            showToast('Tous les filtres ont été réinitialisés', 'success');
+        }
+        
+        // ========== TOAST NOTIFICATION ==========
+        function showToast(message, type = 'info') {
+            // Remove existing toasts
+            const existingToasts = document.querySelectorAll('.custom-toast');
+            existingToasts.forEach(toast => toast.remove());
+            
+            // Create toast
+            const toast = document.createElement('div');
+            toast.className = `custom-toast toast-${type}`;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+                color: white;
+                border-radius: 5px;
+                z-index: 9999;
+                animation: slideIn 0.3s ease;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            `;
+            
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => toast.remove(), 0);
+                }
+            });
+        }
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+            /* Make calendar header responsive */
+            .fc-header-toolbar {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 10px !important;
+                align-items: center !important;
+                padding: 10px 5px !important;
+            }
+            .fc-toolbar-chunk {
+                display: flex !important;
+                align-items: center !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            .fc-custom-buttons {
+                order: 4 !important;
+                width: 100% !important;
+                justify-content: center !important;
+                margin-bottom: 10px !important;
+            }
+            .fc-toolbar-chunk:nth-child(2) {
+                order: 2 !important;
+                width: 100% !important;
+                justify-content: center !important;
+                margin-bottom: 10px !important;
+            }
+            .fc-toolbar-chunk:nth-child(3) {
+                order: 3 !important;
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            /* Responsive adjustments */
+            @media (min-width: 768px) {
+                .fc-custom-buttons {
+                    order: 4 !important;
+                    width: auto !important;
+                    justify-content: flex-start !important;
+                    margin-bottom: 0 !important;
+                }
+                .fc-toolbar-chunk:nth-child(2) {
+                    order: 2 !important;
+                    width: auto !important;
+                    margin-bottom: 0 !important;
+                }
+                .fc-toolbar-chunk:nth-child(3) {
+                    order: 3 !important;
+                    width: auto !important;
+                    justify-content: flex-end !important;
+                }
+                .fc-header-toolbar {
+                    flex-wrap: nowrap !important;
+                }
+            }
+            @media (max-width: 576px) {
+                .fc-custom-buttons {
+                    flex-direction: column !important;
+                    align-items: stretch !important;
+                }
+                .fc-custom-buttons button {
+                    width: 100% !important;
+                    margin: 5px 0 !important;
+                }
+            }
         `;
+        document.head.appendChild(style);
         
-        $('#eventModalBody').html(details);
-        $('#eventModal').modal('show');
-    }
-
-    // Fonction pour formater la date de l'événement
-    function formatEventDate(event) {
-        if (event.allDay) {
-            return event.start.toLocaleDateString('fr-FR');
-        } else {
-            var start = event.start.toLocaleString('fr-FR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+        // ========== EXISTING CALENDAR FUNCTIONS ==========
+        function populateYearFilter() {
+            const yearSelect = $('#filter_year');
+            const currentYear = new Date().getFullYear();
+            
+            yearSelect.find('option:not(:first)').remove();
+            
+            for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+                yearSelect.append(`<option value="${year}">${year}</option>`);
+            }
+            
+            yearSelect.val('');
+        }
+        
+        function getCalendarFilters() {
+            return {
+                categories: getSelectedCategories(),
+                utilisateur_id: $('#filter_utilisateur').val(),
+                dossier_id: $('#filter_dossier').val(),
+                year: $('#filter_year').val(),
+                month: $('#filter_month').val()
+            };
+        }
+        
+        function initializeCalendar() {
+            const savedWeekendPref = localStorage.getItem('fc-weekends-enabled');
+            let initialWeekends = false;
+            
+            if (savedWeekendPref !== null) {
+                initialWeekends = (savedWeekendPref === 'true');
+            } else {
+                initialWeekends = false;
+            }
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridDay',
+                scrollTime: '08:00:00',
+                slotMinTime: '06:00:00',
+                defaultTimedEventDuration: '01:00:00',
+                locale: 'fr',
+                timeZone: 'local',
+                initialView: 'dayGridMonth',
+                weekends: initialWeekends,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                },
+                views: {
+                    dayGridMonth: { 
+                        buttonText: 'Mois',
+                        dayMaxEventRows: 3,
+                        dayMaxEvents: true
+                    },
+                    timeGridWeek: { buttonText: 'Semaine' },
+                    timeGridDay: { buttonText: 'Jour' },
+                    listWeek: { 
+                        buttonText: 'Liste',
+                        listDayFormat: { 
+                            month: 'long', 
+                            day: 'numeric', 
+                            year: 'numeric',
+                            weekday: 'short'
+                        },
+                    },
+                },
+                buttonText: {
+                    today: 'Aujourd\'hui',
+                    month: 'Mois',
+                    week: 'Semaine',
+                    day: 'Jour',
+                    list: 'Liste',
+                },
+                navLinks: true,
+                editable: false,
+                selectable: true,
+                nowIndicator: true,
+                dayMaxEvents: true,
+                height: 'auto',
+                contentHeight: 'auto',
+                events: {
+                    url: '{{ route("agendas.data") }}',
+                    method: 'GET',
+                    extraParams: function() {
+                        return getCalendarFilters();
+                    },
+                    failure: function(error) {
+                        console.error('Erreur FullCalendar:', error);
+                        showToast('Erreur lors du chargement des événements', 'error');
+                    }
+                },
+                eventClick: function(info) {
+                    currentEventId = info.event.id;
+                    currentEventTitle = info.event.title;
+                    showEventDetails(info.event);
+                },
+                dateClick: function(info) {
+                    @if(auth()->user()->hasPermission('create_agendas'))
+                        $('#date_debut').val(info.dateStr);
+                        $('#createEventModal').modal('show');
+                    @endif
+                },
+                datesSet: function(info) {
+                    if (isUserNavigating) {
+                        $('#filter_year').val('');
+                        $('#filter_month').val('');
+                        isUserNavigating = false;
+                        
+                        setTimeout(function() {
+                            calendar.refetchEvents();
+                        }, 100);
+                    }
+                },
+                eventDidMount: function(info) {
+                    var event = info.event;
+                    var tooltipContent = event.title;
+                    
+                    if (event.extendedProps.description) {
+                        tooltipContent += '<br>' + event.extendedProps.description;
+                    }
+                    if (event.extendedProps.dossier) {
+                        tooltipContent += '<br>Dossier: ' + event.extendedProps.dossier;
+                    }
+                    if (event.extendedProps.intervenant) {
+                        tooltipContent += '<br>Intervenant: ' + event.extendedProps.intervenant;
+                    }
+                    
+                    $(info.el).tooltip({
+                        title: tooltipContent,
+                        html: true,
+                        placement: 'top'
+                    });
+                    
+                    if (event.backgroundColor) {
+                        info.el.style.backgroundColor = event.backgroundColor;
+                    }
+                    if (event.textColor) {
+                        info.el.style.color = event.textColor;
+                    }
+                },
+                windowResize: function(view) {
+                    calendar.updateSize();
+                }
             });
             
-            if (event.end) {
-                var end = event.end.toLocaleString('fr-FR', {
+            calendar.render();
+            
+            // Move buttons to header after calendar renders
+            setTimeout(moveAllButtonsToCalendarHeader, 1500);
+            
+            // Setup navigation buttons
+            setTimeout(function() {
+                $('.fc-prev-button, .fc-next-button').on('click', function() {
+                    isUserNavigating = true;
+                });
+            }, 1000);
+        }
+        
+        // ========== EXISTING FUNCTIONS ==========
+        function showAlert(title, message, type = 'info') {
+            if (type === 'error') {
+                alert('❌ ' + title + ': ' + message);
+            } else if (type === 'success') {
+                alert('✅ ' + message);
+            } else {
+                alert('ℹ️ ' + message);
+            }
+        }
+        
+        function getSelectedCategories() {
+            var categories = [];
+            $('input[data-category]:checked').each(function() {
+                categories.push($(this).data('category'));
+            });
+            return categories.join(',');
+        }
+        
+        function showEventDetails(event) {
+            var details = `
+                <div class="event-details">
+                    <h4>${event.title}</h4>
+                    <p><strong>Catégorie:</strong> ${getCategoryLabel(event.extendedProps.categorie)}</p>
+                    ${event.extendedProps.description ? `<p><strong>Description:</strong> ${event.extendedProps.description}</p>` : ''}
+                    <p><strong>Date:</strong> ${formatEventDate(event)}</p>
+                    ${event.extendedProps.dossier ? `<p><strong>Dossier:</strong> ${event.extendedProps.dossier}</p>` : ''}
+                    ${event.extendedProps.intervenant ? `<p><strong>Intervenant:</strong> ${event.extendedProps.intervenant}</p>` : ''}
+                    ${event.extendedProps.utilisateur ? `<p><strong>Assigné à:</strong> ${event.extendedProps.utilisateur}</p>` : ''}
+                    ${event.extendedProps.file_name ? `<p><strong><a href="{{url('agendas/download')}}/${event.id}"><i class="fa fa-download"></i> Télécharger</a></strong> ${event.extendedProps.file_name}</p>` : ''}
+                </div>
+            `;
+            
+            $('#eventModalBody').html(details);
+            $('#eventModal').modal('show');
+        }
+        
+        function formatEventDate(event) {
+            if (event.allDay) {
+                return event.start.toLocaleDateString('fr-FR');
+            } else {
+                var start = event.start.toLocaleString('fr-FR', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                return `${start} - ${end}`;
+                
+                if (event.end) {
+                    var end = event.end.toLocaleString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    return `${start} - ${end}`;
+                }
+                return start;
             }
-            return start;
         }
-    }
-
-    // Fonction pour obtenir le label de la catégorie
-    function getCategoryLabel(categorieName) {
-        var labels = {!! json_encode($categories->pluck('nom','nom')) !!};
-        return labels[categorieName] || categorieName;
-    }
-
-    // Gestion de la case "Journée entière"
-    $('#all_day').change(function() {
-        if ($(this).is(':checked')) {
-            $('#heure_debut, #heure_fin').val('').prop('disabled', true);
-        } else {
-            $('#heure_debut, #heure_fin').prop('disabled', false);
+        
+        function getCategoryLabel(categorieName) {
+            var labels = {!! json_encode($categories->pluck('nom','nom')) !!};
+            return labels[categorieName] || categorieName;
         }
-    });
-
-    // Création d'événement
-    $('#createEventForm').submit(function(e) {
-        e.preventDefault();
-
-        var formData = new FormData(this);
-
-        $.ajax({
-            url: '{{ route("agendas.store") }}',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                $('#createEventModal').modal('hide');
+        
+        // ========== INITIALIZATION ==========
+        function initialize() {
+            // Initialize calendar
+            initializeCalendar();
+            
+            // Populate year filter
+            populateYearFilter();
+            
+            // Load initial events
+            if (calendar) {
                 calendar.refetchEvents();
-                $('#createEventForm')[0].reset();
-                $('#date_debut').val(new Date().toISOString().split('T')[0]);
-                $('#heure_debut, #heure_fin').prop('disabled', false);
-                showAlert('Succès', 'Événement créé avec succès', 'success');
-            },
-            error: function(xhr) {
-                let errorMessage = 'Erreur de validation:\n';
-                if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    $.each(xhr.responseJSON.errors, function(key, value) {
+            }
+            
+            // Existing event listeners
+            $('#all_day').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#heure_debut, #heure_fin').val('').prop('disabled', true);
+                } else {
+                    $('#heure_debut, #heure_fin').prop('disabled', false);
+                }
+            });
+        }
+        
+        // Start everything
+        initialize();
+        
+        // Création d'événement
+        $('#createEventForm').submit(function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '{{ route("agendas.store") }}',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#createEventModal').modal('hide');
+                    calendar.refetchEvents();
+                    $('#createEventForm')[0].reset();
+                    $('#date_debut').val(new Date().toISOString().split('T')[0]);
+                    $('#heure_debut, #heure_fin').prop('disabled', false);
+                    showAlert('Succès', 'Événement créé avec succès', 'success');
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Erreur de validation:\n';
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        $.each(xhr.responseJSON.errors, function(key, value) {
+                            errorMessage += '• ' + value[0] + '\n';
+                        });
+                    } else {
+                        errorMessage += 'Une erreur est survenue.';
+                    }
+                    showAlert('Erreur', errorMessage, 'error');
+                }
+            });
+        });
+
+        // Modification d'événement
+        $('#btnEditEvent').click(function() {
+            $('#eventModal').modal('hide');
+            loadEventForEdit(currentEventId);
+        });
+
+        function loadEventForEdit(eventId) {
+            $.ajax({
+                url: '/agendas/' + eventId + '/edit',
+                type: 'GET',
+                success: function(response) {
+                    // Pré-remplir le formulaire de modification
+                    $('#edit_event_id').val(response.id);
+                    $('#editEventForm input[name="titre"]').val(response.titre);
+                    $('#editEventForm select[name="categorie"]').val(response.categorie);
+                    $('#editEventForm input[name="date_debut"]').val(response.date_debut);
+                    $('#editEventForm input[name="date_fin"]').val(response.date_fin);
+                    $('#editEventForm input[name="heure_debut"]').val(response.heure_debut);
+                    $('#editEventForm input[name="heure_fin"]').val(response.heure_fin);
+                    $('#editEventForm input[name="all_day"]').prop('checked', response.all_day);
+                    $('#editEventForm textarea[name="description"]').val(response.description);
+                    $('#editEventForm select[name="utilisateur_id"]').val(response.utilisateur_id).trigger('change');
+                    $('#editEventForm select[name="dossier_id"]').val(response.dossier_id).trigger('change');
+                    $('#editEventForm select[name="intervenant_id"]').val(response.intervenant_id).trigger('change');
+                    $('#editEventForm input[name="couleur"]').val(response.couleur);
+                    $('#editEventForm input[name="file"]').val(response.file);
+
+                    if (response.all_day) {
+                        $('#editEventForm input[name="heure_debut"], #editEventForm input[name="heure_fin"]').prop('disabled', true);
+                    }
+
+                    $('#editEventModal').modal('show');
+                },
+                error: function() {
+                    showAlert('Erreur', 'Erreur lors du chargement des données', 'error');
+                }
+            });
+        }
+
+        $('#editEventForm').submit(function(e) {
+            e.preventDefault();
+            
+            var formData = new FormData(this);
+            formData.append('_method', 'PUT');
+
+            $.ajax({
+                url: '/agendas/' + $('#edit_event_id').val(),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#editEventModal').modal('hide');
+                    calendar.refetchEvents();
+                    showAlert('Succès', 'Événement mis à jour avec succès', 'success');
+                },
+                error: function(xhr) {
+                    var errors = xhr.responseJSON.errors;
+                    var errorMessage = 'Erreur de validation:\n';
+                    $.each(errors, function(key, value) {
                         errorMessage += '• ' + value[0] + '\n';
                     });
-                } else {
-                    errorMessage += 'Une erreur est survenue.';
+                    showAlert('Erreur', errorMessage, 'error');
                 }
-                showAlert('Erreur', errorMessage, 'error');
-            }
+            });
         });
-    });
 
-    // Modification d'événement
-    $('#btnEditEvent').click(function() {
-        $('#eventModal').modal('hide');
-        loadEventForEdit(currentEventId);
-    });
+        // Suppression d'événement
+        $('#btnDeleteEvent').click(function() {
+            $('#eventModal').modal('hide');
+            $('#deleteEventTitle').text(currentEventTitle);
+            $('#deleteEventModal').modal('show');
+        });
 
-    function loadEventForEdit(eventId) {
-        $.ajax({
-            url: '/agendas/' + eventId + '/edit',
-            type: 'GET',
-            success: function(response) {
-                // Pré-remplir le formulaire de modification
-                $('#edit_event_id').val(response.id);
-                $('#editEventForm input[name="titre"]').val(response.titre);
-                $('#editEventForm select[name="categorie"]').val(response.categorie);
-                $('#editEventForm input[name="date_debut"]').val(response.date_debut);
-                $('#editEventForm input[name="date_fin"]').val(response.date_fin);
-                $('#editEventForm input[name="heure_debut"]').val(response.heure_debut);
-                $('#editEventForm input[name="heure_fin"]').val(response.heure_fin);
-                $('#editEventForm input[name="all_day"]').prop('checked', response.all_day);
-                $('#editEventForm textarea[name="description"]').val(response.description);
-                $('#editEventForm select[name="utilisateur_id"]').val(response.utilisateur_id).trigger('change');
-                $('#editEventForm select[name="dossier_id"]').val(response.dossier_id).trigger('change');
-                $('#editEventForm select[name="intervenant_id"]').val(response.intervenant_id).trigger('change');
-                $('#editEventForm input[name="couleur"]').val(response.couleur);
-                $('#editEventForm input[name="file"]').val(response.file);
-
-                if (response.all_day) {
-                    $('#editEventForm input[name="heure_debut"], #editEventForm input[name="heure_fin"]').prop('disabled', true);
+        $('#btnConfirmDelete').click(function() {
+            $.ajax({
+                url: '/agendas/' + currentEventId,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    $('#deleteEventModal').modal('hide');
+                    calendar.refetchEvents();
+                    showAlert('Succès', 'Événement supprimé avec succès', 'success');
+                },
+                error: function() {
+                    showAlert('Erreur', 'Une erreur est survenue lors de la suppression', 'error');
                 }
-
-                $('#editEventModal').modal('show');
-            },
-            error: function() {
-                showAlert('Erreur', 'Erreur lors du chargement des données', 'error');
-            }
+            });
         });
-    }
 
-    $('#editEventForm').submit(function(e) {
-        e.preventDefault();
-        
-        var formData = new FormData(this);
-        formData.append('_method', 'PUT');
-
-        $.ajax({
-            url: '/agendas/' + $('#edit_event_id').val(),
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                $('#editEventModal').modal('hide');
-                calendar.refetchEvents();
-                showAlert('Succès', 'Événement mis à jour avec succès', 'success');
-            },
-            error: function(xhr) {
-                var errors = xhr.responseJSON.errors;
-                var errorMessage = 'Erreur de validation:\n';
-                $.each(errors, function(key, value) {
-                    errorMessage += '• ' + value[0] + '\n';
-                });
-                showAlert('Erreur', errorMessage, 'error');
+        // Appliquer les filtres depuis la modal
+        $('#applyFilters').click(function() {
+            $('#filtersModal').modal('hide');
+            
+            // Si une année/mois est sélectionné, naviguer vers cette date
+            const year = $('#filter_year').val();
+            const month = $('#filter_month').val();
+            
+            if (year && month) {
+                const targetDate = `${year}-${month.padStart(2, '0')}-01`;
+                calendar.gotoDate(targetDate);
+            } else if (year) {
+                const targetDate = `${year}-01-01`;
+                calendar.gotoDate(targetDate);
+            } else if (month) {
+                // Si seul le mois est sélectionné, utiliser l'année courante
+                const currentYear = new Date().getFullYear();
+                const targetDate = `${currentYear}-${month.padStart(2, '0')}-01`;
+                calendar.gotoDate(targetDate);
             }
-        });
-    });
-
-    // Suppression d'événement
-    $('#btnDeleteEvent').click(function() {
-        $('#eventModal').modal('hide');
-        $('#deleteEventTitle').text(currentEventTitle);
-        $('#deleteEventModal').modal('show');
-    });
-
-    $('#btnConfirmDelete').click(function() {
-        $.ajax({
-            url: '/agendas/' + currentEventId,
-            type: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                _method: 'DELETE'
-            },
-            success: function(response) {
-                $('#deleteEventModal').modal('hide');
-                calendar.refetchEvents();
-                showAlert('Succès', 'Événement supprimé avec succès', 'success');
-            },
-            error: function() {
-                showAlert('Erreur', 'Une erreur est survenue lors de la suppression', 'error');
-            }
-        });
-    });
-
-    // Appliquer les filtres depuis la modal
-    $('#applyFilters').click(function() {
-        $('#filtersModal').modal('hide');
-        
-        // Si une année/mois est sélectionné, naviguer vers cette date
-        const year = $('#filter_year').val();
-        const month = $('#filter_month').val();
-        
-        if (year && month) {
-            const targetDate = `${year}-${month.padStart(2, '0')}-01`;
-            calendar.gotoDate(targetDate);
-        } else if (year) {
-            const targetDate = `${year}-01-01`;
-            calendar.gotoDate(targetDate);
-        } else if (month) {
-            // Si seul le mois est sélectionné, utiliser l'année courante
-            const currentYear = new Date().getFullYear();
-            const targetDate = `${currentYear}-${month.padStart(2, '0')}-01`;
-            calendar.gotoDate(targetDate);
-        }
-        
-        calendar.refetchEvents();
-    });
-
-    // Bouton aujourd'hui - réinitialiser aussi les filtres
-    $('#btn_today').click(function() {
-        // Réinitialiser les filtres année/mois
-        $('#filter_year').val('');
-        $('#filter_month').val('');
-        
-        calendar.today();
-        calendar.refetchEvents();
-    });
-
-    // Bouton réinitialiser
-    $('#btn_reset_filters').click(function() {
-        // Reset all filters in the modal
-        $('input[data-category]').prop('checked', true);
-        $('#filter_utilisateur').val('').trigger('change');
-        $('#filter_dossier').val('').trigger('change');
-        $('#filter_month').val('').trigger('change');
-        $('#filter_year').val('').trigger('change');
-        
-        calendar.today(); // Revenir à la date d'aujourd'hui
-        calendar.refetchEvents(); // Recharger tous les événements
-    });
-
-    // Redimensionner le calendrier quand la fenêtre change
-    $(window).resize(function() {
-        if (calendar) {
-            setTimeout(function() {
-                calendar.updateSize();
-            }, 150);
-        }
-    });
-
-    // AJAX function to create new category
-    $('#createCategorieForm').submit(function(e) {
-        e.preventDefault();
-
-        var formData = {
-            nom: $('#categorie_name').val(),
-            couleur: $('#color').val(),
-            _token: '{{ csrf_token() }}'
-        };
-
-        $.ajax({
-            url: '{{ route("agenda-categories.store") }}',
-            type: 'POST',
-            data: formData,
-            success: function(response) {
-                $('#createCategorieModal').modal('hide');
-                $('#createCategorieForm')[0].reset();
-                
-                // Add the new category to the filter list
-                addCategoryToFilter(response.category);
-                
-                // Add the new category to event creation form
-                addCategoryToEventForm(response.category);
-                
-                showAlert('Succès', 'Catégorie créée avec succès', 'success');
-            },
-            error: function(xhr) {
-                let errorMessage = 'Erreur de validation:\n';
-                if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    $.each(xhr.responseJSON.errors, function(key, value) {
-                        errorMessage += '• ' + value[0] + '\n';
-                    });
-                } else {
-                    errorMessage += 'Une erreur est survenue.';
-                }
-                showAlert('Erreur', errorMessage, 'error');
-            }
-        });
-    });
-
-    // Function to add new category to filter list
-    function addCategoryToFilter(category) {
-        var categoryId = 'filter_' + category.id;
-        var checkboxHtml = `
-            <div class="custom-control custom-checkbox">
-                <span class="legend-color" style="background-color: ${category.couleur}; margin-right:30px;"></span>
-                <input class="custom-control-input" type="checkbox" id="${categoryId}" checked data-category="${category.id}">
-                <label for="${categoryId}" class="custom-control-label">${category.nom}</label>
-            </div>
-        `;
-        
-        // Append to the filter categories container
-        $('.form-group:has(label:contains("Catégories"))').append(checkboxHtml);
-        
-        // Add event listener for the new checkbox
-        $('#' + categoryId).change(function() {
+            
             calendar.refetchEvents();
         });
-    }
 
-    // Function to add new category to event creation form
-    function addCategoryToEventForm(category) {
-        var optionHtml = `<option value="${category.id}">${category.nom}</option>`;
-        
-        // Add to create event form
-        $('#categorie').append(optionHtml);
-        
-        // Add to edit event form
-        $('#edit_categorie').append(optionHtml);
-    }
-
-});
-
-// Script pour la gestion des catégories (inchangé)
-$(document).ready(function() {
-    let categoryToDelete = null;
-
-    // Gestion de la modification
-    $('.edit-category').on('click', function(e) {
-        e.preventDefault();
-        
-        const categoryId = $(this).data('id');
-        const categoryName = $(this).data('name');
-        const categoryColor = $(this).data('color');
-        
-        $('#edit_category_id').val(categoryId);
-        $('#edit_category_name').val(categoryName);
-        $('#edit_category_color').val(categoryColor);
-        
-        $('#editCategoryModal').modal('show');
-    });
-
-    // Sauvegarde des modifications
-    $('#saveCategoryChanges').on('click', function() {
-        const categoryId = $('#edit_category_id').val();
-        const formData = {
-            nom: $('#edit_category_name').val(),
-            couleur: $('#edit_category_color').val(),
-            _token: '{{ csrf_token() }}',
-            _method: 'PUT'
-        };
-
-        $.ajax({
-            url: '/agendas/categories/' + categoryId,
-            type: 'POST',
-            data: formData,
-            success: function(response) {
-                if (response.success) {
-                    // Mettre à jour l'affichage
-                    const categoryElement = $('#category-' + categoryId);
-                    categoryElement.find('.custom-control-label').text(response.categorie.nom);
-                    categoryElement.find('.legend-color').css('background-color', response.categorie.couleur);
-                    categoryElement.find('.edit-category').data('name', response.categorie.nom);
-                    categoryElement.find('.edit-category').data('color', response.categorie.couleur);
-                    
-                    $('#editCategoryModal').modal('hide');
-                    showAlert('success', response.message);
-                }
-            },
-            error: function(xhr) {
-                const response = xhr.responseJSON;
-                showAlert('error', response?.message || 'Erreur lors de la modification');
+        // Redimensionner le calendrier quand la fenêtre change
+        $(window).resize(function() {
+            if (calendar) {
+                setTimeout(function() {
+                    calendar.updateSize();
+                }, 150);
             }
         });
-    });
 
-    // Gestion de la suppression
-    $('.delete-category').on('click', function(e) {
-        e.preventDefault();
-        
-        categoryToDelete = $(this).data('id');
-        const categoryName = $(this).data('name');
-        
-        $('#category_name_to_delete').text(categoryName);
-        $('#deleteCategoryModal').modal('show');
-    });
+        // AJAX function to create new category
+        $('#createCategorieForm').submit(function(e) {
+            e.preventDefault();
 
-    // Confirmation de suppression
-    $('#confirmDeleteCategory').on('click', function() {
-        if (!categoryToDelete) return;
+            var formData = {
+                nom: $('#categorie_name').val(),
+                couleur: $('#color').val(),
+                _token: '{{ csrf_token() }}'
+            };
 
-        $.ajax({
-            url: '/agendas/categories/' + categoryToDelete,
-            type: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                _method: 'DELETE'
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Supprimer l'élément du DOM
-                    $('#category-' + categoryToDelete).remove();
-                    $('#deleteCategoryModal').modal('hide');
-                    showAlert('success', response.message);
+            $.ajax({
+                url: '{{ route("agenda-categories.store") }}',
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    $('#createCategorieModal').modal('hide');
+                    $('#createCategorieForm')[0].reset();
                     
-                    // Recharger la page si plus de catégories
-                    if ($('.category-item').length === 0) {
-                        location.reload();
+                    // Add the new category to the filter list
+                    addCategoryToFilter(response.category);
+                    
+                    // Add the new category to event creation form
+                    addCategoryToEventForm(response.category);
+                    
+                    showAlert('Succès', 'Catégorie créée avec succès', 'success');
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Erreur de validation:\n';
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        $.each(xhr.responseJSON.errors, function(key, value) {
+                            errorMessage += '• ' + value[0] + '\n';
+                        });
+                    } else {
+                        errorMessage += 'Une erreur est survenue.';
                     }
+                    showAlert('Erreur', errorMessage, 'error');
                 }
-            },
-            error: function(xhr) {
-                const response = xhr.responseJSON;
-                $('#deleteCategoryModal').modal('hide');
-                showAlert('error', response?.message || 'Erreur lors de la suppression');
-            }
+            });
         });
+
+        // Function to add new category to filter list
+        function addCategoryToFilter(category) {
+            var categoryId = 'filter_' + category.id;
+            var checkboxHtml = `
+                <div class="custom-control custom-checkbox">
+                    <span class="legend-color" style="background-color: ${category.couleur}; margin-right:30px;"></span>
+                    <input class="custom-control-input" type="checkbox" id="${categoryId}" checked data-category="${category.id}">
+                    <label for="${categoryId}" class="custom-control-label">${category.nom}</label>
+                </div>
+            `;
+            
+            // Append to the filter categories container
+            $('.form-group:has(label:contains("Catégories"))').append(checkboxHtml);
+            
+            // Add event listener for the new checkbox
+            $('#' + categoryId).change(function() {
+                calendar.refetchEvents();
+            });
+        }
+
+        // Function to add new category to event creation form
+        function addCategoryToEventForm(category) {
+            var optionHtml = `<option value="${category.id}">${category.nom}</option>`;
+            
+            // Add to create event form
+            $('#categorie').append(optionHtml);
+            
+            // Add to edit event form
+            $('#edit_categorie').append(optionHtml);
+        }
     });
+    
+    // Script pour la gestion des catégories (inchangé)
+    $(document).ready(function() {
+        let categoryToDelete = null;
 
-    // Fonction pour afficher les alertes
-    function showAlert(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
-                </button>
-            </div>
-        `;
-        
-        // Afficher l'alerte en haut de la page
-        $('.content-wrapper').prepend(alertHtml);
-        
-        // Supprimer automatiquement après 5 secondes
-        setTimeout(() => {
-            $('.alert').alert('close');
-        }, 3000);
-        setTimeout(function() {
-            window.location.reload();
-        }, 1500);
-    }
-});
+        // Gestion de la modification
+        $('.edit-category').on('click', function(e) {
+            e.preventDefault();
+            
+            const categoryId = $(this).data('id');
+            const categoryName = $(this).data('name');
+            const categoryColor = $(this).data('color');
+            
+            $('#edit_category_id').val(categoryId);
+            $('#edit_category_name').val(categoryName);
+            $('#edit_category_color').val(categoryColor);
+            
+            $('#editCategoryModal').modal('show');
+        });
+
+        // Sauvegarde des modifications
+        $('#saveCategoryChanges').on('click', function() {
+            const categoryId = $('#edit_category_id').val();
+            const formData = {
+                nom: $('#edit_category_name').val(),
+                couleur: $('#edit_category_color').val(),
+                _token: '{{ csrf_token() }}',
+                _method: 'PUT'
+            };
+
+            $.ajax({
+                url: '/agendas/categories/' + categoryId,
+                type: 'POST',
+                data: formData,
+                success: function(response) {
+                    if (response.success) {
+                        // Mettre à jour l'affichage
+                        const categoryElement = $('#category-' + categoryId);
+                        categoryElement.find('.custom-control-label').text(response.categorie.nom);
+                        categoryElement.find('.legend-color').css('background-color', response.categorie.couleur);
+                        categoryElement.find('.edit-category').data('name', response.categorie.nom);
+                        categoryElement.find('.edit-category').data('color', response.categorie.couleur);
+                        
+                        $('#editCategoryModal').modal('hide');
+                        showAlert('success', response.message);
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    showAlert('error', response?.message || 'Erreur lors de la modification');
+                }
+            });
+        });
+
+        // Gestion de la suppression
+        $('.delete-category').on('click', function(e) {
+            e.preventDefault();
+            
+            categoryToDelete = $(this).data('id');
+            const categoryName = $(this).data('name');
+            
+            $('#category_name_to_delete').text(categoryName);
+            $('#deleteCategoryModal').modal('show');
+        });
+
+        // Confirmation de suppression
+        $('#confirmDeleteCategory').on('click', function() {
+            if (!categoryToDelete) return;
+
+            $.ajax({
+                url: '/agendas/categories/' + categoryToDelete,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Supprimer l'élément du DOM
+                        $('#category-' + categoryToDelete).remove();
+                        $('#deleteCategoryModal').modal('hide');
+                        showAlert('success', response.message);
+                        
+                        // Recharger la page si plus de catégories
+                        if ($('.category-item').length === 0) {
+                            location.reload();
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    const response = xhr.responseJSON;
+                    $('#deleteCategoryModal').modal('hide');
+                    showAlert('error', response?.message || 'Erreur lors de la suppression');
+                }
+            });
+        });
+
+        // Fonction pour afficher les alertes
+        function showAlert(type, message) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            `;
+            
+            // Afficher l'alerte en haut de la page
+            $('.content-wrapper').prepend(alertHtml);
+            
+            // Supprimer automatiquement après 5 secondes
+            setTimeout(() => {
+                $('.alert').alert('close');
+            }, 3000);
+            setTimeout(function() {
+                window.location.reload();
+            }, 1500);
+        }
+    });
 </script>
-
 
 @endsection

@@ -461,7 +461,7 @@ public function edit(Agenda $agenda)
     
     $request->validate([
         'nom' => 'required|string|max:255|unique:agenda_categories,nom',
-        'couleur' => 'required|string|max:7',
+        'couleur' => 'required|string',
         'description' => 'nullable|string',
         'ordre' => 'nullable|integer',
         'actif' => 'boolean'
@@ -475,7 +475,6 @@ public function edit(Agenda $agenda)
         'success' => true,
         'message' => 'Catégorie créée avec succès',
         'category' => $category,
-        'isAdmin' => $isAdmin
     ]);
     }
 

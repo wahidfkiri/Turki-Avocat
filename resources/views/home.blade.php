@@ -39,6 +39,7 @@
                         </a>
                     </div>
                 </div>
+                @if(auth()->user()->hasRole('admin'))
                 <!-- ./col -->
                 <div class="@if(auth()->user()->hasRole('admin')) col-lg-3 @else col-lg-4 @endif col-6">
                     <!-- small box -->
@@ -72,6 +73,7 @@
                     </div>
                 </div>
                 <!-- ./col -->
+                 @endif
                  @if(auth()->user()->hasRole('admin'))
                 <div class="col-lg-3 col-6">
                     <!-- small box -->
@@ -89,11 +91,6 @@
                     </div>
                 </div>
                 @endif
-            </div>
-            <!-- /.row -->
-
-            <!-- Deuxième ligne de petites boîtes -->
-            <div class="row">
                 <div class="@if(auth()->user()->hasRole('admin')) col-lg-3 @else col-lg-4 @endif col-6">
                     <!-- small box -->
                     <div class="small-box bg-success">
@@ -109,6 +106,7 @@
                         </a>
                     </div>
                 </div>
+                @if(auth()->user()->hasRole('admin'))
                 <!-- ./col -->
                 <div class="@if(auth()->user()->hasRole('admin')) col-lg-3 @else col-lg-4 @endif col-6">
                     <!-- small box -->
@@ -126,6 +124,7 @@
                     </div>
                 </div>
                 <!-- ./col -->
+                 @endif
                 <!-- ./col -->
                 <div class="@if(auth()->user()->hasRole('admin')) col-lg-3 @else col-lg-4 @endif col-6">
                     <!-- small box -->
@@ -142,6 +141,7 @@
                         </a>
                     </div>
                 </div>
+                @if(auth()->user()->hasRole('admin'))
                 <!-- ./col -->
                 <div class="@if(auth()->user()->hasRole('admin')) col-lg-3 @else col-lg-4 @endif col-6">
                     <!-- small box -->
@@ -159,9 +159,10 @@
                     </div>
                 </div>
                 <!-- ./col -->
+                 @endif
             </div>
             <!-- /.row -->
-
+           @if(auth()->user()->hasRole('admin'))
             <!-- Main row -->
             <div class="row">
                 <!-- Left col -->
@@ -221,6 +222,8 @@
                 <!-- /.col -->
             </div>
             <!-- /.row -->
+
+            @endif
 
             <!-- Table row -->
             <div class="row">

@@ -51,8 +51,76 @@ class IntervenantController extends Controller
     return view('intervenants.edit', compact('intervenant','formeSociales','intervenants','intervenantsLies'));
 }
 
+
+private function addToRoundcube($contactEmail, $contactName)
+    {
+        DB::connection('roundcube')->beginTransaction();
+        
+        try {
+            // Get authenticated user
+            $user = auth()->user();
+            
+            // Find user in Roundcube database
+            $userRoundcube = DB::connection('roundcube')
+                ->table('users')
+                ->where('username', $user->email)
+                ->first();
+            
+            if (!$userRoundcube) {
+                DB::connection('roundcube')->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'User not found in Roundcube'
+                ];
+            }
+            
+            // Check if contact already exists
+            $exists = DB::connection('roundcube')
+                ->table('collected_addresses')
+                ->where('user_id', $userRoundcube->user_id)
+                ->where('email', $contactEmail)
+                ->exists();
+            
+            if ($exists) {
+                DB::connection('roundcube')->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'Contact already exists in Roundcube'
+                ];
+            }
+            
+            // Insert contact
+            $contactId = DB::connection('roundcube')
+                ->table('collected_addresses')
+                ->insertGetId([
+                    'user_id' => $userRoundcube->user_id,
+                    'type' => 1,
+                    'email' => $contactEmail,
+                    'name' => $contactName,
+                ]);
+            
+            DB::connection('roundcube')->commit();
+            
+            return [
+                'success' => true,
+                'message' => 'Contact added to Roundcube',
+                'contact_id' => $contactId
+            ];
+            
+        } catch (\Exception $e) {
+            DB::connection('roundcube')->rollBack();
+            
+            Log::error('Roundcube contact error: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
    public function store(StoreIntervenantRequest $request)
 {
+   
     try {
         DB::beginTransaction();
 
@@ -62,6 +130,10 @@ class IntervenantController extends Controller
         
         // Créer l'intervenant avec les données validées
         $intervenant = Intervenant::create($validatedData);
+        
+       if ($request->has('mail1')) {
+            $result = $this->addToRoundcube($request->mail1, $request->identite_fr);
+        }
         
         // Gestion des fichiers
         if ($request->hasFile('piece_jointe')) {
@@ -185,6 +257,10 @@ class IntervenantController extends Controller
         
         // Mettre à jour l'intervenant avec les données validées
         $intervenant->update($validatedData);
+
+         if ($request->has('mail1')) {
+            $result = $this->addToRoundcube($request->mail1, $request->identite_fr);
+        }
         
         // Gestion des nouveaux fichiers
         if ($request->hasFile('piece_jointe')) {

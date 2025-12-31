@@ -9,9 +9,9 @@ Route::middleware(['web','auth','active'])
     ->group(function () {
     // Accès au webmail
     Route::get('/webmail', function() {
-    return $user_email = auth()->user()->email; // ex: contact@turkiavocats.com
-    return redirect()->to('http://roundcube.localhost:8082/?user=' . urlencode($user_email));
-});
+   
+    return redirect()->to('http://roundcube.localhost:8082/'); 
+    })->name('webmail.index');
 
 
     
